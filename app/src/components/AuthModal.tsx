@@ -167,7 +167,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               autoFocus
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="ví dụ: duyle@gmail.com"
+              placeholder="name@example.com"
               style={{
                 width: '100%',
                 boxSizing: 'border-box',

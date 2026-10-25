@@ -468,9 +468,9 @@ describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.t
   })
 
   it('deriveVaultDocId tạo mã định danh ẩn danh SHA-256 nhất quán từ Sync ID + Passphrase', async () => {
-    const id1 = await deriveVaultDocId('DuyLe-Family-Vault', 'MatKhauBiMat#2026')
-    const id2 = await deriveVaultDocId('duyle-family-vault', 'MatKhauBiMat#2026')
-    const idDiffPass = await deriveVaultDocId('duyle-family-vault', 'MatKhauKhac#9999')
+    const id1 = await deriveVaultDocId('My-Family-Vault', 'MatKhauBiMat#2026')
+    const id2 = await deriveVaultDocId('my-family-vault', 'MatKhauBiMat#2026')
+    const idDiffPass = await deriveVaultDocId('my-family-vault', 'MatKhauKhac#9999')
 
     assert.ok(id1.startsWith('vault_'))
     assert.equal(id1.length, 46) // 'vault_' + 40 hex chars
@@ -518,9 +518,9 @@ describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.t
 
   it('auth kiểm tra tính hợp lệ của email và mật khẩu tối thiểu 6 ký tự', async () => {
     await assert.rejects(() => signUpWithEmail('invalid-email', '123456'), /email hợp lệ/)
-    await assert.rejects(() => signUpWithEmail('duyle@test.com', '123'), /tối thiểu 6 ký tự/)
+    await assert.rejects(() => signUpWithEmail('user@test.com', '123'), /tối thiểu 6 ký tự/)
     await assert.rejects(() => signInWithEmail('', '123456'), /email hợp lệ/)
-    await assert.rejects(() => signInWithEmail('duyle@test.com', ''), /mật khẩu/)
+    await assert.rejects(() => signInWithEmail('user@test.com', ''), /mật khẩu/)
   })
 })
 

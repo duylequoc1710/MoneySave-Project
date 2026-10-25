@@ -461,7 +461,7 @@ export default function Settings() {
                   <input
                     value={syncId}
                     onChange={e => setSyncId(e.target.value)}
-                    placeholder="VD: duyle-moneysave"
+                    placeholder="VD: moneysave-vault"
                   />
                 </label>
                 <label className="fld">

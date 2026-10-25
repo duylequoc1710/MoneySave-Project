@@ -155,7 +155,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
               autoFocus
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="ví dụ: quocduyle2000@gmail.com"
+              placeholder="name@example.com"
               style={{
                 width: '100%',
                 boxSizing: 'border-box',
