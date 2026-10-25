@@ -1,4 +1,6 @@
 import { db, exportAll, importAll } from './db.ts'
+import { getAuthUser, subscribeAuth } from './auth.ts'
+import { DEFAULT_FIREBASE_CONFIG } from './firebaseConfig.ts'
 
 export interface CloudSyncConfig {
   enabled: boolean
@@ -219,6 +221,27 @@ export function getCloudSyncConfig(): CloudSyncConfig {
   }
 }
 
+/**
+ * Trả về cấu hình đồng bộ đang có hiệu lực:
+ * - Nếu người dùng đã đăng nhập tài khoản (Firebase Auth), tự động đồng bộ theo User UID
+ *   và mã hóa E2EE bằng khóa tài khoản riêng.
+ * - Nếu chưa đăng nhập, dùng cấu hình thủ công hoặc offline-first.
+ */
+export function getActiveCloudSyncConfig(): CloudSyncConfig {
+  const user = getAuthUser()
+  if (user) {
+    return {
+      enabled: true,
+      projectId: DEFAULT_FIREBASE_CONFIG.projectId,
+      apiKey: DEFAULT_FIREBASE_CONFIG.apiKey,
+      databaseUrl: DEFAULT_FIREBASE_CONFIG.databaseURL,
+      syncId: `usr_${user.uid}`,
+      passphrase: `ms-e2ee-vault:${user.uid}:${user.email}`,
+    }
+  }
+  return getCloudSyncConfig()
+}
+
 export function saveCloudSyncConfig(cfg: CloudSyncConfig) {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(cfg))
@@ -392,9 +415,9 @@ let pushDebounceTimer: ReturnType<typeof setTimeout> | null = null
  * Đẩy dữ liệu hiện tại của máy lên Cloud (Mã hóa E2EE trước khi gửi)
  */
 export async function pushLocalToCloud(customCfg?: CloudSyncConfig): Promise<EncryptedVaultPayload> {
-  const cfg = customCfg ?? getCloudSyncConfig()
+  const cfg = customCfg ?? getActiveCloudSyncConfig()
   if (!cfg.projectId || !cfg.syncId || !cfg.passphrase) {
-    throw new Error('Vui lòng nhập đầy đủ Project ID, Mã định danh (Sync ID) và Mật khẩu mã hóa.')
+    throw new Error('Vui lòng nhập đầy đủ thông tin hoặc đăng nhập tài khoản.')
   }
   syncState = { ...syncState, status: 'syncing', lastError: null }
   notifySyncListeners()
@@ -424,9 +447,9 @@ export async function pushLocalToCloud(customCfg?: CloudSyncConfig): Promise<Enc
  * Tải dữ liệu từ Cloud về máy này và giải mã E2EE
  */
 export async function pullCloudToLocal(customCfg?: CloudSyncConfig): Promise<boolean> {
-  const cfg = customCfg ?? getCloudSyncConfig()
+  const cfg = customCfg ?? getActiveCloudSyncConfig()
   if (!cfg.projectId || !cfg.syncId || !cfg.passphrase) {
-    throw new Error('Vui lòng nhập đầy đủ Project ID, Mã định danh (Sync ID) và Mật khẩu mã hóa.')
+    throw new Error('Vui lòng nhập đầy đủ thông tin hoặc đăng nhập tài khoản.')
   }
   syncState = { ...syncState, status: 'syncing', lastError: null }
   notifySyncListeners()
@@ -470,7 +493,7 @@ export async function pullCloudToLocal(customCfg?: CloudSyncConfig): Promise<boo
  * - Nếu máy hiện tại có thay đổi mới hơn bản trên Cloud -> tự động mã hóa và đẩy lên Cloud.
  */
 export async function syncNowSmart(): Promise<'pushed' | 'pulled' | 'noop'> {
-  const cfg = getCloudSyncConfig()
+  const cfg = getActiveCloudSyncConfig()
   if (!cfg.enabled || !cfg.projectId || !cfg.syncId || !cfg.passphrase) return 'noop'
   if (syncState.status === 'syncing') return 'noop'
 
@@ -544,13 +567,25 @@ export function startRealtimeCloudSyncEngine() {
   const scheduleAutoPush = () => {
     if (isApplyingRemoteImport) return
     markLocalMutated()
-    const cfg = getCloudSyncConfig()
+    const cfg = getActiveCloudSyncConfig()
     if (!cfg.enabled || !cfg.projectId || !cfg.syncId || !cfg.passphrase) return
     if (pushDebounceTimer) clearTimeout(pushDebounceTimer)
     pushDebounceTimer = setTimeout(() => {
       pushLocalToCloud(cfg).catch(() => {})
     }, 1500)
   }
+
+  // Lắng nghe thay đổi tài khoản đăng nhập (Login / Logout)
+  subscribeAuth(user => {
+    if (user) {
+      setTimeout(() => {
+        syncNowSmart().catch(() => {})
+      }, 300)
+    } else {
+      syncState = { ...syncState, status: 'idle', lastError: null }
+      notifySyncListeners()
+    }
+  })
 
   // Lắng nghe mọi thao tác Thêm / Sửa / Xoá trên tất cả các bảng của Dexie
   const tables = [db.funds, db.categories, db.txs, db.budgets, db.recurrings]

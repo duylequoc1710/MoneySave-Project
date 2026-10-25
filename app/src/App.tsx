@@ -13,6 +13,7 @@ import {
   subscribeSyncState,
   type SyncStateSnapshot,
 } from './cloudSync'
+import { getAuthUser, subscribeAuth, type AuthUser } from './auth.ts'
 
 export default function App() {
   const [addingTx, setAddingTx] = useState(false)
@@ -22,22 +23,34 @@ export default function App() {
     lastError: null,
     remoteUpdatedAt: null,
   })
+  const [authUser, setAuthUser] = useState<AuthUser | null>(getAuthUser())
   const nav = useNavigate()
 
   useEffect(() => {
     applyTheme(getStoredTheme())
     startRealtimeCloudSyncEngine()
-    return subscribeSyncState(setSyncSnap)
+    const unsubAuth = subscribeAuth(setAuthUser)
+    const unsubSync = subscribeSyncState(setSyncSnap)
+    return () => {
+      unsubAuth()
+      unsubSync()
+    }
   }, [])
 
   const cfg = getCloudSyncConfig()
-  const syncBadgeLabel = !cfg.enabled
-    ? '🔒 Offline-first'
-    : syncSnap.status === 'syncing'
+  const syncBadgeLabel = authUser
+    ? syncSnap.status === 'syncing'
       ? '🔄 Đang đồng bộ...'
       : syncSnap.status === 'error'
         ? '⚠️ Lỗi đồng bộ'
-        : '☁️ E2EE Synced'
+        : `☁️ ${authUser.email.split('@')[0]}`
+    : !cfg.enabled
+      ? '🔒 Offline-first'
+      : syncSnap.status === 'syncing'
+        ? '🔄 Đang đồng bộ...'
+        : syncSnap.status === 'error'
+          ? '⚠️ Lỗi đồng bộ'
+          : '☁️ E2EE Synced'
 
   return (
     <div className="shell">

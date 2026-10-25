@@ -22,6 +22,8 @@ import {
   syncNowSmart,
   type SyncStateSnapshot,
 } from '../cloudSync'
+import { getAuthUser, signOutUser, subscribeAuth, type AuthUser } from '../auth.ts'
+import AuthModal from '../components/AuthModal.tsx'
 
 const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
@@ -70,6 +72,12 @@ export default function Settings() {
     lastError: null,
     remoteUpdatedAt: null,
   })
+  const [authUser, setAuthUser] = useState<AuthUser | null>(getAuthUser())
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  useEffect(() => {
+    return subscribeAuth(setAuthUser)
+  }, [])
 
   useEffect(() => {
     return subscribeSyncState(setSyncSnap)
@@ -209,8 +217,126 @@ export default function Settings() {
       </div>
 
       {/* 1. ĐỒNG BỘ ĐÁM MÂY REALTIME (FIREBASE FIRESTORE + E2EE AES-256) */}
-      <h2>☁️ ĐỒNG BỘ ĐA THIẾT BỊ (FIREBASE REALTIME + MÃ HÓA ĐẦU CUỐI E2EE)</h2>
+      {/* 1. ĐỒNG BỘ ĐA THIẾT BỊ (FIREBASE AUTH & REALTIME E2EE) */}
+      <h2>☁️ TÀI KHOẢN & ĐỒNG BỘ ĐA THIẾT BỊ (REALTIME E2EE)</h2>
       <div className="card">
+        {authUser ? (
+          <div
+            style={{
+              padding: 14,
+              borderRadius: 14,
+              background: 'rgba(43, 194, 85, 0.12)',
+              border: '1px solid var(--acc)',
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: 'var(--acc)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 10px rgba(43,194,85,0.3)',
+                  }}
+                >
+                  {authUser.email.slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>{authUser.email}</div>
+                  <div className="mut" style={{ fontSize: 12, marginTop: 2 }}>
+                    👑 Tài khoản Cá nhân / Admin · UID: <code>{authUser.uid.slice(0, 8)}…</code>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn on"
+                  style={{ fontSize: 12.5, padding: '6px 12px' }}
+                  onClick={() => handleSaveAndSync()}
+                >
+                  🔄 Đồng Bộ Ngay
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ fontSize: 12.5, padding: '6px 12px' }}
+                  onClick={() => {
+                    signOutUser()
+                    setSyncMsg('Đã đăng xuất tài khoản. Ứng dụng chuyển về chế độ lưu trữ cục bộ (Offline).')
+                  }}
+                >
+                  Đăng Xuất
+                </button>
+              </div>
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 12.5,
+                color: 'var(--acc)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span>✅</span>
+              <span>
+                Toàn bộ ví và giao dịch đang được tự động mã hóa AES-256 và đồng bộ thời gian thực theo tài khoản này.
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="trend-callout"
+            style={{
+              padding: 16,
+              borderRadius: 14,
+              marginBottom: 14,
+              textAlign: 'center',
+              border: '1px solid var(--bd)',
+            }}
+          >
+            <div style={{ fontSize: 28, marginBottom: 6 }}>🔐</div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: 16, fontWeight: 700 }}>
+              Đăng Nhập Tài Khoản Cá Nhân / Gia Đình
+            </h3>
+            <p className="mut" style={{ fontSize: 13, margin: '0 0 14px 0', lineHeight: 1.4 }}>
+              Đăng nhập bằng Email & Mật khẩu để tự động đồng bộ tức thì giữa Điện thoại & Máy tính mà không cần cấu hình thủ công.
+            </p>
+            <button
+              type="button"
+              className="btn on"
+              style={{
+                width: '100%',
+                padding: '11px',
+                fontSize: 14.5,
+                fontWeight: 700,
+                borderRadius: 12,
+              }}
+              onClick={() => setShowAuthModal(true)}
+            >
+              🔑 Đăng Nhập hoặc Đăng Ký Tài Khoản
+            </button>
+          </div>
+        )}
+
         <div
           style={{
             display: 'flex',
@@ -222,9 +348,9 @@ export default function Settings() {
           }}
         >
           <div>
-            <b style={{ fontSize: 16 }}>Tự động đồng bộ Realtime</b>
+            <b style={{ fontSize: 15 }}>Tự động đồng bộ Realtime</b>
             <small className="mut" style={{ display: 'block', marginTop: 2 }}>
-              Mã hóa đầu cuối <b>AES-GCM 256-bit</b> trước khi gửi lên Firebase
+              Mã hóa đầu cuối <b>AES-GCM 256-bit</b> trước khi gửi lên Cloud
             </small>
           </div>
           <button
@@ -280,7 +406,7 @@ export default function Settings() {
             )}
           </div>
           {vaultDocId && (
-            <span className="pill-tag" title={`Firestore Document ID: ${vaultDocId}`}>
+            <span className="pill-tag" title={`Mã định danh Két sắt: ${vaultDocId}`}>
               🔑 {vaultDocId.slice(0, 12)}…
             </span>
           )}
@@ -733,6 +859,15 @@ export default function Settings() {
           🔒 <b>100% dữ liệu lưu cục bộ (IndexedDB)</b> ngay trên trình duyệt thiết bị của bạn; khi bật Đồng bộ Đám mây, dữ liệu luôn được mã hóa đầu cuối <code>AES-256</code> trước khi rời khỏi thiết bị.
         </p>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={user => {
+          setSyncMsg(`🎉 Chào mừng ${user.email}! Ứng dụng đang tự động đồng bộ ví của bạn...`)
+          setTimeout(() => handleSaveAndSync(), 400)
+        }}
+      />
     </>
   )
 }

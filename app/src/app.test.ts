@@ -30,8 +30,10 @@ import {
   decryptVault,
   deriveVaultDocId,
   encryptVault,
+  getActiveCloudSyncConfig,
   parseFirebaseConfigInput,
 } from './cloudSync.ts'
+import { signInWithEmail, signUpWithEmail } from './auth.ts'
 
 describe('effectOn – tính số dư quỹ theo giao dịch', () => {
   const baseTx = { date: '2026-10-24', note: '', createdAt: 1 }
@@ -460,6 +462,19 @@ describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.t
       () => decryptVault(encrypted, 'WrongKey!123'),
       /Không thể giải mã dữ liệu/,
     )
+  })
+
+  it('getActiveCloudSyncConfig tự động gán cấu hình Firebase tích hợp sẵn', () => {
+    const active = getActiveCloudSyncConfig()
+    assert.ok(typeof active.enabled === 'boolean')
+    assert.ok(typeof active.projectId === 'string')
+  })
+
+  it('auth kiểm tra tính hợp lệ của email và mật khẩu tối thiểu 6 ký tự', async () => {
+    await assert.rejects(() => signUpWithEmail('invalid-email', '123456'), /email hợp lệ/)
+    await assert.rejects(() => signUpWithEmail('duyle@test.com', '123'), /tối thiểu 6 ký tự/)
+    await assert.rejects(() => signInWithEmail('', '123456'), /email hợp lệ/)
+    await assert.rejects(() => signInWithEmail('duyle@test.com', ''), /mật khẩu/)
   })
 })
 
