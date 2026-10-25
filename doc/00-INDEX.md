@@ -1,4 +1,4 @@
-# Mục lục tài liệu MoneyGo
+# Mục lục tài liệu MoneySave
 
 | File | Nội dung |
 |---|---|
@@ -8,8 +8,9 @@
 | 04-USER-GUIDE.md | Cài lên iPhone/Android/Mac, cách dùng, sao lưu |
 | 05-TEST-PLAN.md | Kịch bản & kết quả kiểm thử |
 | 06-ROADMAP.md | Trạng thái tính năng, kế hoạch đồng bộ realtime, deploy |
+| 07-INCIDENT-LOGS-AND-CASE-STUDIES.md | **Sổ tay sự cố kỹ thuật & Case studies (RCA, giải pháp, quy tắc phòng ngừa)** |
 | PLAN-initial.md | Kế hoạch ban đầu (WHY, rủi ro, tiêu chí) |
 | adr/ | Architecture Decision Records |
 | sessions/ | Nhật ký phiên làm việc (1 file / phiên, tên YYYY-MM-DD-NN.md) |
 
-**Quy ước:** mọi thay đổi tính năng phải cập nhật SRS + Roadmap; thay đổi cấu trúc dữ liệu phải cập nhật DATA-MODEL và tăng `version` của Dexie schema.
+**Quy ước:** mọi thay đổi tính năng phải cập nhật SRS + Roadmap; thay đổi cấu trúc dữ liệu phải cập nhật DATA-MODEL và tăng `version` của Dexie schema; mọi sự cố/lỗi kỹ thuật phát sinh và bài học kinh nghiệm phải ghi nhận đầy đủ vào file `07-INCIDENT-LOGS-AND-CASE-STUDIES.md` để kỹ sư sau tiếp nhận có thể tra cứu và phòng tránh lặp lại.
