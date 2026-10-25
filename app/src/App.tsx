@@ -82,6 +82,26 @@ export default function App() {
         <NavLink to="/settings">
           <span>⚙️</span>Cài đặt
         </NavLink>
+
+        <div className="desktop-nav-footer">
+          <button
+            type="button"
+            className="desktop-sync-pill"
+            onClick={() => nav('/settings')}
+            title="Xem Trạng thái Tài khoản & Cài đặt Đồng bộ"
+          >
+            <span
+              className={`sync-dot ${
+                syncSnap.status === 'error'
+                  ? 'error'
+                  : syncSnap.status === 'syncing'
+                    ? 'syncing'
+                    : ''
+              }`}
+            />
+            <span className="sync-text">{syncBadgeLabel}</span>
+          </button>
+        </div>
       </nav>
       <main>
         {/* Thanh thương hiệu MoneySave trên giao diện Mobile */}
