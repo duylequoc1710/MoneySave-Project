@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Overview from './pages/Overview'
 import Ledger from './pages/Ledger'
 import Budgets from './pages/Budgets'
@@ -17,6 +17,7 @@ import { getAuthUser, subscribeAuth, type AuthUser } from './auth.ts'
 
 export default function App() {
   const [addingTx, setAddingTx] = useState(false)
+  const [isNavVisible, setIsNavVisible] = useState(true)
   const [syncSnap, setSyncSnap] = useState<SyncStateSnapshot>({
     status: 'idle',
     lastSyncedAt: null,
@@ -26,6 +27,45 @@ export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(getAuthUser())
   const [skipAuth, setSkipAuth] = useState(false)
   const nav = useNavigate()
+  const location = useLocation()
+
+  const [prevPath, setPrevPath] = useState(location.pathname)
+
+  // Reset hiển thị thanh điều hướng mỗi khi chuyển trang (theo chuẩn React state adjustment during render)
+  if (prevPath !== location.pathname) {
+    setPrevPath(location.pathname)
+    setIsNavVisible(true)
+  }
+
+  // Lắng nghe hướng cuộn trang trên mobile:
+  // - Cuộn xuống để xem nội dung -> Ẩn thanh dock & nút FAB để mở rộng không gian dọc
+  // - Cuộn ngược lên -> Hiện lại ngay tức thì
+  useEffect(() => {
+    let lastScrollY = window.scrollY
+    let ticking = false
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY
+          const delta = currentScrollY - lastScrollY
+
+          if (currentScrollY <= 25) {
+            setIsNavVisible(true)
+          } else if (Math.abs(delta) > 8) {
+            setIsNavVisible(delta < 0)
+          }
+
+          lastScrollY = currentScrollY
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     applyTheme(getStoredTheme())
@@ -53,7 +93,7 @@ export default function App() {
 
   return (
     <div className="shell">
-      <nav className="nav">
+      <nav className={`nav ${!isNavVisible ? 'nav-hidden' : ''}`}>
         <NavLink to="/" className="brand" title="MoneySave – Trang chủ">
           <img
             src="/logo-moneysave-nav.png"
@@ -146,7 +186,10 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>
-      <button className="ml-fab-pill" onClick={() => setAddingTx(true)}>
+      <button
+        className={`ml-fab-pill ${!isNavVisible ? 'fab-hidden' : ''}`}
+        onClick={() => setAddingTx(true)}
+      >
         <span style={{ fontSize: 20, fontWeight: 400 }}>＋</span> Thêm giao dịch
       </button>
       {addingTx && <TxForm onClose={() => setAddingTx(false)} />}

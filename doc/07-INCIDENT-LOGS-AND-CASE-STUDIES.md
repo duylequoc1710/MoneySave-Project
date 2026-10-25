@@ -17,6 +17,7 @@
 | **INC-06** | iOS Safari / Layout | Thanh điều hướng (Dock Nav) bị lún xuống thanh Safari và xô lệch 2 bên khi cuộn | Dùng `margin: 0 auto` trên fixed element, thiếu GPU compositing và thiếu `translate3d` | Dùng `left: 50%`, `transform: translate3d(-50%, 0, 0)`, `will-change: transform`, đệm `safe-area` |
 | **INC-07** | Data Safety / Startup | Giao dịch người dùng vừa nhập bị mất khi tải lại app sau bản cập nhật | Bật cờ `PURGE_KEY` tự động xóa IndexedDB trong `initApp()` trên `main.tsx` | Xóa bỏ hoàn toàn mã purge tự động trên startup; chỉ cho phép dọn dẹp khi người dùng chủ động bấm trong Cài đặt |
 | **INC-08** | Performance / UI Glitch | Giao diện bị chớp nháy (flicker) sáng/tối khi mở trang và giật định kỳ | FOUC do theme set trễ trong `useEffect` và Polling 12s kích hoạt re-render toàn bộ `App.tsx` | Đưa script set theme đồng bộ vào `<head>` của `index.html`, áp dụng chế độ Silent Sync cho polling |
+| **INC-09** | Mobile UX / In-App Keypad | Bàn phím hệ thống OS bung lên tách rời làm vỡ bố cục; thiếu dấu phân cách số tiền; dock menu choán màn hình khi xem | Dùng `<input>` trần gọi native virtual keyboard; thiếu in-app calculator keypad; fixed dock thiếu logic tự ẩn khi cuộn | Xây dựng Bàn phím số In-App liền khối chuẩn MoneyLover, thêm logic ẩn/hiện thông minh khi cuộn, nâng touch target 48px |
 
 ---
 
@@ -195,6 +196,40 @@
   4. **Cố định tĩnh nhãn tài khoản (Static Account Pill):** Giữ nguyên văn bản hiển thị `👤 email` trong [`App.tsx`](../app/src/App.tsx), loại bỏ việc hoán đổi text thành `"🔄 Đang đồng bộ..."` và xóa bỏ animation đổi màu chớp nháy xanh dương của `.sync-dot.syncing` trong [`index.css`](../app/src/index.css). Nút tài khoản ở góc dưới bên trái luôn hiển thị tĩnh vững chãi, chấm xanh ổn định 100%.
 * **Quy tắc cho kỹ sư:**
   > Trong các ứng dụng hỗ trợ Dark/Light theme, script thiết lập class theme phải luôn nằm đồng bộ trong `<head>` của HTML, không được phụ thuộc vào React lifecycle. Mọi tác vụ polling chạy ngầm định kỳ phải là Silent Checks để tránh gây giật khung hình cho người dùng.
+
+---
+
+### CASE STUDY 9: Trải Nghiệm Nhập Liệu Tách Rời Của Bàn Phím OS & Lãng Phí Không Gian Hiển Thị Dọc Trên Mobile Web
+* **Mã sự cố:** `INC-09`
+* **Mức độ:** Trung bình – Cao (Trực tiếp ảnh hưởng đến cảm giác "ra chất app" và UX thao tác hàng ngày).
+* **Mô tả hiện tượng:**
+  1. Khi người dùng bấm vào sửa một giao dịch đã có, ứng dụng tự động nhảy con trỏ nhấp nháy vào ô số tiền và kích hoạt bàn phím ảo của hệ điều hành (iOS Safari / Android Gboard). Bàn phím hệ thống là một khối tách rời màu xám/trắng che khuất hơn 50% màn hình, gây co giật viewport và phá vỡ tính liền lạc của app.
+  2. Ô nhập tiền trước đây chỉ là chuỗi số trần (raw digits như `90000`), không có dấu phân cách hàng nghìn (`,`) và thiếu dấu chấm thập phân (`.`) để hỗ trợ nhập các khoản tiền ngoại tệ/thập phân.
+  3. Thanh dock menu ở đáy màn hình và nút nổi `+ Thêm giao dịch` luôn chiếm cố định khoảng 130px diện tích dọc, ngay cả khi người dùng đang cuộn trang xuống để đọc danh sách giao dịch hay xem biểu đồ.
+  4. Thao tác chạm vào các tab trên thanh dock đôi khi có độ trễ hoặc không nảy phản hồi ngay lập tức.
+* **Nguyên nhân gốc rễ (RCA):**
+  1. Form giao dịch sử dụng thẻ HTML `<input inputMode="numeric">` trần kèm cờ `autoFocus`, kích hoạt trình duyệt mobile mở bàn phím gốc của máy.
+  2. Chưa có Bàn phím số / Máy tính chuyên dụng in-app (In-App Numeric Keypad) tích hợp liền khối với theme của ứng dụng.
+  3. Thiếu logic lắng nghe hướng cuộn trang (Scroll Direction Delta) để ẩn/hiện thanh điều hướng.
+  4. Touch target của các icon trên thanh dock có chiều cao thực tế dưới 40px và thiếu hiệu ứng scale `:active` tức thì khi ngón cái vừa chạm vào.
+* **Giải pháp khắc phục:**
+  1. **Khối Hiển Thị Số Tiền & Bàn Phím Số In-App Chuẩn MoneyLover ([`Keypad.tsx`](../app/src/components/Keypad.tsx), [`TxForm.tsx`](../app/src/components/TxForm.tsx)):**
+     * Thay thế `<input>` trần bằng thẻ hiển thị số tiền có định dạng tự động (`formatKeypadDisplay`).
+     * Khi mở sửa giao dịch, bàn phím mặc định được ẩn đi và không kích hoạt con trỏ nhấp nháy. Người dùng xem toàn bộ thông tin chi tiết một cách trọn vẹn, chỉ khi chạm vào ô số tiền thì bàn phím in-app mới trượt lên.
+     * Tích hợp bàn phím máy tính 4x5 liền khối: hỗ trợ số `0-9`, `000`, dấu thập phân `.`, phép tính `+ − × ÷`, phím `C`, phím xoá `⌫`, phím `XONG` 2 hàng màu xanh và các chip gợi ý số tiền tròn (`50,000`, `100,000`, `200,000`, `500,000`).
+     * Không kích hoạt bàn phím hệ thống của OS; trên máy tính Desktop hỗ trợ bấm trực tiếp các phím số vật lý trên bàn phím máy tính.
+  2. **Thanh Dock & Nút FAB Tự Ẩn Thông Minh Khi Cuộn ([`App.tsx`](../app/src/App.tsx), [`index.css`](../app/src/index.css)):**
+     * Sử dụng listener cuộn trang thụ động (`passive: true`) kèm `requestAnimationFrame`:
+       * Khi cuộn xuống (`delta > 8`): Thanh dock `.nav` và nút `.ml-fab-pill` trượt xuống ẩn đi mượt mà với GPU transform `translate3d(..., 100%, 0)` và `opacity: 0; pointer-events: none;`.
+       * Khi cuộn lên (`delta < 0`) hoặc ở đỉnh trang (`scrollY <= 25`): Hiện lại ngay tức thì.
+       * Khi chuyển đổi tab / trang: Luôn hiển thị lại thanh dock.
+       * Trên Desktop (`min-width: 900px`): Thanh sidebar bên trái luôn hiển thị cố định, không bị ảnh hưởng.
+  3. **Tối Ưu 5 Tiêu Chuẩn "Ra Chất App" Native Mobile Web:**
+     * Nâng chiều cao Touch Target của các tab điều hướng lên chuẩn tối thiểu 48px.
+     * Bổ sung hiệu ứng phản hồi chạm haptic scale `:active { transform: scale(0.92); }` tức thì với độ trễ 0ms nhờ `touch-action: manipulation;`.
+     * Cập nhật thẻ viewport meta `maximum-scale=1, user-scalable=no, viewport-fit=cover` và đặt màu nền `html { background: var(--bg); }` để loại bỏ hiện tượng phóng to méo mó và lộ nền trắng khi cuộn nảy overscroll trên iOS.
+* **Quy tắc cho kỹ sư:**
+  > Trong các ứng dụng quản lý tài chính di động mô phỏng native app, việc nhập số tiền không nên sử dụng bàn phím ảo của hệ điều hành mà phải dùng Bàn phím số tích hợp in-app. Thanh bottom navigation bar phải biết tự ẩn khi người dùng cuộn xuống để dành trọn vẹn không gian hiển thị cho dữ liệu, đồng thời mọi nút bấm phải có touch target tối thiểu 48px và phản hồi `:active` thị giác tức thì.
 
 ---
 

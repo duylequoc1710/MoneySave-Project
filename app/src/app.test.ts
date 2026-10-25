@@ -11,6 +11,8 @@ import {
   groupCategoriesHierarchy,
   getCategoryFullName,
   getMonthTabLabel,
+  evaluateKeypadExpression,
+  formatKeypadDisplay,
   money,
   moneyShort,
   resolveTimeRange,
@@ -87,6 +89,32 @@ describe('Định dạng tiền tệ & ngày tháng', () => {
     assert.equal(getMonthTabLabel(new Date(2026, 7, 1), now), 'THÁNG 8, 2026')
     assert.equal(getMonthTabLabel(new Date(2026, 5, 1), now), 'THÁNG 6, 2026')
     assert.equal(getMonthTabLabel(new Date(2027, 0, 1), now), 'THÁNG 1, 2027')
+  })
+
+  it('evaluateKeypadExpression & formatKeypadDisplay tính toán và định dạng chuẩn dấu phân cách', () => {
+    // Định dạng số nguyên và số thập phân
+    assert.equal(formatKeypadDisplay('90000'), '90,000')
+    assert.equal(formatKeypadDisplay('90000.'), '90,000.')
+    assert.equal(formatKeypadDisplay('90000.5'), '90,000.5')
+    assert.equal(formatKeypadDisplay('1500000.75'), '1,500,000.75')
+    assert.equal(formatKeypadDisplay('0'), '0')
+    assert.equal(formatKeypadDisplay(''), '0')
+
+    // Định dạng biểu thức toán học
+    assert.equal(formatKeypadDisplay('50000+40000'), '50,000 + 40,000')
+    assert.equal(formatKeypadDisplay('100000-15000'), '100,000 - 15,000')
+    assert.equal(formatKeypadDisplay('20000×3'), '20,000 × 3')
+
+    // Đánh giá biểu thức tính toán
+    assert.equal(evaluateKeypadExpression('90000'), 90000)
+    assert.equal(evaluateKeypadExpression('90000.5'), 90000.5)
+    assert.equal(evaluateKeypadExpression('50000+40000'), 90000)
+    assert.equal(evaluateKeypadExpression('100000-15000'), 85000)
+    assert.equal(evaluateKeypadExpression('20000×3'), 60000)
+    assert.equal(evaluateKeypadExpression('100000÷2'), 50000)
+    assert.equal(evaluateKeypadExpression('50000+40000*2'), 130000) // nhân chia trước
+    assert.equal(evaluateKeypadExpression('90000+'), 90000) // bỏ qua toán tử cuối chưa xong
+    assert.equal(evaluateKeypadExpression(''), 0)
   })
 })
 

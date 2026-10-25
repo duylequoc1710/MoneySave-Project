@@ -41,6 +41,8 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  background: var(--bg);
+  touch-action: manipulation;
 }
 body {
   background: var(--bg);
@@ -52,6 +54,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 button,
 input,
@@ -104,25 +107,47 @@ h1, h2, h3, h4, h5, h6 {
   padding: 6px;
   z-index: 25;
   box-shadow: 0 8px 28px color-mix(in srgb, var(--fg) 14%, transparent);
-  will-change: transform;
+  will-change: transform, opacity;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   touch-action: manipulation;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;
+}
+.nav.nav-hidden {
+  transform: translate3d(-50%, calc(100% + 24px + env(safe-area-inset-bottom, 0px)), 0);
+  -webkit-transform: translate3d(-50%, calc(100% + 24px + env(safe-area-inset-bottom, 0px)), 0);
+  opacity: 0;
+  pointer-events: none;
 }
 .nav a {
   flex: 1;
   text-align: center;
-  padding: 7px 4px;
+  padding: 8px 4px 6px;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   color: var(--mut);
   text-decoration: none;
   font-size: 11px;
   border-radius: 24px;
-  transition: background 0.15s, color 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.08s ease;
+}
+.nav a:active {
+  transform: scale(0.92);
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
 }
 .nav a span {
   display: block;
   font-size: 18px;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
+  line-height: 1;
 }
 .nav a.active {
   color: var(--fg);
@@ -137,7 +162,7 @@ main {
   max-width: 680px;
   width: 100%;
   margin: 0 auto;
-  padding: 16px 16px calc(135px + env(safe-area-inset-bottom));
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(135px + env(safe-area-inset-bottom));
 }
 @media (min-width: 900px) {
   html,
@@ -666,14 +691,39 @@ h2 {
   z-index: 24;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
-  will-change: transform;
+  will-change: transform, opacity;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease, filter 0.15s ease;
+}
+.ml-fab-pill:active {
+  transform: scale(0.94);
+  filter: brightness(0.95);
+}
+.ml-fab-pill.fab-hidden {
+  transform: translate3d(0, calc(100% + 120px + env(safe-area-inset-bottom, 0px)), 0);
+  -webkit-transform: translate3d(0, calc(100% + 120px + env(safe-area-inset-bottom, 0px)), 0);
+  opacity: 0;
+  pointer-events: none;
 }
 @media (min-width: 900px) {
+  .nav.nav-hidden {
+    transform: none !important;
+    -webkit-transform: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
   .ml-fab-pill {
     bottom: 28px;
     right: 32px;
+  }
+  .ml-fab-pill.fab-hidden {
+    transform: translate3d(0, 0, 0) !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 }
 
@@ -764,10 +814,11 @@ h2 {
   background: var(--card);
   width: 100%;
   max-width: 520px;
-  border-radius: 24px 24px 0 0;
-  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
-  max-height: 92dvh;
+  border-radius: 28px 28px 0 0;
+  padding: 18px 18px calc(24px + env(safe-area-inset-bottom));
+  max-height: 94dvh;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 @media (min-width: 900px) {
   .sheetbg {
@@ -775,7 +826,220 @@ h2 {
   }
   .sheet {
     border-radius: 24px;
+    max-height: 88dvh;
   }
+}
+
+/* MoneyLover Modal Header */
+.ml-tx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  position: relative;
+}
+.ml-tx-cancel-btn {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--fg);
+  border: 0;
+  border-radius: 99px;
+  padding: 7px 16px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.ml-tx-cancel-btn:active {
+  transform: scale(0.92);
+  background: color-mix(in srgb, var(--fg) 18%, transparent);
+}
+.ml-tx-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--fg);
+  text-align: center;
+  flex: 1;
+}
+
+/* MoneyLover Amount Display Card */
+.ml-amount-display-box {
+  background: var(--bg);
+  border: 1.5px solid var(--bd);
+  border-radius: 20px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.ml-amount-display-box.active {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 22%, transparent);
+  background: color-mix(in srgb, var(--acc) 4%, var(--bg));
+}
+.ml-amount-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.ml-amount-caption {
+  font-size: 12px;
+  color: var(--mut);
+  font-weight: 500;
+}
+.ml-amount-mode-badge {
+  font-size: 11px;
+  color: var(--acc);
+  font-weight: 600;
+}
+.ml-amount-val-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ml-currency-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  color: var(--mut);
+  letter-spacing: 0.02em;
+}
+.ml-amount-val {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--fg);
+  flex: 1;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ml-amount-clear-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 0;
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
+  color: var(--fg);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease;
+}
+.ml-amount-clear-btn:active {
+  transform: scale(0.9);
+}
+
+/* In-App Calculator Keypad (1 khối chung chuẩn MoneyLover) */
+.ml-keypad-container {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bd);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ml-keypad-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.ml-keypad-chips::-webkit-scrollbar {
+  display: none;
+}
+.ml-keypad-chip {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+  border: 1px solid var(--bd);
+  color: var(--fg);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.ml-keypad-chip:active {
+  transform: scale(0.93);
+  background: color-mix(in srgb, var(--acc) 20%, transparent);
+  border-color: var(--acc);
+}
+.ml-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 52px;
+  gap: 8px;
+}
+.ml-keypad-btn {
+  border-radius: 14px;
+  border: 0;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+.ml-keypad-btn.num {
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  color: var(--fg);
+}
+.ml-keypad-btn.num.dot {
+  font-size: 24px;
+  line-height: 1;
+}
+.ml-keypad-btn.op {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--acc);
+  font-size: 22px;
+}
+.ml-keypad-btn.op-clear {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--acc);
+  font-size: 18px;
+}
+.ml-keypad-btn.op-del {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--acc);
+  font-size: 20px;
+}
+.ml-keypad-btn.btn-xong {
+  grid-column: 4 / 5;
+  grid-row: 4 / 6;
+  background: var(--acc);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--acc) 35%, transparent);
+}
+.ml-keypad-btn:active {
+  transform: scale(0.92);
+  filter: brightness(1.2);
+}
+.ml-keypad-btn.btn-xong:active {
+  transform: scale(0.94);
+  filter: brightness(0.92);
 }
 .fld {
   display: block;

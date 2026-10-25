@@ -96,3 +96,19 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
   * Thanh taskbar ở dưới màn hình điện thoại và nút nổi `+ Thêm giao dịch` được kích hoạt tăng tốc phần cứng GPU (`translate3d`), căn giữa tuyệt đối chống rung lắc, lún sâu hoặc xô lệch khi cuộn trang nhanh.
   * Vùng an toàn (`env(safe-area-inset-bottom)`) được đệm chuẩn xác, đảm bảo không bị cấn phím Home Bar của iPhone hay thanh công cụ trình duyệt.
 
+---
+
+## 8. Bàn Phím Số In-App Chuẩn MoneyLover & Thanh Dock Tự Ẩn Thông Minh
+
+* **Bàn phím số / Máy tính tích hợp (In-App Numeric Keypad):**
+  * **Trải nghiệm liền mạch 1 khối chung:** Khi nhập hoặc sửa số tiền, ứng dụng sử dụng bàn phím số tích hợp ngay trong giao diện thay vì mở bàn phím ảo tách rời của hệ điều hành, giúp giao diện không bị giật lún hay co giật khung nhìn (viewport resize).
+  * **Chế độ Sửa giao dịch không xâm lấn:** Khi mở một giao dịch đã có để sửa, bàn phím mặc định được thu gọn và không tự nhấp nháy con trỏ vào ô tiền. Chỉ khi người dùng chủ động chạm vào ô số tiền, bàn phím mới trượt lên.
+  * **Đầy đủ tính năng tính toán:** Hỗ trợ nhập số nguyên, dấu chia cách thập phân (`.`), nút nhanh `000`, nút xoá ký tự `⌫`, phím reset `C`, các phép tính cộng/trừ/nhân/chia (`+`, `−`, `×`, `÷`) và phím xác nhận `XONG` 2 hàng màu xanh nổi bật.
+  * **Định dạng dấu chia cách tức thì:** Số tiền tự động hiển thị với dấu phân cách hàng nghìn (`,`) và dấu thập phân (`.`) theo thời gian thực (ví dụ: `90,000` hoặc `1,500,000.50`).
+  * **Gợi ý số tiền nhanh:** Băng chuyền chip gợi ý các mệnh giá tròn phổ biến (`50,000`, `100,000`, `200,000`, `500,000`) giúp nhập liệu chỉ với 1 chạm.
+* **Thanh Dock & Nút Thêm giao dịch tự ẩn khi cuộn (Smart Scroll Hide):**
+  * **Mở rộng không gian hiển thị dọc:** Khi bạn cuộn xuống (scroll down) để đọc các giao dịch hoặc xem báo cáo tài chính, thanh menu dưới đáy và nút tròn `+ Thêm giao dịch` sẽ trượt xuống ẩn đi mượt mà.
+  * **Hiện lại ngay lập tức:** Chỉ cần cuộn nhẹ ngón tay lên (scroll up), toàn bộ thanh điều hướng và nút thêm giao dịch sẽ xuất hiện trở lại ngay lập tức.
+  * **Chuẩn Touch Target & Haptic Feedback:** Kích thước nút bấm trên thanh dock đạt chuẩn tối thiểu 48px, phản hồi phóng/thu scale `:active` tức thì khi ngón tay vừa chạm vào màn hình và khóa phóng to ngoài ý muốn (`maximum-scale=1, user-scalable=no`).
+
+

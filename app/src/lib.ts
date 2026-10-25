@@ -308,6 +308,98 @@ export const moneyShort = (n: number) => {
   return String(Math.round(n))
 }
 
+/**
+ * Đánh giá biểu thức toán học từ bàn phím số (Calculator Keypad)
+ * Hỗ trợ +, -, ×, ÷ và số thập phân (dấu chấm)
+ */
+export function evaluateKeypadExpression(expr: string): number {
+  if (!expr || typeof expr !== 'string') return 0
+  const clean = expr
+    .replace(/,/g, '')
+    .replace(/×/g, '*')
+    .replace(/÷/g, '/')
+    .trim()
+
+  if (!clean) return 0
+
+  const tokens = clean.match(/([0-9.]+|[+\-*/])/g)
+  if (!tokens || tokens.length === 0) return 0
+
+  if (['+', '-', '*', '/'].includes(tokens[tokens.length - 1])) {
+    tokens.pop()
+  }
+  if (tokens.length === 0) return 0
+
+  // Bước 1: Nhân và chia trước
+  const step1: (number | string)[] = []
+  let i = 0
+  while (i < tokens.length) {
+    const tok = tokens[i]
+    if (tok === '*' || tok === '/') {
+      const prev = Number(step1.pop())
+      const next = Number(tokens[i + 1] ?? 1)
+      const res = tok === '*' ? prev * next : next !== 0 ? prev / next : 0
+      step1.push(res)
+      i += 2
+    } else if (tok === '+' || tok === '-') {
+      step1.push(tok)
+      i++
+    } else {
+      step1.push(Number(tok))
+      i++
+    }
+  }
+
+  // Bước 2: Cộng và trừ tuần tự
+  let result = typeof step1[0] === 'number' ? step1[0] : 0
+  let j = typeof step1[0] === 'number' ? 1 : 0
+  while (j < step1.length) {
+    const op = step1[j]
+    const nextVal = Number(step1[j + 1] ?? 0)
+    if (op === '+') {
+      result += nextVal
+    } else if (op === '-') {
+      result -= nextVal
+    }
+    j += 2
+  }
+
+  return isNaN(result) ? 0 : Math.round(result * 1000) / 1000
+}
+
+/**
+ * Định dạng chuỗi nhập trên bàn phím số với dấu chia cách hàng nghìn (,) và dấu thập phân (.)
+ */
+export function formatKeypadDisplay(raw: string): string {
+  if (!raw || raw === '') return '0'
+
+  return raw
+    .replace(/([0-9.]+)/g, match => {
+      const parts = match.split('.')
+      const intStr = parts[0]
+      let formattedInt = ''
+      if (intStr) {
+        formattedInt = Number(intStr).toLocaleString('en-US')
+      } else {
+        formattedInt = '0'
+      }
+      if (parts.length > 1) {
+        return `${formattedInt}.${parts.slice(1).join('')}`
+      }
+      if (match.endsWith('.')) {
+        return `${formattedInt}.`
+      }
+      return formattedInt
+    })
+    .replace(/\+/g, ' + ')
+    .replace(/-/g, ' - ')
+    .replace(/×/g, ' × ')
+    .replace(/\*/g, ' × ')
+    .replace(/÷/g, ' ÷ ')
+    .replace(/\//g, ' ÷ ')
+    .replace(/\s+/g, ' ')
+}
+
 export const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
 export const monthKey = (d: Date) => format(d, 'yyyy-MM')
 export const monthLabel = (d: Date) => format(d, "'Tháng' M, yyyy", { locale: vi })

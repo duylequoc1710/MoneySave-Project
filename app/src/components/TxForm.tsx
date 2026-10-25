@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
-import { groupCategoriesHierarchy, money, ymd } from '../lib'
+import { evaluateKeypadExpression, formatKeypadDisplay, groupCategoriesHierarchy, money, ymd } from '../lib'
 import DateInput from './DateInput'
+import Keypad from './Keypad'
 
 export interface TxFormDraft {
   type?: TxType
@@ -26,6 +27,7 @@ export default function TxForm({
   const cats = useLiveQuery(() => db.categories.toArray(), []) ?? []
   const [type, setType] = useState<TxType>(tx?.type ?? draft?.type ?? 'expense')
   const [amount, setAmount] = useState(tx ? String(tx.amount) : draft?.amount ? String(draft.amount) : '')
+  const [showKeypad, setShowKeypad] = useState<boolean>(!tx)
   const [date, setDate] = useState(() => tx?.date ?? ymd(new Date()))
   const [fundId, setFundId] = useState<number | ''>(tx?.fundId ?? draft?.fundId ?? '')
   const [toFundId, setToFundId] = useState<number | ''>(tx?.toFundId ?? draft?.toFundId ?? '')
@@ -46,7 +48,7 @@ export default function TxForm({
   const fid = fundId === '' ? (selCat?.fundId ?? funds[0]?.id) : fundId
 
   async function save() {
-    const amt = Number(amount.replace(/[^\d.]/g, ''))
+    const amt = evaluateKeypadExpression(amount)
     if (!amt || amt <= 0) return setErr('Nhập số tiền hợp lệ')
     if (fid == null) return setErr('Chưa có quỹ')
     if (type === 'transfer' && (toFundId === '' || toFundId === fid)) return setErr('Chọn quỹ nhận khác quỹ nguồn')
@@ -90,7 +92,7 @@ export default function TxForm({
     } else {
       await db.txs.add(data)
       if (type === 'transfer' && hasFee) {
-        const fee = Number(feeAmount.replace(/[^\d.]/g, ''))
+        const fee = evaluateKeypadExpression(feeAmount)
         if (fee > 0) {
           await db.txs.add({
             type: 'expense',
@@ -125,7 +127,16 @@ export default function TxForm({
   return (
     <div className="sheetbg" onClick={onClose}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
-        <h1>{tx ? 'Sửa giao dịch' : 'Thêm giao dịch'}</h1>
+        <div className="ml-tx-header">
+          <button type="button" className="ml-tx-cancel-btn" onClick={onClose}>
+            Huỷ
+          </button>
+          <div className="ml-tx-title">
+            {tx ? 'Sửa Giao Dịch' : 'Thêm Giao Dịch'}
+          </div>
+          <div style={{ width: 48 }} />
+        </div>
+
         <div className="seg">
           {(['expense', 'income', 'transfer'] as TxType[]).map(t => (
             <button
@@ -141,21 +152,53 @@ export default function TxForm({
             </button>
           ))}
         </div>
-        <label className="fld">
-          <span>Số tiền (₫)</span>
-          <input
-            inputMode="numeric"
-            autoFocus={!tx}
+
+        {/* Khối hiển thị Số tiền kiểu MoneyLover – không kích hoạt bàn phím hệ thống của OS */}
+        <div
+          className={`ml-amount-display-box ${showKeypad ? 'active' : ''}`}
+          onClick={() => setShowKeypad(true)}
+        >
+          <div className="ml-amount-head">
+            <span className="ml-amount-caption">Số tiền</span>
+            <span className="ml-amount-mode-badge">
+              {showKeypad ? 'Bàn phím đang mở' : 'Chạm để sửa'}
+            </span>
+          </div>
+          <div className="ml-amount-val-row">
+            <span className="ml-currency-pill">VND</span>
+            <span className="ml-amount-val">
+              {formatKeypadDisplay(amount || '0')}
+            </span>
+            {showKeypad && amount && amount !== '0' && (
+              <button
+                type="button"
+                className="ml-amount-clear-btn"
+                onClick={e => {
+                  e.stopPropagation()
+                  setAmount('0')
+                }}
+                aria-label="Xoá số tiền"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Bàn phím số tích hợp liền mạch chuẩn MoneyLover */}
+        {showKeypad && (
+          <Keypad
             value={amount}
-            onChange={e => setAmount(e.target.value)}
-            placeholder="0"
-            style={{ fontSize: 22, fontWeight: 700 }}
+            onChange={setAmount}
+            onDone={() => setShowKeypad(false)}
+            suggestions={[50000, 100000, 200000, 500000]}
           />
-        </label>
+        )}
+
         {type !== 'transfer' && (() => {
           const { parentGroups, independent } = groupCategoriesHierarchy(list)
           return (
-            <label className="fld">
+            <label className="fld" style={{ marginTop: showKeypad ? 14 : 0 }}>
               <span>Nhóm</span>
               <select
                 value={selCat?.id ?? ''}
@@ -319,16 +362,18 @@ export default function TxForm({
         )}
 
         {err && <p className="exp" style={{ marginBottom: 10 }}>{err}</p>}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
           {tx && (
-            <button className="btn dng" onClick={del}>
+            <button type="button" className="btn dng" onClick={del}>
               Xoá
             </button>
           )}
-          <button className="btn" style={{ flex: 1 }} onClick={onClose}>
-            Huỷ
-          </button>
-          <button className="btn pri" style={{ flex: 2 }} onClick={save}>
+          <button
+            type="button"
+            className="btn pri"
+            style={{ flex: 1, padding: '13px 20px', fontSize: 16, borderRadius: 14 }}
+            onClick={save}
+          >
             {isRecurring && !tx ? 'Lưu & Bật tự động' : 'Lưu'}
           </button>
         </div>
