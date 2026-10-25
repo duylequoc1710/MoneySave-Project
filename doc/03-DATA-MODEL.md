@@ -1,14 +1,17 @@
-# 03 – Mô hình dữ liệu (Dexie schema v1)
+# 03 – Mô hình dữ liệu (Dexie schema v2)
 
 ## Bảng
-**funds** (Quỹ): `id, name, icon, color, initialBalance, archived?`
+**funds** (Quỹ & Thẻ tín dụng): `id, name, icon, color, initialBalance, archived?, kind?(cash|credit), creditLimit?, statementDay?(1..31), dueDay?(1..31), excludeFromTotal?, notifyOnTx?`. Index: `kind`.
 
 **categories** (Nhóm giao dịch): `id, name, type(expense|income), icon, color, fundId?` – `fundId` là quỹ mặc định của nhóm. Index: `type, fundId`.
 
-**txs** (Giao dịch): `id, type(expense|income|transfer), amount(>0), date(YYYY-MM-DD), fundId, toFundId?, categoryId?, note, createdAt`. Index: `date, type, fundId, categoryId`.
+**txs** (Giao dịch): `id, type(expense|income|transfer), amount(>0), date(YYYY-MM-DD), fundId, toFundId?, categoryId?, note, createdAt, recurringId?, excludeFromReport?`. Index: `date, type, fundId, categoryId, recurringId`.
 - `transfer`: dùng `fundId` (nguồn) + `toFundId` (đích), không có `categoryId`.
+- `excludeFromReport`: khi bật (`true`), giao dịch vẫn được cộng/trừ vào số dư thực tế của ví qua `effectOn`, nhưng bị loại khỏi các báo cáo thu/chi tổng hợp (`filterReportableTxs`).
 
 **budgets**: `id, categoryId, limit` – hạn mức chi/tháng.
+
+**recurrings** (Giao dịch định kỳ tự động): `id, name, type, amount, fundId, toFundId?, categoryId?, note, frequency(monthly|weekly|daily|yearly), dayOfMonth?(1..31), startDate(YYYY-MM-DD), lastGeneratedDate?, active`. Index: `active, frequency, fundId, categoryId`.
 
 ## Quy tắc
 - Số dư quỹ = `initialBalance` + Σ `effectOn(tx, fund)`:

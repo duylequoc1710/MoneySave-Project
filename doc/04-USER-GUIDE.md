@@ -2,7 +2,7 @@
 
 ## Chạy trên máy này (Mac)
 ```bash
-cd "/Users/duyle/Sources/Vibe Coding/Projects/MoneyGo-Project/app"
+cd "/Users/duyle/Sources/Vibe Coding/Projects/MoneySave-Project/app"
 npm run dev
 ```
 Mở http://localhost:5173. Trong Chrome/Safari có thể “Cài đặt ứng dụng” để dùng như app Mac.

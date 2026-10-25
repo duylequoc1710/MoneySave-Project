@@ -1,7 +1,7 @@
 # 06 – Roadmap
 
-## Giai đoạn 1 – Local-first (HOÀN THÀNH 2026-10-24)
-Ba màn hình chính, quỹ/nhóm, chuyển quỹ, ngân sách, sao lưu, PWA.
+## Giai đoạn 1 – Local-first & Cá nhân hoá chuẩn MoneyLover (HOÀN THÀNH 2026-10-24)
+Bốn màn hình chính (`Tổng quan`, `Sổ giao dịch`, `Ngân sách & Định kỳ`, `Tài khoản & Quỹ`), giao diện clone MoneyLover (Báo cáo xu hướng lũy kế, Báo cáo chi tiêu Tuần/Tháng, Money Insider, Số dư đầu/cuối), **Giao dịch định kỳ tự động**, **Quỹ tín dụng tối ưu dòng tiền xài trước trả sau** (chốt sao kê, hạn thanh toán, tính ngày miễn lãi), sao lưu JSON/CSV, PWA.
 
 ## Giai đoạn 2 – Đồng bộ realtime (CHỜ QUYẾT ĐỊNH CỦA PO)
 Cần PO chọn dịch vụ và tạo tài khoản (hành động ngoài sandbox):
@@ -16,4 +16,4 @@ Host tĩnh miễn phí (Firebase Hosting / Netlify / GitHub Pages) để cài l�
 - Giao dịch định kỳ; nhắc nhở
 - Đính kèm ảnh hoá đơn; báo cáo theo nhóm/quỹ; biểu đồ tròn
 - Mục tiêu tiết kiệm; đa tiền tệ; khoá ứng dụng bằng PIN/FaceID (WebAuthn)
-- Unit test, CI
+- CI tự động (Unit test đã hoàn thành trong `app/src/app.test.ts`)

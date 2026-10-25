@@ -5,7 +5,7 @@
 ## Cấu trúc thư mục (toàn bộ dự án nằm trong thư mục này)
 
 ```
-MoneyGo-Project/
+MoneySave-Project/
 ├── README.md          ← file này
 ├── app/               ← mã nguồn ứng dụng (React + TypeScript + Vite)
 └── doc/               ← TOÀN BỘ tài liệu & session log (*.md)
@@ -27,6 +27,7 @@ MoneyGo-Project/
 cd app
 npm install        # lần đầu
 npm run dev        # chạy tại http://localhost:5173
+npm test           # chạy unit test (effectOn, định dạng, sao lưu/khôi phục)
 npm run build      # build bản production vào app/dist
 npm run preview    # xem thử bản build
 ```

@@ -24,7 +24,13 @@ Ghi chép thu chi nhanh, xem tổng quan tài chính, quản lý theo quỹ; dù
 | FR-12 | (Đề xuất) Tìm kiếm theo ghi chú/nhóm; lọc theo quỹ | ✅ |
 | FR-13 | (Đề xuất) Sao lưu / khôi phục JSON; xuất CSV | ✅ |
 | FR-14 | Đồng bộ realtime giữa các thiết bị | ⏳ Giai đoạn 2 (xem Roadmap) |
-| FR-15 | (Đề xuất) Giao dịch định kỳ (tiền nhà, lương…) | ⏳ Backlog |
+| FR-15 | Giao dịch định kỳ (hóa đơn cố định, cài đặt trước, tự động Chi/Thu khi đến ngày) | ✅ |
+| FR-16 | Quỹ tín dụng (ghi nhớ ngày chốt sao kê, hạn thanh toán, tính số ngày miễn lãi & gợi ý tối ưu tiền mặt xài trước trả sau, tất toán 1 chạm) | ✅ |
+| FR-17 | Giao diện chuẩn MoneyLover (Ẩn/hiện số dư, Ví của tôi, Money Insider, Báo cáo xu hướng lũy kế & Báo cáo chi tiêu Tuần/Tháng, Sổ giao dịch có Số dư đầu/cuối) | ✅ |
+| FR-18 | **Xem báo cáo cho giai đoạn này** (trong Sổ giao dịch): Thu nhập ròng, Báo cáo theo nhóm (2 biểu đồ Donut Khoản thu/Khoản chi song song), Chi tiết khoản chi & Chi tiết khoản thu (chế độ Chi tiết Donut và Xu hướng BarChart theo tuần + so sánh trung bình 3 tháng trước) | ✅ |
+| FR-19 | **Cài đặt Ví nâng cao**: phân nhóm `TÍNH VÀO TỔNG` / `KHÔNG TÍNH VÀO TỔNG` / `ĐÃ LƯU TRỮ`; công tắc `Bật thông báo`, `Không tính vào tổng` (loại bỏ hoàn toàn số dư & giao dịch của ví khỏi Tổng quan và mọi báo cáo tổng hợp), `Lưu trữ` (đóng băng ví & ngừng tạo giao dịch định kỳ); tác vụ `Chuyển tiền đến ví khác` (có phí chuyển khoản & `Không tính vào báo cáo`) và `Điều chỉnh số dư` | ✅ |
+| FR-20 | **Chọn Ví nâng cao (`WalletSelectorPill`) & Bộ lọc khoảng thời gian chi tiết (`TimeRangeModal`)**: nút Tổng cộng cân đối, bấm mở bảng chọn ví theo từng nhóm có số dư; nút lịch `📅` bên trái mở bộ lọc khoảng ngày cụ thể (`Từ ngày – Đến ngày`), chọn nhanh Tháng/Năm, hoặc `Hôm nay` / `Tuần này` / `Quý này` / `Năm nay` / `Tất cả thời gian` | ✅ |
+| FR-21 | **Module Cài đặt (`Settings`) & Xuất Excel (`.xls`)**: chuyển đổi trực tiếp `Dark Theme` / `Light Theme` / `System`; gom toàn bộ quản lý Dữ liệu cá nhân vào Cài đặt; hỗ trợ xuất báo cáo ra file Excel thực sự (`.xls` 2 Sheet: `Sổ Giao Dịch` & `Danh Sách Ví`) cùng `.csv` và `.json` | ✅ |
 
 ## 3. Yêu cầu phi chức năng (NFR)
 - NFR-01 Đa nền tảng: PWA cài được trên iOS (Safari → Thêm vào MH chính), Android (Chrome), macOS (Safari/Chrome).

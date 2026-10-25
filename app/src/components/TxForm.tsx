@@ -1,38 +1,119 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Tx, type TxType } from '../db'
-import { ymd } from '../lib'
+import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
+import { money, ymd } from '../lib'
 
-export default function TxForm({ tx, onClose }: { tx?: Tx; onClose: () => void }) {
-  const funds = useLiveQuery(() => db.funds.filter(f => !f.archived).toArray(), []) ?? []
+export interface TxFormDraft {
+  type?: TxType
+  amount?: number
+  fundId?: number
+  toFundId?: number
+  categoryId?: number
+  note?: string
+}
+
+export default function TxForm({
+  tx,
+  draft,
+  onClose,
+}: {
+  tx?: Tx
+  draft?: TxFormDraft
+  onClose: () => void
+}) {
+  const funds = useLiveQuery(() => db.funds.filter(f => !f.archived || f.id === tx?.fundId).toArray(), [tx?.fundId]) ?? []
   const cats = useLiveQuery(() => db.categories.toArray(), []) ?? []
-  const [type, setType] = useState<TxType>(tx?.type ?? 'expense')
-  const [amount, setAmount] = useState(tx ? String(tx.amount) : '')
-  const [date, setDate] = useState(tx?.date ?? ymd(new Date()))
-  const [fundId, setFundId] = useState<number | ''>(tx?.fundId ?? '')
-  const [toFundId, setToFundId] = useState<number | ''>(tx?.toFundId ?? '')
-  const [categoryId, setCategoryId] = useState<number | ''>(tx?.categoryId ?? '')
-  const [note, setNote] = useState(tx?.note ?? '')
+  const [type, setType] = useState<TxType>(tx?.type ?? draft?.type ?? 'expense')
+  const [amount, setAmount] = useState(tx ? String(tx.amount) : draft?.amount ? String(draft.amount) : '')
+  const [date, setDate] = useState(() => tx?.date ?? ymd(new Date()))
+  const [fundId, setFundId] = useState<number | ''>(tx?.fundId ?? draft?.fundId ?? '')
+  const [toFundId, setToFundId] = useState<number | ''>(tx?.toFundId ?? draft?.toFundId ?? '')
+  const [categoryId, setCategoryId] = useState<number | ''>(tx?.categoryId ?? draft?.categoryId ?? '')
+  const [note, setNote] = useState(tx?.note ?? draft?.note ?? '')
+  const [excludeFromReport, setExcludeFromReport] = useState<boolean>(
+    tx?.excludeFromReport ?? (type === 'transfer' ? true : false),
+  )
+  const [hasFee, setHasFee] = useState(false)
+  const [feeAmount, setFeeAmount] = useState('')
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [frequency, setFrequency] = useState<RecFrequency>('monthly')
+  const [dayOfMonth, setDayOfMonth] = useState<number>(() => new Date().getDate())
   const [err, setErr] = useState('')
 
   const list = cats.filter(c => c.type === type)
-  const fid = fundId === '' ? funds[0]?.id : fundId
+  const selCat = type === 'transfer' ? undefined : (cats.find(c => c.id === categoryId) ?? list[0])
+  const fid = fundId === '' ? (selCat?.fundId ?? funds[0]?.id) : fundId
 
   async function save() {
     const amt = Number(amount.replace(/[^\d.]/g, ''))
     if (!amt || amt <= 0) return setErr('Nhập số tiền hợp lệ')
     if (fid == null) return setErr('Chưa có quỹ')
     if (type === 'transfer' && (toFundId === '' || toFundId === fid)) return setErr('Chọn quỹ nhận khác quỹ nguồn')
-    const cat = type === 'transfer' ? null : (categoryId === '' ? list[0]?.id ?? null : categoryId)
-    const data: Tx = {
-      type, amount: amt, date, fundId: fid,
-      toFundId: type === 'transfer' ? Number(toFundId) : null,
-      categoryId: cat, note, createdAt: tx?.createdAt ?? Date.now(),
+    const cat = type === 'transfer' ? null : (selCat?.id ?? null)
+
+    if (!tx && isRecurring) {
+      const recName = note.trim() || (type === 'transfer' ? 'Chuyển quỹ định kỳ' : (selCat?.name ?? 'Khoản định kỳ'))
+      await db.recurrings.add({
+        name: recName,
+        type,
+        amount: amt,
+        fundId: fid,
+        toFundId: type === 'transfer' ? Number(toFundId) : null,
+        categoryId: cat,
+        note: note.trim(),
+        frequency,
+        dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, dayOfMonth)) : undefined,
+        startDate: date,
+        lastGeneratedDate: null,
+        active: true,
+      })
+      await processRecurringTransactions()
+      onClose()
+      return
     }
-    if (tx?.id) await db.txs.put({ ...data, id: tx.id })
-    else await db.txs.add(data)
+
+    const data: Tx = {
+      type,
+      amount: amt,
+      date,
+      fundId: fid,
+      toFundId: type === 'transfer' ? Number(toFundId) : null,
+      categoryId: cat,
+      note,
+      createdAt: tx?.createdAt ?? Date.now(),
+      recurringId: tx?.recurringId ?? null,
+      excludeFromReport,
+    }
+    if (tx?.id) {
+      await db.txs.put({ ...data, id: tx.id })
+    } else {
+      await db.txs.add(data)
+      if (type === 'transfer' && hasFee) {
+        const fee = Number(feeAmount.replace(/[^\d.]/g, ''))
+        if (fee > 0) {
+          await db.txs.add({
+            type: 'expense',
+            amount: fee,
+            date,
+            fundId: fid,
+            toFundId: null,
+            categoryId: cats.find(c => c.type === 'expense' && c.name.includes('Hoá đơn'))?.id ?? cats.find(c => c.type === 'expense')?.id ?? null,
+            note: `Phí chuyển khoản (${note || 'Chuyển tiền'})`,
+            createdAt: Date.now() + 1,
+            excludeFromReport,
+          })
+        }
+      }
+      const targetFund = funds.find(f => f.id === fid)
+      if (targetFund?.notifyOnTx && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification(`MoneyGo · ${targetFund.name}`, {
+          body: `${type === 'income' ? '+' : '-'}${money(amt)} · ${note || selCat?.name || 'Giao dịch mới'}`,
+        })
+      }
+    }
     onClose()
   }
+
   async function del() {
     if (tx?.id && confirm('Xoá giao dịch này?')) {
       await db.txs.delete(tx.id)
@@ -46,43 +127,191 @@ export default function TxForm({ tx, onClose }: { tx?: Tx; onClose: () => void }
         <h1>{tx ? 'Sửa giao dịch' : 'Thêm giao dịch'}</h1>
         <div className="seg">
           {(['expense', 'income', 'transfer'] as TxType[]).map(t => (
-            <button key={t} className={type === t ? 'on' : ''} onClick={() => { setType(t); setCategoryId('') }}>
-              {t === 'expense' ? 'Chi' : t === 'income' ? 'Thu' : 'Chuyển quỹ'}
+            <button
+              key={t}
+              className={type === t ? 'on' : ''}
+              onClick={() => {
+                setType(t)
+                setCategoryId('')
+                if (t === 'transfer') setExcludeFromReport(true)
+              }}
+            >
+              {t === 'expense' ? 'Chi tiêu' : t === 'income' ? 'Thu nhập' : 'Chuyển / Trả thẻ'}
             </button>
           ))}
         </div>
-        <label className="fld"><span>Số tiền (₫)</span>
-          <input inputMode="numeric" autoFocus value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" /></label>
+        <label className="fld">
+          <span>Số tiền (₫)</span>
+          <input
+            inputMode="numeric"
+            autoFocus
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="0"
+            style={{ fontSize: 22, fontWeight: 700 }}
+          />
+        </label>
         {type !== 'transfer' && (
-          <label className="fld"><span>Nhóm</span>
-            <select value={categoryId === '' ? list[0]?.id ?? '' : categoryId} onChange={e => {
-              const id = Number(e.target.value)
-              setCategoryId(id)
-              const cf = cats.find(c => c.id === id)?.fundId
-              if (cf) setFundId(cf)
-            }}>
-              {list.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-            </select></label>
+          <label className="fld">
+            <span>Nhóm</span>
+            <select
+              value={selCat?.id ?? ''}
+              onChange={e => {
+                const id = Number(e.target.value)
+                setCategoryId(id)
+                const cf = cats.find(c => c.id === id)?.fundId
+                if (cf) setFundId(cf)
+              }}
+            >
+              {list.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.icon} {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
-        <label className="fld"><span>{type === 'transfer' ? 'Từ quỹ' : 'Quỹ'}</span>
+        <label className="fld">
+          <span>{type === 'transfer' ? 'Từ quỹ (nguồn)' : 'Quỹ / Thẻ thanh toán'}</span>
           <select value={fid ?? ''} onChange={e => setFundId(Number(e.target.value))}>
-            {funds.map(f => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
-          </select></label>
+            {funds.map(f => (
+              <option key={f.id} value={f.id}>
+                {f.icon} {f.name} {f.kind === 'credit' ? '(Tín dụng)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
         {type === 'transfer' && (
-          <label className="fld"><span>Đến quỹ</span>
+          <label className="fld">
+            <span>Đến quỹ / Thẻ nhận</span>
             <select value={toFundId} onChange={e => setToFundId(Number(e.target.value))}>
               <option value="">— chọn —</option>
-              {funds.filter(f => f.id !== fid).map(f => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
-            </select></label>
+              {funds
+                .filter(f => f.id !== fid)
+                .map(f => (
+                  <option key={f.id} value={f.id}>
+                    {f.icon} {f.name} {f.kind === 'credit' ? '(Trả thẻ tín dụng)' : ''}
+                  </option>
+                ))}
+            </select>
+          </label>
         )}
-        <label className="fld"><span>Ngày (có thể chọn tương lai)</span>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
-        <label className="fld"><span>Ghi chú</span><input value={note} onChange={e => setNote(e.target.value)} /></label>
+        <label className="fld">
+          <span>{isRecurring ? 'Ngày bắt đầu áp dụng' : 'Ngày giao dịch'}</span>
+          <input
+            type="date"
+            value={date}
+            onChange={e => {
+              setDate(e.target.value)
+              const d = Number(e.target.value.split('-')[2])
+              if (d >= 1 && d <= 31) setDayOfMonth(d)
+            }}
+          />
+        </label>
+        <label className="fld">
+          <span>Ghi chú / Tên hóa đơn</span>
+          <input value={note} onChange={e => setNote(e.target.value)} placeholder="VD: Tiền điện, Xăng rửa xe..." />
+        </label>
+
+        {/* Tuỳ chọn Không tính vào báo cáo & Phí chuyển khoản */}
+        <div className="card" style={{ background: 'var(--bg)', marginBottom: 12, padding: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Không tính vào báo cáo</div>
+              <small className="mut">
+                {type === 'transfer'
+                  ? 'Giao dịch chuyển và nhận sẽ được loại khỏi báo cáo ở cả hai ví'
+                  : 'Giao dịch này sẽ không đưa vào thống kê báo cáo Thu/Chi'}
+              </small>
+            </div>
+            <button
+              type="button"
+              className={`ios-switch ${excludeFromReport ? 'on' : ''}`}
+              onClick={() => setExcludeFromReport(v => !v)}
+              aria-label="Không tính vào báo cáo"
+            />
+          </div>
+
+          {type === 'transfer' && !tx && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--bd)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>Thêm phí chuyển khoản</span>
+                <button
+                  type="button"
+                  className={`ios-switch ${hasFee ? 'on' : ''}`}
+                  onClick={() => setHasFee(v => !v)}
+                  aria-label="Thêm phí chuyển khoản"
+                />
+              </div>
+              {hasFee && (
+                <label className="fld" style={{ marginTop: 8, marginBottom: 0 }}>
+                  <span>Phí chuyển khoản (₫)</span>
+                  <input
+                    inputMode="numeric"
+                    value={feeAmount}
+                    onChange={e => setFeeAmount(e.target.value)}
+                    placeholder="VD: 3,300"
+                  />
+                </label>
+              )}
+            </div>
+          )}
+        </div>
+
+        {!tx && (
+          <div className="card" style={{ background: 'var(--bg)', marginBottom: 12, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>
+                🔁 Cài làm Giao dịch định kỳ (tự động thực hiện khi đến ngày)
+              </span>
+              <button
+                type="button"
+                className={`ios-switch ${isRecurring ? 'on' : ''}`}
+                onClick={() => setIsRecurring(v => !v)}
+                aria-label="Giao dịch định kỳ"
+              />
+            </div>
+            {isRecurring && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                <label className="fld" style={{ marginBottom: 0 }}>
+                  <span>Chu kỳ lặp</span>
+                  <select value={frequency} onChange={e => setFrequency(e.target.value as RecFrequency)}>
+                    <option value="monthly">Hàng tháng</option>
+                    <option value="weekly">Hàng tuần</option>
+                    <option value="daily">Hàng ngày</option>
+                    <option value="yearly">Hàng năm</option>
+                  </select>
+                </label>
+                {frequency === 'monthly' && (
+                  <label className="fld" style={{ marginBottom: 0 }}>
+                    <span>Ngày cố định (1-31)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={dayOfMonth}
+                      onChange={e => setDayOfMonth(Number(e.target.value))}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {err && <p className="exp" style={{ marginBottom: 10 }}>{err}</p>}
         <div style={{ display: 'flex', gap: 8 }}>
-          {tx && <button className="btn dng" onClick={del}>Xoá</button>}
-          <button className="btn" style={{ flex: 1 }} onClick={onClose}>Huỷ</button>
-          <button className="btn pri" style={{ flex: 2 }} onClick={save}>Lưu</button>
+          {tx && (
+            <button className="btn dng" onClick={del}>
+              Xoá
+            </button>
+          )}
+          <button className="btn" style={{ flex: 1 }} onClick={onClose}>
+            Huỷ
+          </button>
+          <button className="btn pri" style={{ flex: 2 }} onClick={save}>
+            {isRecurring && !tx ? 'Lưu & Bật tự động' : 'Lưu'}
+          </button>
         </div>
       </div>
     </div>

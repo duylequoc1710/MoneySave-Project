@@ -1,0 +1,390 @@
+import { describe, it } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  analyzeCreditFund,
+  buildCsvContent,
+  buildExcelXml,
+  computeTotalBalance,
+  effectOn,
+  filterReportableTxs,
+  getIncludedFunds,
+  money,
+  moneyShort,
+  resolveTimeRange,
+  ymd,
+  monthKey,
+  shiftMonth,
+} from './lib.ts'
+import {
+  computeDueDates,
+  exportAll,
+  getNextOccurrence,
+  importAll,
+  type Budget,
+  type Category,
+  type Fund,
+  type RecurringTx,
+  type Tx,
+} from './db.ts'
+
+describe('effectOn – tính số dư quỹ theo giao dịch', () => {
+  const baseTx = { date: '2026-10-24', note: '', createdAt: 1 }
+
+  it('income cộng tiền đúng vào quỹ nhận và không ảnh hưởng quỹ khác', () => {
+    const tx: Tx = { ...baseTx, type: 'income', amount: 5_000_000, fundId: 1 }
+    assert.equal(effectOn(tx, 1), 5_000_000)
+    assert.equal(effectOn(tx, 2), 0)
+  })
+
+  it('expense trừ tiền đúng khỏi quỹ chi và không ảnh hưởng quỹ khác', () => {
+    const tx: Tx = { ...baseTx, type: 'expense', amount: 120_000, fundId: 1 }
+    assert.equal(effectOn(tx, 1), -120_000)
+    assert.equal(effectOn(tx, 2), 0)
+  })
+
+  it('transfer trừ tiền quỹ nguồn, cộng tiền quỹ đích và bảo toàn tổng số dư (= 0)', () => {
+    const tx: Tx = { ...baseTx, type: 'transfer', amount: 2_000_000, fundId: 1, toFundId: 2 }
+    assert.equal(effectOn(tx, 1), -2_000_000)
+    assert.equal(effectOn(tx, 2), 2_000_000)
+    assert.equal(effectOn(tx, 3), 0)
+    assert.equal(effectOn(tx, 1) + effectOn(tx, 2) + effectOn(tx, 3), 0)
+  })
+})
+
+describe('Định dạng tiền tệ & ngày tháng', () => {
+  it('money & moneyShort định dạng đúng chuẩn VND', () => {
+    assert.match(money(1500000), /1,500,000\s*₫/)
+    assert.equal(moneyShort(500), '500')
+    assert.equal(moneyShort(45_000), '45k')
+    assert.equal(moneyShort(2_500_000), '2.5 M')
+    assert.equal(moneyShort(3_000_000_000), '3 tỷ')
+  })
+
+  it('ymd, monthKey, shiftMonth xử lý đúng ngày và chuyển tháng tương lai/quá khứ', () => {
+    const d = new Date(2026, 9, 24) // 2026-10-24 local
+    assert.equal(ymd(d), '2026-10-24')
+    assert.equal(monthKey(d), '2026-10')
+    assert.equal(monthKey(shiftMonth(d, 2)), '2026-12')
+    assert.equal(monthKey(shiftMonth(d, -1)), '2026-09')
+  })
+})
+
+describe('Giao dịch định kỳ (computeDueDates & getNextOccurrence)', () => {
+  it('Tự động tính các kỳ hóa đơn hàng tháng từ ngày bắt đầu đến hôm nay và không lặp lại kỳ đã chạy', () => {
+    const rec: RecurringTx = {
+      id: 1,
+      name: 'Tiền Internet',
+      type: 'expense',
+      amount: 300_000,
+      fundId: 1,
+      categoryId: 1,
+      note: 'FPT',
+      frequency: 'monthly',
+      dayOfMonth: 15,
+      startDate: '2026-08-10',
+      lastGeneratedDate: null,
+      active: true,
+    }
+    const due = computeDueDates(rec, '2026-10-24')
+    assert.deepEqual(due, ['2026-08-15', '2026-09-15', '2026-10-15'])
+
+    // Sau khi đã chạy tới 2026-10-15, gọi lại trong cùng ngày 2026-10-24 không sinh thêm
+    const recAfter = { ...rec, lastGeneratedDate: '2026-10-15' }
+    assert.deepEqual(computeDueDates(recAfter, '2026-10-24'), [])
+    assert.equal(getNextOccurrence(recAfter, '2026-10-24'), '2026-11-15')
+  })
+
+  it('Xử lý đúng ngày 31 cho các tháng thiếu (ví dụ tháng 2 và tháng 9)', () => {
+    const rec: RecurringTx = {
+      id: 2,
+      name: 'Tiền nhà',
+      type: 'expense',
+      amount: 6_000_000,
+      fundId: 1,
+      categoryId: 1,
+      note: '',
+      frequency: 'monthly',
+      dayOfMonth: 31,
+      startDate: '2026-02-01',
+      lastGeneratedDate: null,
+      active: true,
+    }
+    const due = computeDueDates(rec, '2026-04-30')
+    assert.deepEqual(due, ['2026-02-28', '2026-03-31', '2026-04-30'])
+  })
+
+  it('Ngừng tự động phát sinh giao dịch định kỳ khi Ví ở trạng thái Lưu trữ (archived = true)', () => {
+    const rec: RecurringTx = {
+      id: 3,
+      name: 'Hoá đơn định kỳ',
+      type: 'expense',
+      amount: 500_000,
+      fundId: 1,
+      categoryId: 1,
+      note: '',
+      frequency: 'monthly',
+      dayOfMonth: 10,
+      startDate: '2026-09-01',
+      lastGeneratedDate: null,
+      active: true,
+    }
+    assert.deepEqual(computeDueDates(rec, '2026-10-24', true), [])
+  })
+})
+
+describe('Tính năng Ví: Không tính vào tổng (excludeFromTotal) & Không tính vào báo cáo (excludeFromReport)', () => {
+  const funds: Fund[] = [
+    { id: 1, name: 'Quỹ Chính', icon: '👛', color: '#f97316', initialBalance: 60_000_000, excludeFromTotal: false },
+    { id: 2, name: 'Investing', icon: '💰', color: '#10b981', initialBalance: 159_506_700, excludeFromTotal: true },
+    { id: 3, name: 'Saving LT', icon: '🪙', color: '#14b8a6', initialBalance: 23_000_000, excludeFromTotal: true },
+  ]
+
+  const txs: Tx[] = [
+    // Giao dịch chi ở Quỹ Chính (Tính vào tổng)
+    { id: 1, type: 'expense', amount: 1_000_000, date: '2026-10-10', fundId: 1, categoryId: 1, note: 'Ăn uống', createdAt: 1 },
+    // Giao dịch thu ở ví Investing (Không tính vào tổng)
+    { id: 2, type: 'income', amount: 4_500_000, date: '2026-10-18', fundId: 2, categoryId: 12, note: 'Cổ tức', createdAt: 2 },
+    // Giao dịch Điều chỉnh số dư ở Quỹ Chính (excludeFromReport = true)
+    {
+      id: 3,
+      type: 'income',
+      amount: 1_871_584,
+      date: '2026-10-24',
+      fundId: 1,
+      categoryId: null,
+      note: 'Điều chỉnh số dư',
+      createdAt: 3,
+      excludeFromReport: true,
+    },
+  ]
+
+  it('Khi xem Tổng cộng (fundFilter = 0), số dư và danh sách ví loại bỏ hoàn toàn các ví bật Không tính vào tổng', () => {
+    const included = getIncludedFunds(funds, 0)
+    assert.equal(included.length, 1)
+    assert.equal(included[0].name, 'Quỹ Chính')
+
+    // Số dư Quỹ Chính = 60,000,000 - 1,000,000 + 1,871,584 (điều chỉnh số dư vẫn cập nhật số dư ví!) = 60,871,584
+    assert.equal(computeTotalBalance(funds, txs, 0), 60_871_584)
+
+    // Khi xem riêng ví Investing (fundFilter = 2), số dư của riêng ví đó vẫn tính đầy đủ: 159,506,700 + 4,500,000
+    assert.equal(computeTotalBalance(funds, txs, 2), 164_006_700)
+  })
+
+  it('Báo cáo tổng hợp loại bỏ cả giao dịch của ví Không tính vào tổng LẪN giao dịch bật Không tính vào báo cáo', () => {
+    const reportAll = filterReportableTxs(txs, funds, 0)
+    // Chỉ còn lại duy nhất giao dịch id=1 (Ăn uống 1,000,000 ở Quỹ Chính); id=2 (Investing) và id=3 (Điều chỉnh số dư) đều bị loại
+    assert.deepEqual(reportAll.map(t => t.id), [1])
+
+    // Nhưng khi xem báo cáo của riêng ví Investing (fundFilter = 2) thì giao dịch id=2 được hiển thị
+    const reportInvesting = filterReportableTxs(txs, funds, 2)
+    assert.deepEqual(reportInvesting.map(t => t.id), [2])
+  })
+})
+
+describe('Phân tích Quỹ tín dụng – Xài trước trả sau (analyzeCreditFund)', () => {
+  const creditFund: Fund = {
+    id: 10,
+    name: 'VIB Cash Back',
+    icon: '💳',
+    color: '#8b5cf6',
+    initialBalance: 0,
+    kind: 'credit',
+    creditLimit: 50_000_000,
+    statementDay: 20,
+    dueDay: 5,
+  }
+
+  it('Tính đúng dư nợ, hạn mức còn lại, ngày chốt sao kê, hạn thanh toán và thời gian miễn lãi tối ưu', () => {
+    const txs: Tx[] = [
+      {
+        id: 1,
+        type: 'expense',
+        amount: 4_000_000,
+        date: '2026-10-22',
+        fundId: 10,
+        categoryId: 1,
+        note: 'Mua đồ',
+        createdAt: 1,
+      },
+    ]
+    // Ngày tham chiếu: 24/10/2026 (vừa qua ngày chốt sao kê 20/10 được 4 ngày)
+    const info = analyzeCreditFund(creditFund, txs, new Date(2026, 9, 24))
+    assert.equal(info.debt, 4_000_000)
+    assert.equal(info.availableCredit, 46_000_000)
+    assert.equal(info.lastStatementDate, '2026-10-20')
+    assert.equal(info.nextStatementDate, '2026-11-20')
+    assert.equal(info.daysUntilStatement, 27)
+    // Hạn thanh toán của kỳ 20/10 là 05/11/2026 (còn 12 ngày)
+    assert.equal(info.nextDueDate, '2026-11-05')
+    assert.equal(info.daysUntilDue, 12)
+    // Giao dịch ngày 24/10 rơi vào kỳ sao kê 20/11 và hạn trả là 05/12 -> miễn lãi 42 ngày!
+    assert.equal(info.interestFreeDaysToday, 42)
+    assert.equal(info.statusTag, 'optimal')
+  })
+})
+
+function createMockStore(initial?: {
+  funds?: Fund[]
+  categories?: Category[]
+  txs?: Tx[]
+  budgets?: Budget[]
+  recurrings?: RecurringTx[]
+}) {
+  const makeTable = <T,>(arr: T[]) => {
+    let data = [...arr]
+    return {
+      toArray: async () => [...data],
+      clear: async () => {
+        data = []
+      },
+      bulkAdd: async (items: T[]) => {
+        data.push(...items)
+      },
+    }
+  }
+  const store = {
+    funds: makeTable<Fund>(initial?.funds ?? []),
+    categories: makeTable<Category>(initial?.categories ?? []),
+    txs: makeTable<Tx>(initial?.txs ?? []),
+    budgets: makeTable<Budget>(initial?.budgets ?? []),
+    recurrings: makeTable<RecurringTx>(initial?.recurrings ?? []),
+    transaction: async (_mode: string, ...args: unknown[]) => {
+      const cb = args[args.length - 1] as () => Promise<void>
+      await cb()
+    },
+  }
+  return store as unknown as NonNullable<Parameters<typeof importAll>[1]>
+}
+
+describe('Sao lưu & khôi phục dữ liệu (exportAll / importAll)', () => {
+  it('Sao lưu rồi khôi phục sang kho dữ liệu khác giữ nguyên 100% quỹ, nhóm, giao dịch, ngân sách và định kỳ', async () => {
+    const src = createMockStore({
+      funds: [
+        {
+          id: 1,
+          name: 'Thẻ Tín Dụng',
+          icon: '💳',
+          color: '#8b5cf6',
+          initialBalance: 0,
+          kind: 'credit',
+          creditLimit: 30_000_000,
+          statementDay: 20,
+          dueDay: 5,
+        },
+      ],
+      categories: [{ id: 1, name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', fundId: 1 }],
+      txs: [
+        {
+          id: 1,
+          type: 'expense',
+          amount: 55_000,
+          date: '2026-10-24',
+          fundId: 1,
+          categoryId: 1,
+          note: 'Phở bò',
+          createdAt: 1700000000000,
+        },
+      ],
+      budgets: [{ id: 1, categoryId: 1, limit: 3_000_000 }],
+      recurrings: [
+        {
+          id: 1,
+          name: 'Netflix',
+          type: 'expense',
+          amount: 260_000,
+          fundId: 1,
+          categoryId: 1,
+          note: '',
+          frequency: 'monthly',
+          dayOfMonth: 10,
+          startDate: '2026-10-01',
+          lastGeneratedDate: '2026-10-10',
+          active: true,
+        },
+      ],
+    })
+
+    const json = await exportAll(src)
+    const parsed = JSON.parse(json)
+    assert.equal(parsed.app, 'MoneyGo')
+    assert.equal(parsed.version, 2)
+
+    const dest = createMockStore()
+    await importAll(json, dest)
+
+    assert.deepEqual(await dest.funds.toArray(), await src.funds.toArray())
+    assert.deepEqual(await dest.categories.toArray(), await src.categories.toArray())
+    assert.deepEqual(await dest.txs.toArray(), await src.txs.toArray())
+    assert.deepEqual(await dest.budgets.toArray(), await src.budgets.toArray())
+    assert.deepEqual(await dest.recurrings!.toArray(), await src.recurrings!.toArray())
+  })
+
+  it('Từ chối file JSON không phải của MoneyGo hoặc thiếu dữ liệu bắt buộc', async () => {
+    const dest = createMockStore({
+      funds: [{ id: 1, name: 'Tiền mặt', icon: '💵', color: '#10b981', initialBalance: 500_000 }],
+    })
+    await assert.rejects(() => importAll(JSON.stringify({ app: 'OtherApp' }), dest), /MoneyGo/)
+    await assert.rejects(() => importAll(JSON.stringify({ app: 'MoneyGo', funds: 'invalid' }), dest), /MoneyGo/)
+    assert.equal((await dest.funds.toArray()).length, 1)
+  })
+})
+
+describe('Bộ lọc khoảng thời gian (resolveTimeRange) & Xuất file Excel (buildExcelXml)', () => {
+  it('resolveTimeRange tính đúng khoảng ngày cho month, today, week, quarter, year, all và custom', () => {
+    const refDate = new Date(2026, 9, 25) // Chủ Nhật 25/10/2026
+    const baseMonth = new Date(2026, 9, 1)
+
+    const mRange = resolveTimeRange({ mode: 'month', month: baseMonth, startDate: '', endDate: '' }, refDate)
+    assert.equal(mRange.from, '2026-10-01')
+    assert.equal(mRange.to, '2026-10-31')
+    assert.equal(mRange.isMonthMode, true)
+
+    const todayRange = resolveTimeRange({ mode: 'today', month: baseMonth, startDate: '', endDate: '' }, refDate)
+    assert.equal(todayRange.from, '2026-10-25')
+    assert.equal(todayRange.to, '2026-10-25')
+    assert.equal(todayRange.isMonthMode, false)
+
+    const weekRange = resolveTimeRange({ mode: 'week', month: baseMonth, startDate: '', endDate: '' }, refDate)
+    assert.equal(weekRange.from, '2026-10-19') // Thứ Hai
+    assert.equal(weekRange.to, '2026-10-25') // Chủ Nhật
+
+    const quarterRange = resolveTimeRange({ mode: 'quarter', month: baseMonth, startDate: '', endDate: '' }, refDate)
+    assert.equal(quarterRange.from, '2026-10-01')
+    assert.equal(quarterRange.to, '2026-12-31')
+
+    // Custom range tự động sắp xếp lại nếu người dùng chọn startDate > endDate
+    const customRange = resolveTimeRange(
+      { mode: 'custom', month: baseMonth, startDate: '2026-10-20', endDate: '2026-10-05' },
+      refDate,
+    )
+    assert.equal(customRange.from, '2026-10-05')
+    assert.equal(customRange.to, '2026-10-20')
+  })
+
+  it('buildExcelXml & buildCsvContent xuất đầy đủ 2 Sheet Excel và định dạng chuẩn tiếng Việt', () => {
+    const funds: Fund[] = [
+      { id: 1, name: 'Quỹ Chính', icon: '👛', color: '#10b981', initialBalance: 10_000_000 },
+      { id: 2, name: 'Investing', icon: '💰', color: '#eab308', initialBalance: 50_000_000, excludeFromTotal: true },
+    ]
+    const cats: Category[] = [
+      { id: 1, name: 'Ăn uống & Cafe', type: 'expense', icon: '🍜', color: '#f97316', fundId: 1 },
+      { id: 2, name: 'Lương', type: 'income', icon: '💼', color: '#22c55e', fundId: 1 },
+    ]
+    const txs: Tx[] = [
+      { id: 1, type: 'income', amount: 25_000_000, date: '2026-10-05', fundId: 1, categoryId: 2, note: 'Lương tháng 10', createdAt: 1 },
+      { id: 2, type: 'expense', amount: 150_000, date: '2026-10-06', fundId: 1, categoryId: 1, note: 'Ăn trưa <test>', createdAt: 2 },
+    ]
+
+    const xml = buildExcelXml(funds, cats, txs)
+    assert.ok(xml.includes('<Worksheet ss:Name="So Giao Dich">'))
+    assert.ok(xml.includes('<Worksheet ss:Name="Danh Sach Vi">'))
+    assert.ok(xml.includes('<Data ss:Type="Number">25000000</Data>'))
+    assert.ok(xml.includes('Ăn uống &amp; Cafe'))
+    assert.ok(xml.includes('Ăn trưa &lt;test&gt;'))
+
+    const csv = buildCsvContent(funds, cats, txs)
+    assert.ok(csv.startsWith('\uFEFF'))
+    assert.ok(csv.includes('Lương tháng 10'))
+  })
+})
+
