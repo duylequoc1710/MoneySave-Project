@@ -38,13 +38,7 @@ export default function App() {
     }
   }, [])
 
-  const syncBadgeLabel = authUser
-    ? syncSnap.status === 'syncing'
-      ? '🔄 Đang đồng bộ...'
-      : syncSnap.status === 'error'
-        ? '⚠️ Lỗi đồng bộ'
-        : `👤 ${authUser.email}`
-    : '🔑 Đăng nhập / Đăng ký'
+  const accountLabel = authUser ? `👤 ${authUser.email}` : '🔑 Đăng nhập / Đăng ký'
 
   if (!authUser && !skipAuth) {
     return (
@@ -93,18 +87,24 @@ export default function App() {
             type="button"
             className="desktop-sync-pill"
             onClick={() => nav('/settings')}
-            title={authUser ? `Tài khoản: ${authUser.email}\nUID: ${authUser.uid}` : 'Nhấp để Đăng nhập / Đăng ký'}
+            title={
+              authUser
+                ? `Tài khoản: ${authUser.email}\nTrạng thái: ${
+                    syncSnap.status === 'error'
+                      ? '⚠️ Lỗi đồng bộ: ' + (syncSnap.lastError ?? '')
+                      : syncSnap.status === 'syncing'
+                        ? '🔄 Đang đồng bộ...'
+                        : '✅ Đã đồng bộ an toàn (E2EE)'
+                  }`
+                : 'Nhấp để Đăng nhập / Đăng ký'
+            }
           >
             <span
               className={`sync-dot ${
-                syncSnap.status === 'error'
-                  ? 'error'
-                  : syncSnap.status === 'syncing'
-                    ? 'syncing'
-                    : ''
+                syncSnap.status === 'error' ? 'error' : ''
               }`}
             />
-            <span className="sync-text">{syncBadgeLabel}</span>
+            <span className="sync-text">{accountLabel}</span>
           </button>
         </div>
       </nav>
@@ -133,9 +133,9 @@ export default function App() {
               color: syncSnap.status === 'error' ? 'var(--exp)' : 'var(--acc)',
             }}
             onClick={() => nav('/settings')}
-            title="Cấu hình Đồng bộ Đám mây mã hóa đầu cuối (E2EE)"
+            title="Tài khoản & Đồng bộ Đám mây"
           >
-            {syncBadgeLabel}
+            {accountLabel}
           </button>
         </header>
         <Routes>

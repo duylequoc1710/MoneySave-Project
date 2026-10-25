@@ -190,8 +190,9 @@
        })();
      </script>
      ```
-  2. **Silent Sync cho Polling định kỳ:** Bổ sung cờ `silent = true` cho `syncNowSmart(silent)`: Khi polling định kỳ hoặc chuyển tab, hệ thống kiểm tra âm thầm trong nền. Nếu Cloud không có dữ liệu mới từ thiết bị khác, nó giữ nguyên trạng thái và KHÔNG kích hoạt re-render toàn app.
+  2. **Silent Sync cho Polling định kỳ:** Bổ sung cờ `silent = true` cho `syncNowSmart(silent)` và tăng khoảng cách kiểm tra lên 30s: Khi polling định kỳ hoặc chuyển tab, hệ thống kiểm tra âm thầm trong nền. Nếu Cloud không có dữ liệu mới từ thiết bị khác, nó giữ nguyên trạng thái và KHÔNG kích hoạt re-render toàn app.
   3. **Tắt Animation thừa:** Thêm `isAnimationActive={false}` cho các thẻ `Area` và `Bar` của Recharts trong [`Overview.tsx`](../app/src/pages/Overview.tsx).
+  4. **Cố định tĩnh nhãn tài khoản (Static Account Pill):** Giữ nguyên văn bản hiển thị `👤 email` trong [`App.tsx`](../app/src/App.tsx), loại bỏ việc hoán đổi text thành `"🔄 Đang đồng bộ..."` và xóa bỏ animation đổi màu chớp nháy xanh dương của `.sync-dot.syncing` trong [`index.css`](../app/src/index.css). Nút tài khoản ở góc dưới bên trái luôn hiển thị tĩnh vững chãi, chấm xanh ổn định 100%.
 * **Quy tắc cho kỹ sư:**
   > Trong các ứng dụng hỗ trợ Dark/Light theme, script thiết lập class theme phải luôn nằm đồng bộ trong `<head>` của HTML, không được phụ thuộc vào React lifecycle. Mọi tác vụ polling chạy ngầm định kỳ phải là Silent Checks để tránh gây giật khung hình cho người dùng.
 

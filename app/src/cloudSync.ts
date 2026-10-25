@@ -621,10 +621,10 @@ export function startRealtimeCloudSyncEngine() {
     syncNowSmart(false).catch(() => {})
   })
 
-  // Polling nhẹ mỗi 15 giây khi đang mở ứng dụng để nhận cập nhật Realtime từ thiết bị khác (chạy ngầm im lặng, không nháy UI)
+  // Polling nhẹ mỗi 30 giây khi đang mở ứng dụng để nhận cập nhật Realtime từ thiết bị khác (chạy ngầm hoàn toàn im lặng)
   setInterval(() => {
     if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
       syncNowSmart(true).catch(() => {})
     }
-  }, 15_000)
+  }, 30_000)
 }
