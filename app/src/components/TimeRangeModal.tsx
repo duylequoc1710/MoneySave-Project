@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { endOfMonth, startOfMonth } from 'date-fns'
 import { type TimeFilter, type TimeRangeMode, ymd } from '../lib'
+import DateInput from './DateInput'
 
 interface Props {
   filter: TimeFilter
@@ -82,11 +83,11 @@ export default function TimeRangeModal({ filter, onChange, onClose }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             <label className="fld" style={{ margin: 0 }}>
               <span>Từ ngày</span>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <DateInput value={startDate} onChange={setStartDate} showDayOfWeek={false} />
             </label>
             <label className="fld" style={{ margin: 0 }}>
               <span>Đến ngày</span>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <DateInput value={endDate} onChange={setEndDate} showDayOfWeek={false} />
             </label>
           </div>
           <button

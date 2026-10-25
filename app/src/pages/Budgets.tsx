@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { startOfMonth } from 'date-fns'
+import DateInput from '../components/DateInput'
 import {
   db,
   getNextOccurrence,
@@ -429,7 +430,7 @@ function RecurringForm({
         </div>
         <label className="fld">
           <span>Bắt đầu áp dụng từ ngày</span>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <DateInput value={startDate} onChange={setStartDate} />
         </label>
         <label className="fld">
           <span>Ghi chú thêm</span>

@@ -83,3 +83,16 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
 * **Xuất file Excel (`.xls`):** Xuất báo cáo tài chính 2 Sheet chuẩn tiếng Việt (`Sổ Giao Dịch` và `Danh Sách Ví`).
 * **Sao lưu & Khôi phục JSON:** Tải file sao lưu an toàn về máy và khôi phục lại bất kỳ lúc nào.
 * **Giao diện Tối / Sáng (Dark / Light Theme):** Chuyển đổi trực tiếp trong mục Cài đặt.
+
+---
+
+## 7. Trải Nghiệm Web App Mobile & Đồng Bộ Ngày dd/MM/yyyy
+
+* **Đồng bộ định dạng ngày tiếng Việt (`dd/MM/yyyy`):**
+  * Trên toàn bộ ứng dụng (khi thêm/sửa giao dịch, lọc ngày, cài đặt ngân sách), ngày luôn được hiển thị thống nhất theo định dạng `dd/MM/yyyy` kèm thứ trong tuần tiếng Việt (ví dụ: `📅 17/10/2026 (Thứ Bảy)`).
+  * Khắc phục hoàn toàn tình trạng iOS Safari hiển thị tiếng Anh dạng `"1 Aug 2026"` và Android Chrome hiển thị `"08/01/2026"`.
+  * Khi chạm vào ô ngày, picker dạng cuộn bánh xe (wheel) hoặc lịch gốc của máy vẫn xuất hiện mượt mà để chọn ngày nhanh chóng.
+* **Tối ưu thanh điều hướng cố định (Fixed Bottom Dock) trên iOS Safari:**
+  * Thanh taskbar ở dưới màn hình điện thoại và nút nổi `+ Thêm giao dịch` được kích hoạt tăng tốc phần cứng GPU (`translate3d`), căn giữa tuyệt đối chống rung lắc, lún sâu hoặc xô lệch khi cuộn trang nhanh.
+  * Vùng an toàn (`env(safe-area-inset-bottom)`) được đệm chuẩn xác, đảm bảo không bị cấn phím Home Bar của iPhone hay thanh công cụ trình duyệt.
+

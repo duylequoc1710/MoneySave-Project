@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Category, type Fund, type Tx } from '../db'
 import { analyzeCreditFund, effectOn, groupCategoriesHierarchy, money, ymd } from '../lib'
+import DateInput from '../components/DateInput'
 
 const COLORS = ['#f97316', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#eab308', '#ef4444', '#06b6d4']
 
@@ -999,17 +1000,14 @@ function TransferWalletModal({
           Tuỳ chọn
         </div>
         <div className="card" style={{ padding: '4px 16px' }}>
-          <div className="row">
-            <span style={{ fontSize: 18 }}>📅</span>
+          <div className="row" style={{ alignItems: 'center', padding: '6px 0' }}>
             <div className="grow">
-              <input
-                type="date"
+              <DateInput
                 value={date}
-                onChange={e => setDate(e.target.value)}
-                style={{ background: 'transparent', border: 0, fontSize: 16, width: '100%' }}
+                onChange={setDate}
+                style={{ width: '100%' }}
               />
             </div>
-            <span className="mut">›</span>
           </div>
 
           <div className="row" style={{ alignItems: 'center' }}>

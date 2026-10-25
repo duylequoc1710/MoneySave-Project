@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
 import { groupCategoriesHierarchy, money, ymd } from '../lib'
+import DateInput from './DateInput'
 
 export interface TxFormDraft {
   type?: TxType
@@ -217,12 +218,11 @@ export default function TxForm({
         )}
         <label className="fld">
           <span>{isRecurring ? 'Ngày bắt đầu áp dụng' : 'Ngày giao dịch'}</span>
-          <input
-            type="date"
+          <DateInput
             value={date}
-            onChange={e => {
-              setDate(e.target.value)
-              const d = Number(e.target.value.split('-')[2])
+            onChange={val => {
+              setDate(val)
+              const d = Number(val.split('-')[2])
               if (d >= 1 && d <= 31) setDayOfMonth(d)
             }}
           />
