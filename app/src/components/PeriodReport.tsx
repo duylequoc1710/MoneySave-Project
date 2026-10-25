@@ -27,6 +27,8 @@ import {
 } from '../lib'
 import { WalletSelectorPill } from './WalletPickerModal'
 import TimeRangeModal from './TimeRangeModal'
+import TxDetailModal from './TxDetailModal'
+import TxForm, { type TxFormDraft } from './TxForm'
 
 interface Props {
   cur: Date
@@ -252,6 +254,9 @@ export default function PeriodReport({
   const [showAvgCompare, setShowAvgCompare] = useState(true)
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
   const [showTimeModal, setShowTimeModal] = useState(false)
+  const [viewingTx, setViewingTx] = useState<Tx | null>(null)
+  const [editTx, setEditTx] = useState<Tx | null>(null)
+  const [draftTx, setDraftTx] = useState<TxFormDraft | null>(null)
   const [today] = useState(() => new Date())
   const nowMonth = useMemo(() => startOfMonth(today), [today])
 
@@ -529,11 +534,13 @@ export default function PeriodReport({
                           {c.txs.map(t => (
                             <div
                               key={t.id}
+                              onClick={() => setViewingTx(t)}
                               style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 fontSize: 13,
-                                padding: '4px 0',
+                                padding: '6px 0',
+                                cursor: 'pointer',
                               }}
                               className="mut"
                             >
@@ -617,11 +624,13 @@ export default function PeriodReport({
                           {b.txs.map(t => (
                             <div
                               key={t.id}
+                              onClick={() => setViewingTx(t)}
                               style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 fontSize: 13,
-                                padding: '4px 0',
+                                padding: '6px 0',
+                                cursor: 'pointer',
                               }}
                               className="mut"
                             >
@@ -815,6 +824,22 @@ export default function PeriodReport({
             onClose={() => setShowTimeModal(false)}
           />
         )}
+        {viewingTx && (
+          <TxDetailModal
+            tx={viewingTx}
+            onClose={() => setViewingTx(null)}
+            onEdit={t => {
+              setViewingTx(null)
+              setEditTx(t)
+            }}
+            onDuplicate={draft => {
+              setViewingTx(null)
+              setDraftTx(draft)
+            }}
+          />
+        )}
+        {editTx && <TxForm tx={editTx} onClose={() => setEditTx(null)} />}
+        {draftTx && <TxForm draft={draftTx} onClose={() => setDraftTx(null)} />}
       </div>
     </div>
   )

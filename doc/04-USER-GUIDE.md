@@ -59,8 +59,15 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
 
 ---
 
-## 5. Sổ Giao Dịch & Báo Cáo Giai Đoạn Này
+## 5. Sổ Giao Dịch, Chi Tiết Giao Dịch & Báo Cáo Giai Đoạn Này
 
+* **Màn hình Chi Tiết Giao Dịch (Chuẩn MoneyLover):**
+  * Khi bấm vào bất kỳ khoản chi tiêu/thu nhập/chuyển tiền nào, ứng dụng sẽ mở màn hình **Chi tiết giao dịch** riêng biệt thay vì bật ngay form sửa và bàn phím ảo.
+  * Hiển thị trực quan: Icon nhóm, tên nhóm phân cấp, ghi chú, số tiền lớn nổi bật, ngày giao dịch tiếng Việt đầy đủ và ví thanh toán.
+  * Thao tác nhanh tiện lợi:
+    * **📄 Sao chép giao dịch:** Tự động tạo giao dịch mới với đầy đủ thông tin sao chép sẵn để bạn lưu nhanh.
+    * **🗑️ Xóa giao dịch:** Xóa giao dịch an toàn có hộp thoại xác nhận.
+    * **Nút "Sửa":** Nằm ở góc trên bên phải, chỉ khi bạn bấm vào nút này thì form chỉnh sửa mới mở ra.
 * **Lọc thời gian linh hoạt (`📅`):** Lọc theo khoảng ngày cụ thể (Từ ngày - Đến ngày), Tháng/Năm, hoặc các mốc nhanh: *Hôm nay, Tuần này, Quý này, Năm nay, Tất cả thời gian*.
 * **Bộ chọn Ví (`🌐 Tổng cộng ▾`):** Bấm để mở bảng chọn nhanh ví theo từng nhóm hoặc xem tổng hợp toàn bộ tài sản.
 * **Xem báo cáo cho giai đoạn này:**

@@ -7,8 +7,8 @@ export interface TxFormDraft {
   type?: TxType
   amount?: number
   fundId?: number
-  toFundId?: number
-  categoryId?: number
+  toFundId?: number | null
+  categoryId?: number | null
   note?: string
 }
 
@@ -144,7 +144,7 @@ export default function TxForm({
           <span>Số tiền (₫)</span>
           <input
             inputMode="numeric"
-            autoFocus
+            autoFocus={!tx}
             value={amount}
             onChange={e => setAmount(e.target.value)}
             placeholder="0"

@@ -898,5 +898,20 @@ h2 {
   background: color-mix(in srgb, var(--fg) 10%, var(--card));
 }
 
+/* Chi tiết giao dịch (Transaction Detail View - Chuẩn MoneyLover) */
+.detail-back-btn:hover {
+  background: color-mix(in srgb, var(--fg) 14%, transparent) !important;
+}
+.detail-edit-btn:hover {
+  background: color-mix(in srgb, var(--fg) 16%, transparent) !important;
+}
+.detail-action-btn:hover {
+  background: color-mix(in srgb, var(--fg) 6%, transparent) !important;
+}
+.detail-action-btn:active {
+  background: color-mix(in srgb, var(--fg) 10%, transparent) !important;
+}
+
+
 
 

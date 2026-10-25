@@ -29,6 +29,7 @@ import {
   ymd,
 } from '../lib'
 import TxForm, { type TxFormDraft } from '../components/TxForm'
+import TxDetailModal from '../components/TxDetailModal'
 
 const NO_TXS: Tx[] = []
 const NO_FUNDS: Fund[] = []
@@ -41,6 +42,7 @@ export default function Overview() {
   const [trendTab, setTrendTab] = useState<'expense' | 'income'>('expense')
   const [barScope, setBarScope] = useState<'week' | 'month'>('month')
   const [topScope, setTopScope] = useState<'week' | 'month'>('month')
+  const [viewingTx, setViewingTx] = useState<Tx | null>(null)
   const [editTx, setEditTx] = useState<Tx | null>(null)
   const [payDraft, setPayDraft] = useState<TxFormDraft | null>(null)
   const [today] = useState(() => new Date())
@@ -573,7 +575,7 @@ export default function Overview() {
           const f = fMap.get(t.fundId)
           const isT = t.type === 'transfer'
           return (
-            <div className="row" key={t.id} onClick={() => setEditTx(t)} style={{ cursor: 'pointer' }}>
+            <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
               <div className="ico round" style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}>
                 {isT ? '🔁' : (c?.icon ?? '❓')}
                 {f && <span className="wallet-mini-badge">{f.icon}</span>}
@@ -590,6 +592,20 @@ export default function Overview() {
         })}
       </div>
 
+      {viewingTx && (
+        <TxDetailModal
+          tx={viewingTx}
+          onClose={() => setViewingTx(null)}
+          onEdit={t => {
+            setViewingTx(null)
+            setEditTx(t)
+          }}
+          onDuplicate={draft => {
+            setViewingTx(null)
+            setPayDraft(draft)
+          }}
+        />
+      )}
       {editTx && <TxForm tx={editTx} onClose={() => setEditTx(null)} />}
       {payDraft && <TxForm draft={payDraft} onClose={() => setPayDraft(null)} />}
     </>

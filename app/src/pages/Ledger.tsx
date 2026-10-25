@@ -14,7 +14,8 @@ import {
   type TimeFilter,
   ymd,
 } from '../lib'
-import TxForm from '../components/TxForm'
+import TxForm, { type TxFormDraft } from '../components/TxForm'
+import TxDetailModal from '../components/TxDetailModal'
 import PeriodReport from '../components/PeriodReport'
 import { WalletSelectorPill } from '../components/WalletPickerModal'
 import TimeRangeModal from '../components/TimeRangeModal'
@@ -36,7 +37,9 @@ export default function Ledger() {
   const [q, setQ] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [fundFilter, setFundFilter] = useState(0) // 0 = Tổng cộng
+  const [viewingTx, setViewingTx] = useState<Tx | null>(null)
   const [edit, setEdit] = useState<Tx | null>(null)
+  const [draftTx, setDraftTx] = useState<TxFormDraft | null>(null)
   const [showReport, setShowReport] = useState(false)
 
   const allTxs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
@@ -265,7 +268,7 @@ export default function Ledger() {
               const f = fMap.get(t.fundId)
               const isT = t.type === 'transfer'
               return (
-                <div className="row" key={t.id} onClick={() => setEdit(t)} style={{ cursor: 'pointer' }}>
+                <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
                   <div
                     className="ico round"
                     style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}
@@ -294,7 +297,22 @@ export default function Ledger() {
         )
       })}
 
+      {viewingTx && (
+        <TxDetailModal
+          tx={viewingTx}
+          onClose={() => setViewingTx(null)}
+          onEdit={t => {
+            setViewingTx(null)
+            setEdit(t)
+          }}
+          onDuplicate={draft => {
+            setViewingTx(null)
+            setDraftTx(draft)
+          }}
+        />
+      )}
       {edit && <TxForm tx={edit} onClose={() => setEdit(null)} />}
+      {draftTx && <TxForm draft={draftTx} onClose={() => setDraftTx(null)} />}
       {showTimeModal && (
         <TimeRangeModal
           filter={timeFilter}
