@@ -15,6 +15,8 @@
 | **INC-04** | UI / Ledger Tabs | Chọn tháng cũ (T8, T6) rồi click tab thì bị nhảy ngược về tháng 9 | 3 nút tab tháng bị hardcode cứng vào `now - 1`, `now`, `now + 1` | Áp dụng cơ chế trượt cửa sổ động (Windowed Sliding Tabs: `cur - 1`, `cur`, `cur + 1`) |
 | **INC-05** | Mobile UX / Keyboard | Bấm vào khoản chi tiêu thì bàn phím ảo tự động bung lên chiếm màn hình | Bấm vào item nhảy thẳng vào form sửa kèm thuộc tính `autoFocus={true}` | Tách màn hình Chi tiết giao dịch (`TxDetailModal.tsx`), tắt `autoFocus` khi sửa |
 | **INC-06** | iOS Safari / Layout | Thanh điều hướng (Dock Nav) bị lún xuống thanh Safari và xô lệch 2 bên khi cuộn | Dùng `margin: 0 auto` trên fixed element, thiếu GPU compositing và thiếu `translate3d` | Dùng `left: 50%`, `transform: translate3d(-50%, 0, 0)`, `will-change: transform`, đệm `safe-area` |
+| **INC-07** | Data Safety / Startup | Giao dịch người dùng vừa nhập bị mất khi tải lại app sau bản cập nhật | Bật cờ `PURGE_KEY` tự động xóa IndexedDB trong `initApp()` trên `main.tsx` | Xóa bỏ hoàn toàn mã purge tự động trên startup; chỉ cho phép dọn dẹp khi người dùng chủ động bấm trong Cài đặt |
+| **INC-08** | Performance / UI Glitch | Giao diện bị chớp nháy (flicker) sáng/tối khi mở trang và giật định kỳ | FOUC do theme set trễ trong `useEffect` và Polling 12s kích hoạt re-render toàn bộ `App.tsx` | Đưa script set theme đồng bộ vào `<head>` của `index.html`, áp dụng chế độ Silent Sync cho polling |
 
 ---
 
@@ -149,8 +151,55 @@
 
 ---
 
+### CASE STUDY 7: Mất Dữ Liệu Thực Tế Của Người Dùng Do Cờ Purge Tự Động Chạy Trên Startup
+* **Mã sự cố:** `INC-07`
+* **Mức độ:** Cực kỳ nghiêm trọng (Data Loss – Mất mát dữ liệu người dùng).
+* **Mô tả hiện tượng:**
+  Người dùng sau khi bắt đầu dùng app đã nhập các giao dịch thực tế đầu tiên. Tuy nhiên khi lập trình viên cập nhật bản vá lỗi mới, cờ dọn dẹp trong `main.tsx` (`PURGE_KEY`) tự động chạy và xóa sạch toàn bộ các giao dịch vừa nhập đưa cơ sở dữ liệu về 0 ₫.
+* **Nguyên nhân gốc rễ (RCA):**
+  1. Trong file [`main.tsx`](../app/src/main.tsx), logic dọn dẹp được gắn vào hàm `initApp()` với điều kiện kiểm tra `localStorage.getItem(PURGE_KEY) !== 'done'`.
+  2. Mỗi khi kỹ sư tăng phiên bản cờ (`v3` lên `v5`), trình duyệt của người dùng phát hiện khóa mới chưa tồn tại nên đã gọi hàm `clearAllToCleanState()` một cách mù quáng (indiscriminately) trước khi khởi động giao diện.
+  3. Hàm này chạy lệnh `db.txs.clear()`, cuốn phăng mọi giao dịch hợp lệ mà người dùng vừa ghi chép.
+* **Giải pháp khắc phục:**
+  * **Xóa bỏ vĩnh viễn** bất kỳ lệnh purge/clear dữ liệu tự động nào trong quy trình khởi động ứng dụng (`main.tsx`).
+  * `initApp()` chỉ được phép chạy hàm an toàn `seedIfEmpty()`: hàm này chỉ khởi tạo 2 quỹ rỗng và danh mục mặc định KHI VÀ CHỈ KHI số lượng quỹ trong máy là `0` (`db.funds.count() === 0`), và tuyệt đối KHÔNG BAO GIỜ gọi `clear()` trên bảng giao dịch.
+  * Tác vụ dọn dẹp xóa dữ liệu test chỉ được phép thực hiện khi người dùng **chủ động bấm nút** "Xoá sạch dữ liệu test (Về 0 ₫)" trong trang Cài đặt và phải có hộp thoại xác nhận `confirm()`.
+* **Quy tắc cho kỹ sư:**
+  > **Dữ liệu người dùng là bất khả xâm phạm.** Trong môi trường sản xuất (Production), tuyệt đối không bao giờ được phép đặt các hàm xóa bảng dữ liệu (`clear()`, `truncate()`, `drop()`) bên trong luồng khởi chạy tự động của ứng dụng (startup lifecycle). Mọi nâng cấp schema phải là Migration (bảo toàn dữ liệu cũ), không bao giờ được dùng Reset.
+
+---
+
+### CASE STUDY 8: Nháy / Flicker Giao Diện Sáng Tối & Giật Lag Định Kỳ (FOUC & Sync Jitter)
+* **Mã sự cố:** `INC-08`
+* **Mức độ:** Trung bình (Ảnh hưởng thị giác & trải nghiệm cao cấp).
+* **Mô tả hiện tượng:**
+  1. Mỗi khi mở web app hoặc tải lại trang, giao diện bị chớp nháy màu trắng sáng rất nhanh (~0.1s) rồi mới chuyển sang nền tối (Dark mode), logo MoneySave ở góc trên bị giật đổi giữa phiên bản sáng và tối.
+  2. Định kỳ mỗi 12–15 giây, nút tài khoản ở chân Sidebar và thanh header mobile bị giật đổi chữ ("🔄 Đang đồng bộ..." rồi về lại tên email), các biểu đồ Recharts trong Tổng quan tự động chạy lại hiệu ứng bung cột/vùng.
+* **Nguyên nhân gốc rễ (RCA):**
+  1. *Theme Flash (FOUC):* File `index.html` ban đầu không có thuộc tính `data-theme` trên thẻ `<html>`. Việc đọc theme từ `localStorage` và gán thuộc tính `data-theme="dark"` lại được đặt trong `useEffect` của `App.tsx` (chạy bất đồng bộ sau khi React đã render khung HTML đầu tiên). Do đó trình duyệt đã vẽ giao diện mặc định (màu sáng) trước rồi mới đổi sang tối sau 100ms.
+  2. *Polling Jitter:* Hàm `setInterval(..., 12_000)` trong `cloudSync.ts` gọi `syncNowSmart()`. Mỗi lần gọi, hàm này đặt `syncState.status = 'syncing'` và phát tín hiệu cho toàn bộ `App.tsx` re-render lại, làm nháy badge đồng bộ và khiến các biểu đồ Recharts chạy lại hiệu ứng `isAnimationActive`.
+* **Giải pháp khắc phục:**
+  1. **Triệt tiêu Flash 0.1s:** Nhúng script đồng bộ thuần cực ngắn ngay trong thẻ `<head>` của [`index.html`](../app/index.html) để đọc `localStorage` và gán `data-theme` ngay trước khi trình duyệt vẽ frame đầu tiên:
+     ```html
+     <script>
+       (function() {
+         try {
+           var t = localStorage.getItem('moneygo_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+           document.documentElement.setAttribute('data-theme', t);
+         } catch(e) {}
+       })();
+     </script>
+     ```
+  2. **Silent Sync cho Polling định kỳ:** Bổ sung cờ `silent = true` cho `syncNowSmart(silent)`: Khi polling định kỳ hoặc chuyển tab, hệ thống kiểm tra âm thầm trong nền. Nếu Cloud không có dữ liệu mới từ thiết bị khác, nó giữ nguyên trạng thái và KHÔNG kích hoạt re-render toàn app.
+  3. **Tắt Animation thừa:** Thêm `isAnimationActive={false}` cho các thẻ `Area` và `Bar` của Recharts trong [`Overview.tsx`](../app/src/pages/Overview.tsx).
+* **Quy tắc cho kỹ sư:**
+  > Trong các ứng dụng hỗ trợ Dark/Light theme, script thiết lập class theme phải luôn nằm đồng bộ trong `<head>` của HTML, không được phụ thuộc vào React lifecycle. Mọi tác vụ polling chạy ngầm định kỳ phải là Silent Checks để tránh gây giật khung hình cho người dùng.
+
+---
+
 ## 🛡️ Hướng Dẫn Kỹ Sư Kế Tiếp Khi Triển Khai Tính Năng Mới
-1. **Trước khi thêm CSS toàn cục:** Luôn kiểm tra hành vi cuộn trên cả 3 môi trường: iPhone Safari, Android Chrome và macOS Trackpad.
-2. **Trước khi sửa đổi logic cơ sở dữ liệu:** Kiểm tra xem thay đổi có ảnh hưởng đến hàm `exportAll`, `importAll` và engine `syncNowSmart` không.
-3. **Khi thêm trường dữ liệu mới:** Luôn tăng Dexie Schema version và cập nhật file [`doc/03-DATA-MODEL.md`](03-DATA-MODEL.md).
-4. **Kiểm thử trước khi push:** Chạy đủ bộ test `cd app && npm test && npm run build` để đảm bảo không có cảnh báo TypeScript hay lỗi biên dịch.
+1. **Dữ liệu người dùng là số 1:** Không bao giờ đặt lệnh xóa cơ sở dữ liệu tự động trong `main.tsx` hoặc các hook khởi động.
+2. **Trước khi thêm CSS toàn cục:** Luôn kiểm tra hành vi cuộn trên cả 3 môi trường: iPhone Safari, Android Chrome và macOS Trackpad.
+3. **Trước khi sửa đổi logic cơ sở dữ liệu:** Kiểm tra xem thay đổi có ảnh hưởng đến hàm `exportAll`, `importAll` và engine `syncNowSmart` không.
+4. **Khi thêm trường dữ liệu mới:** Luôn tăng Dexie Schema version và cập nhật file [`doc/03-DATA-MODEL.md`](03-DATA-MODEL.md).
+5. **Kiểm thử trước khi push:** Chạy đủ bộ test `cd app && npm test && npm run build` để đảm bảo không có cảnh báo TypeScript hay lỗi biên dịch.

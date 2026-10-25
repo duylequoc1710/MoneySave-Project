@@ -421,6 +421,7 @@ export default function Overview() {
                     strokeWidth={2}
                     fillOpacity={0}
                     dot={false}
+                    isAnimationActive={false}
                   />
                   <Area
                     type="monotone"
@@ -431,6 +432,7 @@ export default function Overview() {
                     fillOpacity={1}
                     fill="url(#colorCur)"
                     dot={false}
+                    isAnimationActive={false}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -502,7 +504,7 @@ export default function Overview() {
                     itemStyle={{ color: 'var(--fg)', fontWeight: 600 }}
                     formatter={v => [money(Number(v)), 'Đã chi']}
                   />
-                  <Bar dataKey="value" name="Đã chi" radius={[10, 10, 0, 0]}>
+                  <Bar dataKey="value" name="Đã chi" radius={[10, 10, 0, 0]} isAnimationActive={false}>
                     {barData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} />
                     ))}

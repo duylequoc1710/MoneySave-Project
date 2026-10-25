@@ -491,14 +491,17 @@ export async function pullCloudToLocal(customCfg?: CloudSyncConfig): Promise<boo
  * - Nếu trên Cloud chưa có bản ghi nào -> tự động đẩy dữ liệu máy hiện tại lên Cloud.
  * - Nếu bản trên Cloud mới hơn bản máy hiện tại (do thiết bị khác vừa cập nhật) -> tự động tải về và giải mã.
  * - Nếu máy hiện tại có thay đổi mới hơn bản trên Cloud -> tự động mã hóa và đẩy lên Cloud.
+ * - Hỗ trợ cờ silent: khi chạy ngầm định kỳ (polling) hoặc chuyển tab, kiểm tra im lặng không gây giật / nháy lại toàn bộ giao diện nếu không có thay đổi.
  */
-export async function syncNowSmart(): Promise<'pushed' | 'pulled' | 'noop'> {
+export async function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' | 'noop'> {
   const cfg = getActiveCloudSyncConfig()
   if (!cfg.enabled || !cfg.projectId || !cfg.syncId || !cfg.passphrase) return 'noop'
   if (syncState.status === 'syncing') return 'noop'
 
-  syncState = { ...syncState, status: 'syncing', lastError: null }
-  notifySyncListeners()
+  if (!silent) {
+    syncState = { ...syncState, status: 'syncing', lastError: null }
+    notifySyncListeners()
+  }
 
   try {
     const remote = await fetchRemoteVault(cfg)
@@ -538,18 +541,23 @@ export async function syncNowSmart(): Promise<'pushed' | 'pulled' | 'noop'> {
       return 'pushed'
     }
 
-    syncState = {
-      status: 'synced',
-      lastSyncedAt: lastSync || remote.updatedAt,
-      lastError: null,
-      remoteUpdatedAt: remote.updatedAt,
+    // Nếu chạy ngầm (silent) và không có dữ liệu mới, giữ nguyên trạng thái không kích hoạt re-render toàn app
+    if (!silent) {
+      syncState = {
+        status: 'synced',
+        lastSyncedAt: lastSync || remote.updatedAt,
+        lastError: null,
+        remoteUpdatedAt: remote.updatedAt,
+      }
+      notifySyncListeners()
     }
-    notifySyncListeners()
     return 'noop'
   } catch (e) {
     const msg = (e as Error).message
-    syncState = { ...syncState, status: 'error', lastError: msg }
-    notifySyncListeners()
+    if (!silent) {
+      syncState = { ...syncState, status: 'error', lastError: msg }
+      notifySyncListeners()
+    }
     return 'noop'
   }
 }
@@ -600,23 +608,23 @@ export function startRealtimeCloudSyncEngine() {
     syncNowSmart().catch(() => {})
   }, 1200)
 
-  // Tự động kiểm tra khi người dùng mở lại tab / mở điện thoại lên hoặc có mạng trở lại
+  // Tự động kiểm tra im lặng khi người dùng mở lại tab / mở điện thoại lên hoặc có mạng trở lại
   window.addEventListener('focus', () => {
-    syncNowSmart().catch(() => {})
+    syncNowSmart(true).catch(() => {})
   })
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      syncNowSmart().catch(() => {})
+      syncNowSmart(true).catch(() => {})
     }
   })
   window.addEventListener('online', () => {
-    syncNowSmart().catch(() => {})
+    syncNowSmart(false).catch(() => {})
   })
 
-  // Polling nhẹ mỗi 12 giây khi đang mở ứng dụng để nhận cập nhật Realtime từ thiết bị khác
+  // Polling nhẹ mỗi 15 giây khi đang mở ứng dụng để nhận cập nhật Realtime từ thiết bị khác (chạy ngầm im lặng, không nháy UI)
   setInterval(() => {
     if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-      syncNowSmart().catch(() => {})
+      syncNowSmart(true).catch(() => {})
     }
-  }, 12_000)
+  }, 15_000)
 }
