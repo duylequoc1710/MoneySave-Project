@@ -4,6 +4,7 @@ export interface CloudSyncConfig {
   enabled: boolean
   projectId: string
   apiKey?: string
+  databaseUrl?: string
   syncId: string
   passphrase: string
 }
@@ -68,26 +69,42 @@ export function getDeviceId(): string {
 }
 
 /**
- * Cho phép người dùng dán trực tiếp:
- * - Chỉ `projectId` (ví dụ: `moneysave-12345`)
- * - Hoặc toàn bộ đoạn mã `const firebaseConfig = { projectId: "...", apiKey: "..." }` copy từ Firebase Console
+ * Cho phép người dùng dán linh hoạt:
+ * - Link Realtime Database (ví dụ: `https://moneysave-project-default-rtdb.asia-southeast1.firebasedatabase.app`)
+ * - Hoặc chỉ `projectId` (ví dụ: `moneysave-12345`)
+ * - Hoặc toàn bộ đoạn mã `const firebaseConfig = { projectId: "...", databaseURL: "...", apiKey: "..." }`
  */
-export function parseFirebaseConfigInput(raw: string): { projectId: string; apiKey: string } {
+export function parseFirebaseConfigInput(raw: string): { projectId: string; apiKey: string; databaseUrl: string } {
   const trimmed = raw.trim()
-  if (!trimmed) return { projectId: '', apiKey: '' }
+  if (!trimmed) return { projectId: '', apiKey: '', databaseUrl: '' }
 
   const projMatch = trimmed.match(/["']?projectId["']?\s*:\s*["']([^"']+)["']/)
   const keyMatch = trimmed.match(/["']?apiKey["']?\s*:\s*["']([^"']+)["']/)
-  if (projMatch) {
+  const dbUrlMatch = trimmed.match(/["']?databaseURL["']?\s*:\s*["']([^"']+)["']/)
+
+  if (projMatch || dbUrlMatch) {
     return {
-      projectId: projMatch[1].trim(),
+      projectId: projMatch ? projMatch[1].trim() : '',
       apiKey: keyMatch ? keyMatch[1].trim() : '',
+      databaseUrl: dbUrlMatch ? dbUrlMatch[1].trim() : '',
     }
   }
 
-  // Nếu người dùng chỉ nhập thẳng mã projectId (예: moneysave-personal-db)
+  // Nếu người dùng dán trực tiếp đường dẫn URL của Realtime Database
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    const cleanUrl = trimmed.replace(/\/$/, '')
+    const hostMatch = cleanUrl.match(/https?:\/\/([^.]+)/)
+    const derivedProj = hostMatch ? hostMatch[1].replace(/-default-rtdb$/, '') : ''
+    return {
+      projectId: derivedProj,
+      apiKey: '',
+      databaseUrl: cleanUrl,
+    }
+  }
+
+  // Nếu người dùng chỉ nhập mã projectId đơn thuần (ví dụ: moneysave-personal)
   const cleanId = trimmed.replace(/[^a-zA-Z0-9-]/g, '')
-  return { projectId: cleanId, apiKey: '' }
+  return { projectId: cleanId, apiKey: '', databaseUrl: '' }
 }
 
 /**
@@ -183,21 +200,22 @@ export async function decryptVault(payload: EncryptedVaultPayload, passphrase: s
 
 export function getCloudSyncConfig(): CloudSyncConfig {
   if (typeof localStorage === 'undefined') {
-    return { enabled: false, projectId: '', apiKey: '', syncId: '', passphrase: '' }
+    return { enabled: false, projectId: '', apiKey: '', databaseUrl: '', syncId: '', passphrase: '' }
   }
   try {
     const raw = localStorage.getItem(SYNC_CONFIG_KEY)
-    if (!raw) return { enabled: false, projectId: '', apiKey: '', syncId: '', passphrase: '' }
+    if (!raw) return { enabled: false, projectId: '', apiKey: '', databaseUrl: '', syncId: '', passphrase: '' }
     const parsed = JSON.parse(raw)
     return {
       enabled: Boolean(parsed.enabled),
       projectId: String(parsed.projectId ?? ''),
       apiKey: String(parsed.apiKey ?? ''),
+      databaseUrl: String(parsed.databaseUrl ?? ''),
       syncId: String(parsed.syncId ?? ''),
       passphrase: String(parsed.passphrase ?? ''),
     }
   } catch {
-    return { enabled: false, projectId: '', apiKey: '', syncId: '', passphrase: '' }
+    return { enabled: false, projectId: '', apiKey: '', databaseUrl: '', syncId: '', passphrase: '' }
   }
 }
 
@@ -231,6 +249,18 @@ export function markLocalMutated() {
   }
 }
 
+function getEffectiveRtdbUrl(cfg: CloudSyncConfig): string | null {
+  if (cfg.databaseUrl && cfg.databaseUrl.trim()) {
+    return cfg.databaseUrl.trim().replace(/\/$/, '')
+  }
+  if (cfg.projectId && (cfg.projectId.includes('firebasedatabase.app') || cfg.projectId.includes('firebaseio.com'))) {
+    let u = cfg.projectId.trim()
+    if (!u.startsWith('http')) u = 'https://' + u
+    return u.replace(/\/$/, '')
+  }
+  return null
+}
+
 function buildFirestoreDocUrl(cfg: CloudSyncConfig, docId: string): string {
   const base = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId.trim())}/databases/(default)/documents/moneysave_vaults/${encodeURIComponent(docId)}`
   if (cfg.apiKey?.trim()) {
@@ -240,10 +270,27 @@ function buildFirestoreDocUrl(cfg: CloudSyncConfig, docId: string): string {
 }
 
 /**
- * Đọc gói dữ liệu mã hóa từ Firestore REST API
+ * Đọc gói dữ liệu mã hóa từ Cloud (tự động nhận diện Realtime Database hoặc Firestore)
  */
 export async function fetchRemoteVault(cfg: CloudSyncConfig): Promise<EncryptedVaultPayload | null> {
   const docId = await deriveVaultDocId(cfg.syncId, cfg.passphrase)
+  const rtdbUrl = getEffectiveRtdbUrl(cfg)
+
+  if (rtdbUrl) {
+    // Kết nối Firebase Realtime Database
+    const url = `${rtdbUrl}/moneysave_vaults/${encodeURIComponent(docId)}.json`
+    const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+    if (res.status === 404) return null
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      throw new Error(`Realtime Database lỗi (${res.status}): ${errText.slice(0, 140) || res.statusText}`)
+    }
+    const data = await res.json()
+    if (!data || !data.ciphertext) return null
+    return data as EncryptedVaultPayload
+  }
+
+  // Kết nối Cloud Firestore REST API
   const url = buildFirestoreDocUrl(cfg, docId)
   const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
   if (res.status === 404) return null
@@ -267,13 +314,31 @@ export async function fetchRemoteVault(cfg: CloudSyncConfig): Promise<EncryptedV
 }
 
 /**
- * Ghi gói dữ liệu đã mã hóa AES-256 lên Firestore REST API
+ * Ghi gói dữ liệu đã mã hóa AES-256 lên Cloud (tự động nhận diện Realtime Database hoặc Firestore)
  */
 export async function pushEncryptedVaultToRemote(
   cfg: CloudSyncConfig,
   payload: EncryptedVaultPayload,
 ): Promise<void> {
   const docId = await deriveVaultDocId(cfg.syncId, cfg.passphrase)
+  const rtdbUrl = getEffectiveRtdbUrl(cfg)
+
+  if (rtdbUrl) {
+    // Ghi lên Firebase Realtime Database REST API (PUT ghi đè node két sắt ẩn danh)
+    const url = `${rtdbUrl}/moneysave_vaults/${encodeURIComponent(docId)}.json`
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      throw new Error(`Không thể đẩy lên Realtime Database (${res.status}): ${errText.slice(0, 160) || res.statusText}`)
+    }
+    return
+  }
+
+  // Ghi lên Cloud Firestore REST API
   const url = buildFirestoreDocUrl(cfg, docId)
   const body = {
     fields: {

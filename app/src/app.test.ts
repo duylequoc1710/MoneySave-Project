@@ -395,21 +395,28 @@ describe('Bộ lọc khoảng thời gian (resolveTimeRange) & Xuất file Excel
 })
 
 describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.ts)', () => {
-  it('parseFirebaseConfigInput tách đúng projectId và apiKey từ cả chuỗi đơn hoặc đoạn code firebaseConfig', () => {
+  it('parseFirebaseConfigInput tách đúng projectId, databaseUrl và apiKey từ chuỗi đơn, link RTDB hoặc đoạn code firebaseConfig', () => {
     const simple = parseFirebaseConfigInput('  moneysave-personal-2026  ')
     assert.equal(simple.projectId, 'moneysave-personal-2026')
     assert.equal(simple.apiKey, '')
+    assert.equal(simple.databaseUrl, '')
+
+    const rtdbUrl = parseFirebaseConfigInput('https://moneysave-project-default-rtdb.asia-southeast1.firebasedatabase.app/')
+    assert.equal(rtdbUrl.databaseUrl, 'https://moneysave-project-default-rtdb.asia-southeast1.firebasedatabase.app')
+    assert.equal(rtdbUrl.projectId, 'moneysave-project')
 
     const snippet = parseFirebaseConfigInput(`
       const firebaseConfig = {
         apiKey: "AIzaSyDemoKey123456789",
         authDomain: "moneysave-demo.firebaseapp.com",
+        databaseURL: "https://moneysave-demo-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "moneysave-demo-id",
         storageBucket: "moneysave-demo.appspot.com"
       };
     `)
     assert.equal(snippet.projectId, 'moneysave-demo-id')
     assert.equal(snippet.apiKey, 'AIzaSyDemoKey123456789')
+    assert.equal(snippet.databaseUrl, 'https://moneysave-demo-rtdb.asia-southeast1.firebasedatabase.app')
   })
 
   it('deriveVaultDocId tạo mã định danh ẩn danh SHA-256 nhất quán từ Sync ID + Passphrase', async () => {

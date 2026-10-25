@@ -27,6 +27,17 @@ const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
 const NO_TXS: Tx[] = []
 
+const REALTIME_DB_RULES_SNIPPET = `{
+  "rules": {
+    "moneysave_vaults": {
+      "$vaultId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}`
+
 const FIRESTORE_RULES_SNIPPET = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -84,13 +95,15 @@ export default function Settings() {
   }
 
   function handleFirebaseInputPaste(val: string) {
-    if (val.includes('projectId')) {
-      const parsed = parseFirebaseConfigInput(val)
+    const parsed = parseFirebaseConfigInput(val)
+    if (parsed.databaseUrl) {
+      setRawFirebaseInput(parsed.databaseUrl)
+    } else if (parsed.projectId) {
       setRawFirebaseInput(parsed.projectId)
-      if (parsed.apiKey) setApiKey(parsed.apiKey)
     } else {
       setRawFirebaseInput(val)
     }
+    if (parsed.apiKey) setApiKey(parsed.apiKey)
   }
 
   function currentDraftConfig(enabledOverride = syncEnabled) {
@@ -99,6 +112,7 @@ export default function Settings() {
       enabled: enabledOverride,
       projectId: parsed.projectId || rawFirebaseInput.trim(),
       apiKey: parsed.apiKey || apiKey.trim(),
+      databaseUrl: parsed.databaseUrl || (rawFirebaseInput.includes('http') ? rawFirebaseInput.trim() : ''),
       syncId: syncId.trim(),
       passphrase,
     }
@@ -112,17 +126,17 @@ export default function Settings() {
       setSyncMsg('Đã lưu cấu hình (Chế độ Offline-first, tắt đồng bộ tự động).')
       return
     }
-    if (!cfg.projectId || !cfg.syncId || !cfg.passphrase) {
-      setSyncMsg('⚠️ Vui lòng nhập đủ Firebase Project ID, Mã định danh (Sync ID) và Mật khẩu mã hóa.')
+    if ((!cfg.projectId && !cfg.databaseUrl) || !cfg.syncId || !cfg.passphrase) {
+      setSyncMsg('⚠️ Vui lòng nhập URL Realtime Database (hoặc Project ID), Mã định danh (Sync ID) và Mật khẩu mã hóa.')
       return
     }
     const res = await syncNowSmart()
     if (res === 'pushed') {
-      setSyncMsg('✅ Đã mã hóa AES-256 và đẩy dữ liệu lên Firebase Firestore thành công!')
+      setSyncMsg('✅ Đã mã hóa AES-256 và đẩy dữ liệu lên Firebase thành công!')
     } else if (res === 'pulled') {
-      setSyncMsg('✅ Đã tải và giải mã bản cập nhật mới nhất từ Firebase Firestore!')
+      setSyncMsg('✅ Đã tải và giải mã bản cập nhật mới nhất từ Firebase!')
     } else if (syncSnap.status !== 'error') {
-      setSyncMsg('✅ Đã lưu cấu hình và kiểm tra đồng bộ thành công!')
+      setSyncMsg('✅ Đã lưu cấu hình và kết nối đồng bộ thành công!')
     }
   }
 
@@ -273,11 +287,11 @@ export default function Settings() {
         </div>
 
         <label className="fld">
-          <span>1. Firebase Project ID (hoặc dán nguyên đoạn mã firebaseConfig)</span>
+          <span>1. URL Realtime Database hoặc Firebase Project ID</span>
           <input
             value={rawFirebaseInput}
             onChange={e => handleFirebaseInputPaste(e.target.value)}
-            placeholder="VD: moneysave-duyle-db (hoặc dán nguyên đoạn firebaseConfig)"
+            placeholder="VD: https://moneysave-project-default-rtdb.asia-southeast1.firebasedatabase.app"
           />
         </label>
 
@@ -368,57 +382,78 @@ export default function Settings() {
             style={{ background: 'none', border: 0, padding: 0, fontSize: 13.5 }}
             onClick={() => setShowGuide(g => !g)}
           >
-            {showGuide ? '▾ Ẩn hướng dẫn tạo Firebase miễn phí' : '▸ 📖 Hướng dẫn 3 bước tạo Firebase Firestore miễn phí (0 đồng)'}
+            {showGuide ? '▾ Ẩn hướng dẫn cài đặt Firebase' : '▸ 📖 Hướng dẫn cấu hình Firebase (Realtime Database hoặc Firestore)'}
           </button>
 
           {showGuide && (
             <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.55 }} className="mut">
-              <p style={{ marginBottom: 6 }}>
-                <b>Bước 1:</b> Truy cập{' '}
-                <a
-                  href="https://console.firebase.google.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: 'var(--acc)' }}
+              <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid var(--bd)' }}>
+                <b style={{ color: 'var(--fg)', display: 'block', marginBottom: 4 }}>
+                  🟢 Cách 1: Sử dụng Realtime Database (Đơn giản nhất, copy link database dán vào ô số 1):
+                </b>
+                <p style={{ marginBottom: 4 }}>
+                  Vào tab <b>Rules</b> của Realtime Database, dán đoạn JSON sau rồi bấm <b>Publish</b>:
+                </p>
+                <pre
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--bd)',
+                    borderRadius: 10,
+                    padding: 10,
+                    overflowX: 'auto',
+                    fontSize: 11.5,
+                    color: 'var(--fg)',
+                    marginBottom: 6,
+                  }}
                 >
-                  console.firebase.google.com
-                </a>{' '}
-                → Bấm <b>Create a project</b> (tắt Google Analytics cho gọn) → Copy <b>Project ID</b> dán vào ô số 1 ở trên.
-              </p>
-              <p style={{ marginBottom: 6 }}>
-                <b>Bước 2:</b> Trong menu trái của Firebase, chọn <b>Build → Firestore Database</b> → Bấm{' '}
-                <b>Create database</b> → Chọn vùng gần nhất (ví dụ <code>asia-southeast1</code> Singapore) → Chọn{' '}
-                <b>Start in production mode</b>.
-              </p>
-              <p style={{ marginBottom: 6 }}>
-                <b>Bước 3:</b> Chuyển sang tab <b>Rules</b> của Firestore, dán đoạn Rule bảo vệ dưới đây và bấm{' '}
-                <b>Publish</b>:
-              </p>
-              <pre
-                style={{
-                  background: 'var(--bg)',
-                  border: '1px solid var(--bd)',
-                  borderRadius: 10,
-                  padding: 10,
-                  overflowX: 'auto',
-                  fontSize: 11.5,
-                  color: 'var(--fg)',
-                  marginBottom: 8,
-                }}
-              >
-                {FIRESTORE_RULES_SNIPPET}
-              </pre>
-              <button
-                type="button"
-                className="btn"
-                style={{ fontSize: 12, padding: '5px 10px' }}
-                onClick={() => {
-                  navigator.clipboard?.writeText(FIRESTORE_RULES_SNIPPET)
-                  setSyncMsg('📋 Đã copy Firestore Security Rules vào bộ nhớ tạm!')
-                }}
-              >
-                📋 Copy Firestore Rules
-              </button>
+                  {REALTIME_DB_RULES_SNIPPET}
+                </pre>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ fontSize: 12, padding: '5px 10px' }}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(REALTIME_DB_RULES_SNIPPET)
+                    setSyncMsg('📋 Đã copy Realtime Database Rules vào bộ nhớ tạm!')
+                  }}
+                >
+                  📋 Copy Realtime Database Rules
+                </button>
+              </div>
+
+              <div>
+                <b style={{ color: 'var(--fg)', display: 'block', marginBottom: 4 }}>
+                  🔵 Cách 2: Sử dụng Cloud Firestore:
+                </b>
+                <p style={{ marginBottom: 4 }}>
+                  Vào tab <b>Rules</b> của Firestore Database, dán đoạn mã sau rồi bấm <b>Publish</b>:
+                </p>
+                <pre
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--bd)',
+                    borderRadius: 10,
+                    padding: 10,
+                    overflowX: 'auto',
+                    fontSize: 11.5,
+                    color: 'var(--fg)',
+                    marginBottom: 6,
+                  }}
+                >
+                  {FIRESTORE_RULES_SNIPPET}
+                </pre>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ fontSize: 12, padding: '5px 10px' }}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(FIRESTORE_RULES_SNIPPET)
+                    setSyncMsg('📋 Đã copy Firestore Rules vào bộ nhớ tạm!')
+                  }}
+                >
+                  📋 Copy Firestore Rules
+                </button>
+              </div>
             </div>
           )}
         </div>
