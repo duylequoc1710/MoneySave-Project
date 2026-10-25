@@ -27,6 +27,7 @@ export interface Category {
   icon: string
   color: string
   fundId?: number | null
+  parentId?: number | null
 }
 
 export interface Tx {
@@ -83,6 +84,13 @@ class MoneyDB extends Dexie {
     this.version(2).stores({
       funds: '++id, kind',
       categories: '++id, type, fundId',
+      txs: '++id, date, type, fundId, categoryId, recurringId',
+      budgets: '++id, categoryId',
+      recurrings: '++id, active, frequency, fundId, categoryId',
+    })
+    this.version(3).stores({
+      funds: '++id, kind',
+      categories: '++id, type, fundId, parentId',
       txs: '++id, date, type, fundId, categoryId, recurringId',
       budgets: '++id, categoryId',
       recurrings: '++id, active, frequency, fundId, categoryId',

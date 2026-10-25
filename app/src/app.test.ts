@@ -8,6 +8,8 @@ import {
   effectOn,
   filterReportableTxs,
   getIncludedFunds,
+  groupCategoriesHierarchy,
+  getCategoryFullName,
   money,
   moneyShort,
   resolveTimeRange,
@@ -395,6 +397,50 @@ describe('Bộ lọc khoảng thời gian (resolveTimeRange) & Xuất file Excel
     assert.ok(csv.includes('Lương tháng 10'))
   })
 })
+
+describe('Hệ thống Nhóm Cha & Nhóm Con (Category Hierarchy)', () => {
+  const sampleCats: Category[] = [
+    { id: 1, name: 'Thiết Yếu 50%', type: 'expense', icon: '🏡', color: '#eab308' },
+    { id: 2, name: 'Cá nhân 25%', type: 'expense', icon: '👤', color: '#ef4444' },
+    { id: 3, name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', parentId: 1 },
+    { id: 4, name: 'Di chuyển', type: 'expense', icon: '🚗', color: '#eab308', parentId: 1 },
+    { id: 5, name: 'Mua sắm', type: 'expense', icon: '🛍️', color: '#ec4899', parentId: 2 },
+    { id: 6, name: 'Khác', type: 'expense', icon: '📦', color: '#94a3b8' }, // Nhóm độc lập không có con
+    { id: 7, name: 'Mồ côi', type: 'expense', icon: '❓', color: '#94a3b8', parentId: 9999 }, // Cha không tồn tại
+  ]
+
+  it('groupCategoriesHierarchy gom đúng các nhóm cha có nhóm con và các nhóm độc lập', () => {
+    const { parentGroups, independent } = groupCategoriesHierarchy(sampleCats)
+
+    assert.equal(parentGroups.length, 2)
+    const thietYeuGrp = parentGroups.find(g => g.parent.id === 1)
+    assert.ok(thietYeuGrp)
+    assert.equal(thietYeuGrp.children.length, 2)
+    assert.deepEqual(thietYeuGrp.children.map(c => c.name), ['Ăn uống', 'Di chuyển'])
+
+    const caNhanGrp = parentGroups.find(g => g.parent.id === 2)
+    assert.ok(caNhanGrp)
+    assert.equal(caNhanGrp.children.length, 1)
+    assert.equal(caNhanGrp.children[0].name, 'Mua sắm')
+
+    // Nhóm 'Khác' và nhóm 'Mồ côi' (cha không tồn tại) phải tự động đưa vào independent
+    assert.equal(independent.length, 2)
+    assert.ok(independent.some(c => c.name === 'Khác'))
+    assert.ok(independent.some(c => c.name === 'Mồ côi'))
+  })
+
+  it('getCategoryFullName hiển thị đúng "Nhóm cha › Nhóm con" hoặc tên gốc', () => {
+    const anUong = sampleCats.find(c => c.id === 3)!
+    assert.equal(getCategoryFullName(anUong, sampleCats), 'Thiết Yếu 50% › Ăn uống')
+
+    const thietYeu = sampleCats.find(c => c.id === 1)!
+    assert.equal(getCategoryFullName(thietYeu, sampleCats), 'Thiết Yếu 50%')
+
+    const khac = sampleCats.find(c => c.id === 6)!
+    assert.equal(getCategoryFullName(khac, sampleCats), 'Khác')
+  })
+})
+
 
 describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.ts)', () => {
   it('parseFirebaseConfigInput tách đúng projectId, databaseUrl và apiKey từ chuỗi đơn, link RTDB hoặc đoạn code firebaseConfig', () => {

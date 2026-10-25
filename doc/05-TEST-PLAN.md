@@ -17,5 +17,6 @@
 | T-13 | Kiểm thử Module Cài đặt (Dark/Light Theme, Xuất Excel `.xls`), `WalletSelectorPill`, `TimeRangeModal` & Responsive đa màn hình điện thoại (`360x800`, `375x667`, `393x852`, `430x932`) | ✅ Pass |
 | T-14 | Kiểm thử Đồng bộ Cloud Realtime qua Firebase Firestore kèm Mã hóa đầu cuối (E2EE `AES-GCM 256-bit` + `PBKDF2-SHA256`) & tích hợp Logo/Favicon MoneySave trong suốt | ✅ Pass |
 | T-15 | Kiểm thử Xác thực Tài khoản Cá nhân/Gia đình (Firebase Auth Email/Password), cô lập dữ liệu theo User UID, tích hợp sẵn `firebaseConfig`, và quy trình CI/CD GitHub Pages PWA | ✅ Pass (20/20 unit tests) |
+| T-16 | Kiểm thử Hệ thống Nhóm Cha & Nhóm Con (Category Hierarchy), gom nhóm phân cấp, gán nhanh nhóm con, chọn nhóm optgroup trong form giao dịch, hiển thị `Nhóm cha › Nhóm con` trên báo cáo | ✅ Pass (22/22 unit tests) |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.

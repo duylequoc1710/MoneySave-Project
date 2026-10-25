@@ -459,3 +459,62 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
     advice,
   }
 }
+
+export interface CategoryTreeGroup {
+  parent: Category
+  children: Category[]
+}
+
+/**
+ * Phân cấp danh mục thành các Nhóm cha có chứa nhóm con và Nhóm độc lập
+ */
+export function groupCategoriesHierarchy(categories: Category[]): {
+  parentGroups: CategoryTreeGroup[]
+  independent: Category[]
+} {
+  const parentMap = new Map<number, Category>()
+  const childrenMap = new Map<number, Category[]>()
+  const potentialChildren: Category[] = []
+
+  for (const c of categories) {
+    if (c.id && !c.parentId) {
+      parentMap.set(c.id, c)
+    } else {
+      potentialChildren.push(c)
+    }
+  }
+
+  const independent: Category[] = []
+  for (const c of potentialChildren) {
+    if (c.parentId && parentMap.has(c.parentId)) {
+      const arr = childrenMap.get(c.parentId) ?? []
+      arr.push(c)
+      childrenMap.set(c.parentId, arr)
+    } else {
+      independent.push(c)
+    }
+  }
+
+  const parentGroups: CategoryTreeGroup[] = []
+  for (const [pId, parent] of parentMap.entries()) {
+    const children = childrenMap.get(pId) ?? []
+    if (children.length > 0) {
+      parentGroups.push({ parent, children })
+    } else {
+      independent.push(parent)
+    }
+  }
+
+  return { parentGroups, independent }
+}
+
+/**
+ * Lấy tên đầy đủ có kèm nhóm cha đại diện (VD: "Thiết Yếu 50% › Ăn uống")
+ */
+export function getCategoryFullName(category: Category, allCategories: Category[]): string {
+  if (category.parentId) {
+    const p = allCategories.find(c => c.id === category.parentId)
+    if (p) return `${p.name} › ${category.name}`
+  }
+  return category.name
+}

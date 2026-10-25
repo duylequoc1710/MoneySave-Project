@@ -17,6 +17,7 @@ import { type Category, type Fund, type Tx } from '../db'
 import {
   effectOn,
   filterReportableTxs,
+  getCategoryFullName,
   getIncludedFunds,
   money,
   monthKey,
@@ -329,7 +330,7 @@ export default function PeriodReport({
         const amount = list.reduce((s, t) => s + t.amount, 0)
         return {
           id: cid,
-          name: c?.name ?? 'Không nhóm',
+          name: c ? getCategoryFullName(c, cats) : 'Không nhóm',
           icon: c?.icon ?? (type === 'income' ? '💵' : '📦'),
           color: c?.color ?? (type === 'income' ? '#1d9bf0' : '#f0534f'),
           amount,

@@ -2,13 +2,18 @@
  * Cấu hình Firebase chính thức của dự án MoneySave
  * Tự động tích hợp sẵn, người dùng cuối không cần cấu hình thủ công.
  */
+/**
+ * Cấu hình Firebase của dự án MoneySave
+ * Tự động đọc từ biến môi trường Vite (.env.local hoặc Vercel / Netlify / Hosting)
+ * Hoàn toàn an toàn khi chia sẻ mã nguồn mở (Open Source) lên GitHub.
+ */
 export const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyCo9msPV6t4nnljnFkLWPRRnJmFG2ERy8k',
-  authDomain: 'moneysave-project.firebaseapp.com',
-  databaseURL: 'https://moneysave-project-default-rtdb.asia-southeast1.firebasedatabase.app',
-  projectId: 'moneysave-project',
-  storageBucket: 'moneysave-project.firebasestorage.app',
-  messagingSenderId: '356324629636',
-  appId: '1:356324629636:web:7a1ca5030e4e94b93536d1',
-  measurementId: 'G-QWMF251X10',
+  apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || '',
+  authDomain: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN) || '',
+  databaseURL: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_DATABASE_URL) || '',
+  projectId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_PROJECT_ID) || '',
+  storageBucket: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET) || '',
+  messagingSenderId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID) || '',
+  appId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_APP_ID) || '',
+  measurementId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID) || '',
 } as const

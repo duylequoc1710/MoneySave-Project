@@ -50,6 +50,22 @@ export function subscribeAuth(listener: (u: AuthUser | null) => void): () => voi
   return () => authListeners.delete(listener)
 }
 
+function getEffectiveApiKey(): string {
+  if (DEFAULT_FIREBASE_CONFIG.apiKey) return DEFAULT_FIREBASE_CONFIG.apiKey
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('moneysave_cloud_sync_cfg_v1')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed.apiKey) return parsed.apiKey
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return ''
+}
+
 function mapFirebaseError(raw: string): string {
   if (raw.includes('EMAIL_EXISTS')) {
     return 'Email này đã được đăng ký tài khoản. Vui lòng chọn tab Đăng Nhập.'
@@ -84,7 +100,12 @@ export async function signUpWithEmail(email: string, pass: string): Promise<Auth
     throw new Error('Mật khẩu phải có tối thiểu 6 ký tự.')
   }
 
-  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${DEFAULT_FIREBASE_CONFIG.apiKey}`
+  const apiKey = getEffectiveApiKey()
+  if (!apiKey) {
+    throw new Error('Chưa cấu hình Firebase Web API Key. Vui lòng vào Cài đặt để nhập hoặc cấu hình file .env.local.')
+  }
+
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -126,7 +147,12 @@ export async function signInWithEmail(email: string, pass: string): Promise<Auth
     throw new Error('Vui lòng nhập mật khẩu.')
   }
 
-  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${DEFAULT_FIREBASE_CONFIG.apiKey}`
+  const apiKey = getEffectiveApiKey()
+  if (!apiKey) {
+    throw new Error('Chưa cấu hình Firebase Web API Key. Vui lòng vào Cài đặt để nhập hoặc cấu hình file .env.local.')
+  }
+
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -175,7 +201,9 @@ export async function refreshTokenIfNeeded(): Promise<string | null> {
   }
 
   try {
-    const url = `https://securetoken.googleapis.com/v1/token?key=${DEFAULT_FIREBASE_CONFIG.apiKey}`
+    const apiKey = getEffectiveApiKey()
+    if (!apiKey) return currentUser.idToken
+    const url = `https://securetoken.googleapis.com/v1/token?key=${apiKey}`
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

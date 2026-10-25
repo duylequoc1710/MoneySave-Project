@@ -21,6 +21,7 @@ import {
   effectOn,
   filterReportableTxs,
   fullViDate,
+  getCategoryFullName,
   getIncludedFunds,
   money,
   moneyShort,
@@ -550,7 +551,7 @@ export default function Overview() {
               {item.cat?.icon ?? '📦'}
             </div>
             <div className="grow">
-              <b>{item.cat?.name ?? 'Không nhóm'}</b>
+              <b>{item.cat ? getCategoryFullName(item.cat, cats) : 'Không nhóm'}</b>
               <small>{money(item.amount)}</small>
             </div>
             <b className="exp">{item.pct}%</b>

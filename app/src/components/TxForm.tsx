@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
-import { money, ymd } from '../lib'
+import { groupCategoriesHierarchy, money, ymd } from '../lib'
 
 export interface TxFormDraft {
   type?: TxType
@@ -151,26 +151,45 @@ export default function TxForm({
             style={{ fontSize: 22, fontWeight: 700 }}
           />
         </label>
-        {type !== 'transfer' && (
-          <label className="fld">
-            <span>Nhóm</span>
-            <select
-              value={selCat?.id ?? ''}
-              onChange={e => {
-                const id = Number(e.target.value)
-                setCategoryId(id)
-                const cf = cats.find(c => c.id === id)?.fundId
-                if (cf) setFundId(cf)
-              }}
-            >
-              {list.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.icon} {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        {type !== 'transfer' && (() => {
+          const { parentGroups, independent } = groupCategoriesHierarchy(list)
+          return (
+            <label className="fld">
+              <span>Nhóm</span>
+              <select
+                value={selCat?.id ?? ''}
+                onChange={e => {
+                  const id = Number(e.target.value)
+                  setCategoryId(id)
+                  const cf = cats.find(c => c.id === id)?.fundId
+                  if (cf) setFundId(cf)
+                }}
+              >
+                {parentGroups.map(grp => (
+                  <optgroup key={grp.parent.id} label={`${grp.parent.icon} ${grp.parent.name}`}>
+                    <option value={grp.parent.id}>
+                      {grp.parent.icon} {grp.parent.name} (Chung)
+                    </option>
+                    {grp.children.map(ch => (
+                      <option key={ch.id} value={ch.id}>
+                        &nbsp;&nbsp;&nbsp;&nbsp;↳ {ch.icon} {ch.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+                {independent.length > 0 && (
+                  <optgroup label={parentGroups.length > 0 ? 'Nhóm khác' : 'Danh sách nhóm'}>
+                    {independent.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.icon} {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </label>
+          )
+        })()}
         <label className="fld">
           <span>{type === 'transfer' ? 'Từ quỹ (nguồn)' : 'Quỹ / Thẻ thanh toán'}</span>
           <select value={fid ?? ''} onChange={e => setFundId(Number(e.target.value))}>

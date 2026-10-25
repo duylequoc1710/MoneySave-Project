@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Category, type Fund, type Tx } from '../db'
-import { analyzeCreditFund, effectOn, money, ymd } from '../lib'
+import { analyzeCreditFund, effectOn, groupCategoriesHierarchy, money, ymd } from '../lib'
 
 const COLORS = ['#f97316', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#eab308', '#ef4444', '#06b6d4']
 
@@ -37,7 +37,10 @@ export default function Accounts() {
   async function delCat(c: Category) {
     const used = await db.txs.where('categoryId').equals(c.id!).count()
     if (used) return alert(`Nhóm đang có ${used} giao dịch, không thể xoá.`)
-    if (confirm(`Xoá nhóm "${c.name}"?`)) {
+    if (confirm(`Xoá nhóm "${c.name}"? (Các nhóm con nếu có sẽ trở thành nhóm độc lập, không bị mất dữ liệu).`)) {
+      if (c.id) {
+        await db.categories.where('parentId').equals(c.id).modify({ parentId: null })
+      }
       await db.budgets.where('categoryId').equals(c.id!).delete()
       await db.categories.delete(c.id!)
     }
@@ -275,28 +278,102 @@ export default function Accounts() {
           + Thêm nhóm
         </button>
       </div>
-      {(['expense', 'income'] as const).map(type => (
-        <div key={type}>
-          <div className="mut" style={{ fontSize: 13, margin: '8px 4px' }}>
-            {type === 'expense' ? 'Nhóm chi tiêu' : 'Nhóm thu nhập'}
-          </div>
-          <div className="card" style={{ padding: '0 14px' }}>
-            {cats
-              .filter(c => c.type === type)
-              .map(c => (
-                <div className="row" key={c.id} onClick={() => setCatEdit(c)} style={{ cursor: 'pointer' }}>
-                  <div className="ico" style={{ background: c.color + '22' }}>
-                    {c.icon}
+      {(['expense', 'income'] as const).map(type => {
+        const { parentGroups, independent } = groupCategoriesHierarchy(cats.filter(c => c.type === type))
+        return (
+          <div key={type} style={{ marginBottom: 16 }}>
+            <div className="mut" style={{ fontSize: 13, margin: '8px 4px', fontWeight: 600 }}>
+              {type === 'expense' ? 'Nhóm chi tiêu' : 'Nhóm thu nhập'}
+            </div>
+
+            {/* Các Nhóm cha có chứa nhóm con */}
+            {parentGroups.map(grp => (
+              <div
+                key={grp.parent.id}
+                className="card"
+                style={{ padding: '4px 14px 10px', marginBottom: 10, border: '1px solid var(--bd)' }}
+              >
+                {/* Hàng Nhóm Cha */}
+                <div
+                  className="row"
+                  onClick={() => setCatEdit(grp.parent)}
+                  style={{ cursor: 'pointer', paddingBottom: 6 }}
+                >
+                  <div className="ico" style={{ background: grp.parent.color + '25', fontWeight: 700 }}>
+                    {grp.parent.icon}
                   </div>
                   <div className="grow">
-                    <b>{c.name}</b>
-                    <small>{c.fundId ? 'Quỹ mặc định: ' + funds.find(f => f.id === c.fundId)?.name : 'Không gán quỹ'}</small>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <b style={{ fontSize: 16 }}>{grp.parent.name}</b>
+                      <span className="pill-tag" style={{ fontSize: 11, background: 'var(--acc)', color: '#fff' }}>
+                        {grp.children.length} nhóm con
+                      </span>
+                    </div>
+                    <small className="mut">
+                      {grp.parent.fundId
+                        ? 'Quỹ mặc định: ' + funds.find(f => f.id === grp.parent.fundId)?.name
+                        : 'Nhóm cha đại diện'}
+                    </small>
                   </div>
+                  <span className="mut" style={{ fontSize: 18 }}>›</span>
                 </div>
-              ))}
+
+                {/* Danh sách các Nhóm Con thuộc Nhóm Cha */}
+                <div style={{ marginLeft: 20, paddingLeft: 12, borderLeft: '2px solid color-mix(in srgb, var(--acc) 40%, var(--bd))' }}>
+                  {grp.children.map(ch => (
+                    <div
+                      className="row"
+                      key={ch.id}
+                      onClick={() => setCatEdit(ch)}
+                      style={{ cursor: 'pointer', padding: '8px 0', borderBottom: '1px dashed var(--bd)' }}
+                    >
+                      <div className="ico" style={{ background: ch.color + '20', width: 34, height: 34, fontSize: 16 }}>
+                        {ch.icon}
+                      </div>
+                      <div className="grow">
+                        <div style={{ fontWeight: 600, fontSize: 14.5 }}>{ch.name}</div>
+                        <small className="mut">
+                          ↳ Nhóm con của <b>{grp.parent.name}</b>{' '}
+                          {ch.fundId ? '· Quỹ: ' + funds.find(f => f.id === ch.fundId)?.name : ''}
+                        </small>
+                      </div>
+                      <span className="mut" style={{ fontSize: 16 }}>›</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Các Nhóm Độc Lập (chưa gán vào nhóm cha nào) */}
+            {independent.length > 0 && (
+              <div className="card" style={{ padding: '0 14px' }}>
+                {parentGroups.length > 0 && (
+                  <div
+                    className="mut"
+                    style={{ fontSize: 12, fontWeight: 700, padding: '10px 0 4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                  >
+                    Nhóm độc lập / Chưa phân loại
+                  </div>
+                )}
+                {independent.map(c => (
+                  <div className="row" key={c.id} onClick={() => setCatEdit(c)} style={{ cursor: 'pointer' }}>
+                    <div className="ico" style={{ background: c.color + '22' }}>
+                      {c.icon}
+                    </div>
+                    <div className="grow">
+                      <b>{c.name}</b>
+                      <small>
+                        {c.fundId ? 'Quỹ mặc định: ' + funds.find(f => f.id === c.fundId)?.name : 'Không gán quỹ'}
+                      </small>
+                    </div>
+                    <span className="mut" style={{ fontSize: 18 }}>›</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       <div className="card" style={{ padding: '4px 16px', marginTop: 18 }}>
         <div className="row" style={{ cursor: 'pointer' }} onClick={() => nav('/settings')}>
@@ -328,7 +405,15 @@ export default function Accounts() {
           }}
         />
       )}
-      {catEdit && <CatForm c={catEdit} funds={funds} onDel={delCat} onClose={() => setCatEdit(null)} />}
+      {catEdit && (
+        <CatForm
+          c={catEdit}
+          funds={funds}
+          allCats={cats}
+          onDel={delCat}
+          onClose={() => setCatEdit(null)}
+        />
+      )}
       {adjustFund && (
         <AdjustBalanceModal
           initialFund={adjustFund}
@@ -988,21 +1073,60 @@ function TransferWalletModal({
 function CatForm({
   c,
   funds,
+  allCats,
   onClose,
   onDel,
 }: {
   c: Category
   funds: Fund[]
+  allCats: Category[]
   onClose: () => void
   onDel: (c: Category) => void
 }) {
   const [v, setV] = useState(c)
+
+  // Danh sách các nhóm có thể làm nhóm cha của nhóm này
+  const potentialParents = allCats.filter(
+    other => other.id !== c.id && other.type === v.type && !other.parentId
+  )
+
+  // Nếu nhóm này là nhóm cha (!v.parentId), nó có thể gom các nhóm con
+  const candidatesForChildren = allCats.filter(
+    other => other.id !== c.id && other.type === v.type && (!other.parentId || other.parentId === c.id)
+  )
+
+  const [selectedChildIds, setSelectedChildIds] = useState<number[]>(() =>
+    c.id ? allCats.filter(other => other.parentId === c.id).map(other => other.id!) : []
+  )
+
   async function save() {
     if (!v.name.trim()) return
-    if (c.id) await db.categories.put(v)
-    else await db.categories.add(v)
+    let savedId = c.id
+    if (savedId) {
+      await db.categories.put(v)
+    } else {
+      savedId = await db.categories.add(v)
+    }
+
+    if (!v.parentId && savedId) {
+      // Cập nhật các nhóm con được tick chọn
+      for (const other of candidatesForChildren) {
+        if (!other.id) continue
+        const isSelected = selectedChildIds.includes(other.id)
+        if (isSelected && other.parentId !== savedId) {
+          await db.categories.update(other.id, { parentId: savedId })
+        } else if (!isSelected && other.parentId === savedId) {
+          await db.categories.update(other.id, { parentId: null })
+        }
+      }
+    } else if (v.parentId && savedId) {
+      // Nếu chuyển nhóm này thành nhóm con, giải phóng tất cả các con cũ của nó (nếu có)
+      await db.categories.where('parentId').equals(savedId).modify({ parentId: null })
+    }
+
     onClose()
   }
+
   return (
     <div className="sheetbg" onClick={onClose}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
@@ -1010,7 +1134,14 @@ function CatForm({
         {!c.id && (
           <div className="seg">
             {(['expense', 'income'] as const).map(t => (
-              <button key={t} className={v.type === t ? 'on' : ''} onClick={() => setV({ ...v, type: t })}>
+              <button
+                key={t}
+                className={v.type === t ? 'on' : ''}
+                onClick={() => {
+                  setV({ ...v, type: t, parentId: null })
+                  setSelectedChildIds([])
+                }}
+              >
                 {t === 'expense' ? 'Chi' : 'Thu'}
               </button>
             ))}
@@ -1024,6 +1155,89 @@ function CatForm({
           <span>Biểu tượng (emoji)</span>
           <input value={v.icon} onChange={e => setV({ ...v, icon: e.target.value })} />
         </label>
+
+        {/* Cấu hình Nhóm cha & Nhóm con */}
+        <label className="fld">
+          <span>Thuộc nhóm cha (Tùy chọn)</span>
+          <select
+            value={v.parentId ?? ''}
+            onChange={e => {
+              const nextParent = e.target.value ? Number(e.target.value) : null
+              setV({ ...v, parentId: nextParent })
+            }}
+          >
+            <option value="">(Không có - Đây là nhóm cha độc lập)</option>
+            {potentialParents.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.icon} {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Nếu đây là nhóm cha: hiển thị checklist để chọn nhanh các nhóm con */}
+        {!v.parentId && candidatesForChildren.length > 0 && (
+          <div
+            style={{
+              margin: '8px 0 14px',
+              padding: 12,
+              background: 'var(--bg)',
+              borderRadius: 12,
+              border: '1px solid var(--bd)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <b style={{ fontSize: 13 }}>📂 Gán các nhóm con vào nhóm này:</b>
+              <small className="mut">{selectedChildIds.length} nhóm đã chọn</small>
+            </div>
+            <p className="mut" style={{ fontSize: 12, margin: '0 0 8px' }}>
+              Tick chọn các nhóm chi tiêu sẽ nằm dưới nhóm đại diện này:
+            </p>
+            <div
+              style={{
+                maxHeight: 160,
+                overflowY: 'auto',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                gap: 6,
+              }}
+            >
+              {candidatesForChildren.map(other => {
+                const isChecked = selectedChildIds.includes(other.id!)
+                return (
+                  <label
+                    key={other.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 8px',
+                      borderRadius: 8,
+                      background: isChecked ? 'rgba(43, 194, 85, 0.15)' : 'transparent',
+                      border: isChecked ? '1px solid var(--acc)' : '1px solid var(--bd)',
+                      fontSize: 12.5,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        setSelectedChildIds(prev =>
+                          isChecked ? prev.filter(x => x !== other.id) : [...prev, other.id!]
+                        )
+                      }}
+                    />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {other.icon} {other.name}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <label className="fld">
           <span>Gán mặc định vào Quỹ / Thẻ</span>
           <select value={v.fundId ?? ''} onChange={e => setV({ ...v, fundId: e.target.value ? Number(e.target.value) : null })}>
