@@ -40,14 +40,9 @@
   margin: 0;
 }
 html {
-  overflow-x: hidden;
-  max-width: 100vw;
   -webkit-text-size-adjust: 100%;
 }
 body {
-  overflow-x: hidden;
-  max-width: 100vw;
-  position: relative;
   background: var(--bg);
   color: var(--fg);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -57,7 +52,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
 }
 button,
 input,
@@ -78,9 +72,18 @@ h1, h2, h3, h4, h5, h6 {
 .shell {
   display: flex;
   min-height: 100dvh;
-  overflow-x: hidden;
-  max-width: 100vw;
   width: 100%;
+}
+@media (max-width: 899px) {
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  .shell {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
 }
 /* Floating dock navigation (mobile) kiểu MoneyLover */
 .nav {
@@ -137,6 +140,11 @@ main {
   padding: 16px 16px calc(135px + env(safe-area-inset-bottom));
 }
 @media (min-width: 900px) {
+  html,
+  body,
+  .shell {
+    overflow-x: visible;
+  }
   .nav {
     position: sticky;
     top: 0;
@@ -150,6 +158,7 @@ main {
     flex-direction: column;
     width: 240px;
     max-width: 240px;
+    flex-shrink: 0;
     border-radius: 0;
     border: 0;
     border-right: 1px solid var(--bd);

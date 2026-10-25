@@ -14,7 +14,7 @@ document.addEventListener('visibilitychange', () => {
 
 // Dọn dẹp dữ liệu test mẫu cũ về trạng thái sạch 0 ₫ để sẵn sàng sử dụng thực tế
 async function initApp() {
-  const PURGE_KEY = 'moneysave_purge_demo_v3'
+  const PURGE_KEY = 'moneysave_purge_demo_v5'
   if (typeof localStorage !== 'undefined' && localStorage.getItem(PURGE_KEY) !== 'done') {
     await clearAllToCleanState()
     localStorage.setItem(PURGE_KEY, 'done')

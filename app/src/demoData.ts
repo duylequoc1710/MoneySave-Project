@@ -1,4 +1,5 @@
 import { db, type Budget, type Category, type Fund, type RecurringTx, type Tx } from './db'
+import { getActiveCloudSyncConfig, markLocalMutated, pushLocalToCloud } from './cloudSync'
 
 const DEMO_FLAG_KEY = 'moneygo_demo_3m_v2'
 
@@ -322,5 +323,16 @@ export async function clearAllToCleanState() {
   })
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(DEMO_FLAG_KEY, 'cleared')
+  }
+
+  // Đánh dấu mutation cục bộ và tự động đẩy bản sạch 0 ₫ này lên Firebase Cloud (ghi đè két sắt cũ)
+  markLocalMutated()
+  const cfg = getActiveCloudSyncConfig()
+  if (cfg.enabled && cfg.projectId && cfg.syncId && cfg.passphrase) {
+    try {
+      await pushLocalToCloud(cfg)
+    } catch {
+      // ignore
+    }
   }
 }
