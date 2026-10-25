@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import Overview from './pages/Overview'
 import Ledger from './pages/Ledger'
 import Budgets from './pages/Budgets'
@@ -7,13 +7,37 @@ import Accounts from './pages/Accounts'
 import Settings from './pages/Settings'
 import TxForm from './components/TxForm'
 import { applyTheme, getStoredTheme } from './lib'
+import {
+  getCloudSyncConfig,
+  startRealtimeCloudSyncEngine,
+  subscribeSyncState,
+  type SyncStateSnapshot,
+} from './cloudSync'
 
 export default function App() {
   const [addingTx, setAddingTx] = useState(false)
+  const [syncSnap, setSyncSnap] = useState<SyncStateSnapshot>({
+    status: 'idle',
+    lastSyncedAt: null,
+    lastError: null,
+    remoteUpdatedAt: null,
+  })
+  const nav = useNavigate()
 
   useEffect(() => {
     applyTheme(getStoredTheme())
+    startRealtimeCloudSyncEngine()
+    return subscribeSyncState(setSyncSnap)
   }, [])
+
+  const cfg = getCloudSyncConfig()
+  const syncBadgeLabel = !cfg.enabled
+    ? '🔒 Offline-first'
+    : syncSnap.status === 'syncing'
+      ? '🔄 Đang đồng bộ...'
+      : syncSnap.status === 'error'
+        ? '⚠️ Lỗi đồng bộ'
+        : '☁️ E2EE Synced'
 
   return (
     <div className="shell">
@@ -61,9 +85,20 @@ export default function App() {
               className="brand-logo brand-logo-light"
             />
           </NavLink>
-          <span className="pill-tag" style={{ fontSize: 10.5 }}>
-            🔒 Offline-first
-          </span>
+          <button
+            type="button"
+            className="pill-tag"
+            style={{
+              fontSize: 10.5,
+              border: 0,
+              cursor: 'pointer',
+              color: syncSnap.status === 'error' ? 'var(--exp)' : 'var(--acc)',
+            }}
+            onClick={() => nav('/settings')}
+            title="Cấu hình Đồng bộ Đám mây mã hóa đầu cuối (E2EE)"
+          >
+            {syncBadgeLabel}
+          </button>
         </header>
         <Routes>
           <Route path="/" element={<Overview />} />

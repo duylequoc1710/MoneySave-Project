@@ -23,7 +23,7 @@ Ghi chép thu chi nhanh, xem tổng quan tài chính, quản lý theo quỹ; dù
 | FR-11 | (Đề xuất) Ngân sách tháng theo nhóm chi, cảnh báo vượt (thanh đỏ) | ✅ |
 | FR-12 | (Đề xuất) Tìm kiếm theo ghi chú/nhóm; lọc theo quỹ | ✅ |
 | FR-13 | (Đề xuất) Sao lưu / khôi phục JSON; xuất CSV | ✅ |
-| FR-14 | Đồng bộ realtime giữa các thiết bị | ⏳ Giai đoạn 2 (xem Roadmap) |
+| FR-14 | **Đồng bộ Cloud Realtime đa thiết bị kèm Mã hóa đầu cuối (E2EE `AES-GCM 256-bit` + `PBKDF2-SHA256`)** qua Firebase Firestore REST API (Zero-Knowledge, tự động đẩy khi sửa IndexedDB và kéo khi mở app/chuyển tab) | ✅ |
 | FR-15 | Giao dịch định kỳ (hóa đơn cố định, cài đặt trước, tự động Chi/Thu khi đến ngày) | ✅ |
 | FR-16 | Quỹ tín dụng (ghi nhớ ngày chốt sao kê, hạn thanh toán, tính số ngày miễn lãi & gợi ý tối ưu tiền mặt xài trước trả sau, tất toán 1 chạm) | ✅ |
 | FR-17 | Giao diện chuẩn MoneyLover (Ẩn/hiện số dư, Ví của tôi, Money Insider, Báo cáo xu hướng lũy kế & Báo cáo chi tiêu Tuần/Tháng, Sổ giao dịch có Số dư đầu/cuối) | ✅ |

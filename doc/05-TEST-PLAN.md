@@ -10,10 +10,11 @@
 | T-06 | Thêm/sửa/xoá giao dịch qua form, chuyển quỹ, ngân sách, sao lưu/khôi phục | ✅ Pass (kiểm thử E2E trên Chrome) |
 | T-07 | Cài PWA thực trên iPhone/Android | ⏳ Cần deploy https |
 | T-08 | Màn hình desktop ≥900px (sidebar) | ✅ Pass (đã kiểm tra & chụp 1280×840) |
-| T-09 | Unit test (`npm test` – `app/src/app.test.ts`): `effectOn`, định dạng, `computeDueDates`, `analyzeCreditFund`, `excludeFromTotal`/`excludeFromReport`, `archived`, `resolveTimeRange`, `buildExcelXml`, `exportAll`/`importAll` | ✅ Pass (15/15 tests) |
+| T-09 | Unit test (`npm test` – `app/src/app.test.ts`): `effectOn`, định dạng, `computeDueDates`, `analyzeCreditFund`, `excludeFromTotal`/`excludeFromReport`, `archived`, `resolveTimeRange`, `buildExcelXml`, `exportAll`/`importAll`, `cloudSync` (E2EE `AES-GCM 256-bit` + `PBKDF2-SHA256`) | ✅ Pass (18/18 tests) |
 | T-10 | Kiểm thử E2E v2: Giao diện MoneyLover, tự động phát sinh Giao dịch định kỳ, phân tích Quỹ tín dụng | ✅ Pass |
 | T-11 | Kiểm thử Báo cáo giai đoạn (`PeriodReport`) & Sửa lỗi nền trắng Tooltip Recharts trên toàn ứng dụng | ✅ Pass |
 | T-12 | Kiểm thử tính năng Ví nâng cao (`TÍNH VÀO TỔNG` / `KHÔNG TÍNH VÀO TỔNG`, `Lưu trữ`, `Điều chỉnh số dư`, `Chuyển tiền đến ví khác` + phí chuyển khoản) | ✅ Pass |
 | T-13 | Kiểm thử Module Cài đặt (Dark/Light Theme, Xuất Excel `.xls`), `WalletSelectorPill`, `TimeRangeModal` & Responsive đa màn hình điện thoại (`360x800`, `375x667`, `393x852`, `430x932`) | ✅ Pass |
+| T-14 | Kiểm thử Đồng bộ Cloud Realtime qua Firebase Firestore kèm Mã hóa đầu cuối (E2EE `AES-GCM 256-bit` + `PBKDF2-SHA256`) & tích hợp Logo/Favicon MoneySave trong suốt | ✅ Pass |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.

@@ -26,6 +26,12 @@ import {
   type RecurringTx,
   type Tx,
 } from './db.ts'
+import {
+  decryptVault,
+  deriveVaultDocId,
+  encryptVault,
+  parseFirebaseConfigInput,
+} from './cloudSync.ts'
 
 describe('effectOn – tính số dư quỹ theo giao dịch', () => {
   const baseTx = { date: '2026-10-24', note: '', createdAt: 1 }
@@ -387,4 +393,67 @@ describe('Bộ lọc khoảng thời gian (resolveTimeRange) & Xuất file Excel
     assert.ok(csv.includes('Lương tháng 10'))
   })
 })
+
+describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.ts)', () => {
+  it('parseFirebaseConfigInput tách đúng projectId và apiKey từ cả chuỗi đơn hoặc đoạn code firebaseConfig', () => {
+    const simple = parseFirebaseConfigInput('  moneysave-personal-2026  ')
+    assert.equal(simple.projectId, 'moneysave-personal-2026')
+    assert.equal(simple.apiKey, '')
+
+    const snippet = parseFirebaseConfigInput(`
+      const firebaseConfig = {
+        apiKey: "AIzaSyDemoKey123456789",
+        authDomain: "moneysave-demo.firebaseapp.com",
+        projectId: "moneysave-demo-id",
+        storageBucket: "moneysave-demo.appspot.com"
+      };
+    `)
+    assert.equal(snippet.projectId, 'moneysave-demo-id')
+    assert.equal(snippet.apiKey, 'AIzaSyDemoKey123456789')
+  })
+
+  it('deriveVaultDocId tạo mã định danh ẩn danh SHA-256 nhất quán từ Sync ID + Passphrase', async () => {
+    const id1 = await deriveVaultDocId('DuyLe-Family-Vault', 'MatKhauBiMat#2026')
+    const id2 = await deriveVaultDocId('duyle-family-vault', 'MatKhauBiMat#2026')
+    const idDiffPass = await deriveVaultDocId('duyle-family-vault', 'MatKhauKhac#9999')
+
+    assert.ok(id1.startsWith('vault_'))
+    assert.equal(id1.length, 46) // 'vault_' + 40 hex chars
+    assert.equal(id1, id2) // không phân biệt hoa thường ở Sync ID
+    assert.notEqual(id1, idDiffPass) // đổi passphrase tạo vault docId hoàn toàn khác
+  })
+
+  it('encryptVault & decryptVault mã hóa AES-GCM 256-bit (Zero-Knowledge) và từ chối sai khóa', async () => {
+    const sampleJson = JSON.stringify({
+      app: 'MoneyGo',
+      version: 2,
+      funds: [{ id: 1, name: 'Quỹ Tiết Kiệm Bí Mật', initialBalance: 500_000_000 }],
+      txs: [{ id: 1, type: 'income', amount: 85_000_000, note: 'Thưởng dự án Quý 4' }],
+    })
+
+    const encrypted = await encryptVault(sampleJson, 'MySuperSecretKey!2026', 'dev_macbook', 1761380000000)
+
+    assert.equal(encrypted.v, 1)
+    assert.equal(encrypted.alg, 'AES-GCM-256/PBKDF2-SHA256')
+    assert.equal(encrypted.deviceId, 'dev_macbook')
+    assert.equal(encrypted.updatedAt, 1761380000000)
+    assert.equal(encrypted.checksum.length, 16)
+
+    // Đảm bảo bản mã trên Cloud hoàn toàn không chứa bất kỳ thông tin nhạy cảm nào
+    assert.ok(!encrypted.ciphertext.includes('Quỹ Tiết Kiệm Bí Mật'))
+    assert.ok(!encrypted.ciphertext.includes('500000000'))
+    assert.ok(!encrypted.ciphertext.includes('Thưởng dự án Quý 4'))
+
+    // Giải mã với đúng khóa bí mật trả về đúng 100% dữ liệu gốc
+    const decrypted = await decryptVault(encrypted, 'MySuperSecretKey!2026')
+    assert.equal(decrypted, sampleJson)
+
+    // Giải mã với sai khóa bí mật phải báo lỗi xác thực AES-GCM
+    await assert.rejects(
+      () => decryptVault(encrypted, 'WrongKey!123'),
+      /Không thể giải mã dữ liệu/,
+    )
+  })
+})
+
 
