@@ -23,12 +23,12 @@ Truy cập đường link ứng dụng trên trình duyệt điện thoại (ví
 
 ## 2. Hệ Thống Tài Khoản Cá Nhân & Gia Đình
 
-* **Đăng nhập một lần dùng mãi mãi:** Trong tab **⚙️ Cài đặt**, bấm **Đăng Nhập / Tạo Tài Khoản Mới**.
+* **Màn hình Chào mừng & Cổng Đăng Nhập:** Khi lần đầu truy cập ứng dụng trên web hoặc điện thoại, người dùng sẽ được đón chào bởi màn hình Đăng Ký / Đăng Nhập riêng biệt. Sau khi tạo tài khoản hoặc đăng nhập thành công, phiên làm việc được lưu vĩnh viễn và chuyển thẳng vào trang Tổng quan.
 * **Độc lập và Riêng tư:** Mỗi tài khoản đăng nhập bằng Email cá nhân. Dữ liệu ví của mỗi người được lưu hoàn toàn riêng biệt theo mã định danh `User UID`.
 * **Thành viên gia đình:** Người thân (vợ/chồng, con cái) có thể tự đăng ký tài khoản bằng email của họ trên điện thoại riêng để quản lý các ví cá nhân độc lập.
 * **Mã hóa đầu cuối (E2EE):** Mật khẩu tài khoản được dùng để tự động tạo khóa mã hóa AES-256 ngầm dưới nền. Dữ liệu khi gửi lên máy chủ luôn là bản mã không thể giải mã nếu không có mật khẩu.
-* **Giao diện Cài đặt tinh gọn & Thân thiện:** Toàn bộ cấu hình kỹ thuật phức tạp (URL Realtime DB, Sync ID, API Key, hướng dẫn Database Rules) được ẩn gọn trong mục *⚙️ Cấu hình máy chủ Firebase tùy chỉnh (Dành cho Developer)*. Người dùng chỉ cần đăng nhập Email là hệ thống tự động kết nối và đồng bộ.
-* **Trải nghiệm Desktop (macOS Native Typography):** Hệ thống font chữ tối ưu theo chuẩn San Francisco của Apple (`-apple-system`, `SF Pro`), thanh điều hướng bên trái mở rộng 240px đi kèm huy hiệu trạng thái tài khoản & đồng bộ tiện lợi ở chân menu.
+* **Giao diện Cài đặt tinh gọn & Thân thiện:** Toàn bộ cấu hình kỹ thuật phức tạp (URL Realtime DB, Sync ID, API Key, hướng dẫn Database Rules) được ẩn gọn trong mục *⚙️ Cấu hình máy chủ Firebase tùy chỉnh (Dành cho Developer)*. Người dùng chỉ cần đăng nhập Email là hệ thống tự động kết nối và đồng bộ. Chân trang Cài đặt ghi nhận thông tin Tác giả: **Duylequoc1710**.
+* **Trải nghiệm Desktop (macOS Native Typography):** Hệ thống font chữ tối ưu theo chuẩn San Francisco của Apple (`-apple-system`, `SF Pro`), thanh điều hướng bên trái mở rộng 240px đi kèm huy hiệu hiển thị trực tiếp Email/UID của bạn ở chân menu.
 
 ---
 

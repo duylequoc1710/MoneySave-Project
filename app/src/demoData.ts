@@ -293,22 +293,6 @@ export async function clearAllToCleanState() {
     { name: 'Quỹ Chính', icon: '👛', color: '#f97316', initialBalance: 0, kind: 'cash' },
     { name: 'Ngân hàng', icon: '🏦', color: '#3b82f6', initialBalance: 0, kind: 'cash' },
   ]
-  const defaultCats: Category[] = [
-    { name: 'Thiết Yếu 50%', type: 'expense', icon: '🏡', color: '#eab308' },
-    { name: 'Cá nhân 25%', type: 'expense', icon: '👤', color: '#ef4444' },
-    { name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316' },
-    { name: 'Di chuyển', type: 'expense', icon: '🚗', color: '#eab308' },
-    { name: 'Pet', type: 'expense', icon: '🐱', color: '#f59e0b' },
-    { name: 'Du lịch', type: 'expense', icon: '✈️', color: '#3b82f6' },
-    { name: 'Hoá đơn', type: 'expense', icon: '🧾', color: '#64748b' },
-    { name: 'Mua sắm', type: 'expense', icon: '🛍️', color: '#ec4899' },
-    { name: 'Nhà cửa', type: 'expense', icon: '🏠', color: '#8b5cf6' },
-    { name: 'Giải trí', type: 'expense', icon: '🎬', color: '#06b6d4' },
-    { name: 'Sức khoẻ', type: 'expense', icon: '💊', color: '#ef4444' },
-    { name: 'Lương', type: 'income', icon: '💼', color: '#10b981' },
-    { name: 'Thưởng', type: 'income', icon: '🎁', color: '#22c55e' },
-    { name: 'Thu nhập khác', type: 'income', icon: '💰', color: '#14b8a6' },
-  ]
   await db.transaction('rw', [db.funds, db.categories, db.txs, db.budgets, db.recurrings], async () => {
     await Promise.all([
       db.funds.clear(),
@@ -318,7 +302,23 @@ export async function clearAllToCleanState() {
       db.recurrings.clear(),
     ])
     await db.funds.bulkAdd(defaultFunds)
-    await db.categories.bulkAdd(defaultCats)
+    const p1 = await db.categories.add({ name: 'Thiết Yếu 50%', type: 'expense', icon: '🏡', color: '#eab308' })
+    const p2 = await db.categories.add({ name: 'Cá nhân 25%', type: 'expense', icon: '👤', color: '#ef4444' })
+
+    await db.categories.bulkAdd([
+      { name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', parentId: p1 },
+      { name: 'Di chuyển', type: 'expense', icon: '🚗', color: '#eab308', parentId: p1 },
+      { name: 'Hoá đơn', type: 'expense', icon: '🧾', color: '#64748b', parentId: p1 },
+      { name: 'Nhà cửa', type: 'expense', icon: '🏠', color: '#8b5cf6', parentId: p1 },
+      { name: 'Mua sắm', type: 'expense', icon: '🛍️', color: '#ec4899', parentId: p2 },
+      { name: 'Giải trí', type: 'expense', icon: '🎬', color: '#06b6d4', parentId: p2 },
+      { name: 'Du lịch', type: 'expense', icon: '✈️', color: '#3b82f6', parentId: p2 },
+      { name: 'Pet', type: 'expense', icon: '🐱', color: '#f59e0b', parentId: p2 },
+      { name: 'Sức khoẻ', type: 'expense', icon: '💊', color: '#ef4444' },
+      { name: 'Lương', type: 'income', icon: '💼', color: '#10b981' },
+      { name: 'Thưởng', type: 'income', icon: '🎁', color: '#22c55e' },
+      { name: 'Thu nhập khác', type: 'income', icon: '💰', color: '#14b8a6' },
+    ])
   })
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(DEMO_FLAG_KEY, 'cleared')

@@ -888,6 +888,26 @@ export default function Settings() {
         </p>
       </div>
 
+      <footer
+        style={{
+          marginTop: 28,
+          paddingTop: 16,
+          paddingBottom: 20,
+          borderTop: '1px solid var(--bd)',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--fg)' }}>
+          MoneySave · Quản Lý Tài Chính Cá Nhân & Gia Đình
+        </div>
+        <div className="mut" style={{ fontSize: 12.5, marginTop: 4 }}>
+          Tác giả: <b>Duylequoc1710</b>
+        </div>
+        <div className="mut" style={{ fontSize: 11.5, marginTop: 2 }}>
+          Bản quyền © {new Date().getFullYear()} · Phiên bản 2.1.0
+        </div>
+      </footer>
+
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}

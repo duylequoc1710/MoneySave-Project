@@ -6,9 +6,9 @@ import Budgets from './pages/Budgets'
 import Accounts from './pages/Accounts'
 import Settings from './pages/Settings'
 import TxForm from './components/TxForm'
+import AuthLanding from './components/AuthLanding'
 import { applyTheme, getStoredTheme } from './lib'
 import {
-  getCloudSyncConfig,
   startRealtimeCloudSyncEngine,
   subscribeSyncState,
   type SyncStateSnapshot,
@@ -24,6 +24,7 @@ export default function App() {
     remoteUpdatedAt: null,
   })
   const [authUser, setAuthUser] = useState<AuthUser | null>(getAuthUser())
+  const [skipAuth, setSkipAuth] = useState(false)
   const nav = useNavigate()
 
   useEffect(() => {
@@ -37,20 +38,24 @@ export default function App() {
     }
   }, [])
 
-  const cfg = getCloudSyncConfig()
   const syncBadgeLabel = authUser
     ? syncSnap.status === 'syncing'
       ? '🔄 Đang đồng bộ...'
       : syncSnap.status === 'error'
         ? '⚠️ Lỗi đồng bộ'
-        : `☁️ ${authUser.email.split('@')[0]}`
-    : !cfg.enabled
-      ? '🔒 Offline-first'
-      : syncSnap.status === 'syncing'
-        ? '🔄 Đang đồng bộ...'
-        : syncSnap.status === 'error'
-          ? '⚠️ Lỗi đồng bộ'
-          : '☁️ E2EE Synced'
+        : `👤 ${authUser.email}`
+    : '🔑 Đăng nhập / Đăng ký'
+
+  if (!authUser && !skipAuth) {
+    return (
+      <AuthLanding
+        onSuccess={user => {
+          setAuthUser(user)
+        }}
+        onSkip={() => setSkipAuth(true)}
+      />
+    )
+  }
 
   return (
     <div className="shell">
@@ -88,7 +93,7 @@ export default function App() {
             type="button"
             className="desktop-sync-pill"
             onClick={() => nav('/settings')}
-            title="Xem Trạng thái Tài khoản & Cài đặt Đồng bộ"
+            title={authUser ? `Tài khoản: ${authUser.email}\nUID: ${authUser.uid}` : 'Nhấp để Đăng nhập / Đăng ký'}
           >
             <span
               className={`sync-dot ${
