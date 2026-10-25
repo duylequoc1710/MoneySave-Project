@@ -10,6 +10,7 @@ import {
   getIncludedFunds,
   groupCategoriesHierarchy,
   getCategoryFullName,
+  getMonthTabLabel,
   money,
   moneyShort,
   resolveTimeRange,
@@ -76,6 +77,16 @@ describe('Định dạng tiền tệ & ngày tháng', () => {
     assert.equal(monthKey(d), '2026-10')
     assert.equal(monthKey(shiftMonth(d, 2)), '2026-12')
     assert.equal(monthKey(shiftMonth(d, -1)), '2026-09')
+  })
+
+  it('getMonthTabLabel định dạng nhãn trượt cửa sổ chuẩn MoneyLover', () => {
+    const now = new Date(2026, 9, 1) // 10/2026
+    assert.equal(getMonthTabLabel(new Date(2026, 9, 1), now), 'THÁNG NÀY')
+    assert.equal(getMonthTabLabel(new Date(2026, 8, 1), now), 'THÁNG TRƯỚC')
+    assert.equal(getMonthTabLabel(new Date(2026, 10, 1), now), 'TƯƠNG LAI')
+    assert.equal(getMonthTabLabel(new Date(2026, 7, 1), now), 'THÁNG 8, 2026')
+    assert.equal(getMonthTabLabel(new Date(2026, 5, 1), now), 'THÁNG 6, 2026')
+    assert.equal(getMonthTabLabel(new Date(2027, 0, 1), now), 'THÁNG 1, 2027')
   })
 })
 

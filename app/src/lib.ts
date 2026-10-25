@@ -311,6 +311,19 @@ export const moneyShort = (n: number) => {
 export const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
 export const monthKey = (d: Date) => format(d, 'yyyy-MM')
 export const monthLabel = (d: Date) => format(d, "'Tháng' M, yyyy", { locale: vi })
+
+/**
+ * Nhãn hiển thị cho thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneyLover
+ */
+export function getMonthTabLabel(targetMonth: Date, referenceNow: Date): string {
+  const diff =
+    (targetMonth.getFullYear() - referenceNow.getFullYear()) * 12 +
+    (targetMonth.getMonth() - referenceNow.getMonth())
+  if (diff === 0) return 'THÁNG NÀY'
+  if (diff === -1) return 'THÁNG TRƯỚC'
+  if (diff === 1) return 'TƯƠNG LAI'
+  return monthLabel(targetMonth).toUpperCase()
+}
 export const dayLabel = (s: string) => format(parseISO(s), 'EEEE, dd/MM', { locale: vi })
 export const fullViDate = (s: string) => format(parseISO(s), "EEEE, dd 'tháng' M yyyy", { locale: vi })
 export const shiftMonth = (d: Date, n: number) => addMonths(d, n)

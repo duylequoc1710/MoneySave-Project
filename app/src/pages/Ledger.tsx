@@ -5,10 +5,10 @@ import { vi } from 'date-fns/locale'
 import { db, type Category, type Fund, type Tx } from '../db'
 import {
   effectOn,
+  getMonthTabLabel,
   getIncludedFunds,
   money,
   moneySigned,
-  monthKey,
   monthLabel,
   resolveTimeRange,
   type TimeFilter,
@@ -103,12 +103,9 @@ export default function Ledger() {
     return [...m.entries()]
   }, [shown])
 
-  const prevM = addMonths(nowMonth, -1)
-  const nextM = addMonths(nowMonth, 1)
-  const curK = monthKey(cur)
-  const nowK = monthKey(nowMonth)
-  const prevK = monthKey(prevM)
-  const nextK = monthKey(nextM)
+  const tabLeft = addMonths(cur, -1)
+  const tabCenter = cur
+  const tabRight = addMonths(cur, 1)
 
   return (
     <>
@@ -158,31 +155,34 @@ export default function Ledger() {
         <div style={{ fontSize: 24, fontWeight: 700 }}>{money(currentTotalBalance)}</div>
       </div>
 
-      {/* Thanh chuyển tháng hoặc hiển thị khoảng thời gian tuỳ chỉnh */}
+      {/* Thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneyLover */}
       {resolvedRange.isMonthMode ? (
         <div className="ml-month-tabs">
-          <button className="m-arrow" onClick={() => selectMonth(addMonths(cur, -1))} title="Tháng trước">
+          <button className="m-arrow" onClick={() => selectMonth(tabLeft)} title="Tháng trước">
             ‹
           </button>
           <button
-            className={`m-tab ${curK === prevK ? 'active' : ''}`}
-            onClick={() => selectMonth(prevM)}
+            className="m-tab"
+            onClick={() => selectMonth(tabLeft)}
+            title={monthLabel(tabLeft)}
           >
-            {curK < prevK ? monthLabel(cur).toUpperCase() : 'THÁNG TRƯỚC'}
+            {getMonthTabLabel(tabLeft, nowMonth)}
           </button>
           <button
-            className={`m-tab ${curK === nowK ? 'active' : ''}`}
-            onClick={() => selectMonth(nowMonth)}
+            className="m-tab active"
+            onClick={() => selectMonth(tabCenter)}
+            title={monthLabel(tabCenter)}
           >
-            THÁNG NÀY
+            {getMonthTabLabel(tabCenter, nowMonth)}
           </button>
           <button
-            className={`m-tab ${curK === nextK || curK > nextK ? 'active' : ''}`}
-            onClick={() => selectMonth(nextM)}
+            className="m-tab"
+            onClick={() => selectMonth(tabRight)}
+            title={monthLabel(tabRight)}
           >
-            {curK > nextK ? monthLabel(cur).toUpperCase() : 'TƯƠNG LAI'}
+            {getMonthTabLabel(tabRight, nowMonth)}
           </button>
-          <button className="m-arrow" onClick={() => selectMonth(addMonths(cur, 1))} title="Tháng kế tiếp">
+          <button className="m-arrow" onClick={() => selectMonth(tabRight)} title="Tháng kế tiếp">
             ›
           </button>
         </div>

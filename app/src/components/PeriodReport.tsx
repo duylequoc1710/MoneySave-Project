@@ -19,8 +19,10 @@ import {
   filterReportableTxs,
   getCategoryFullName,
   getIncludedFunds,
+  getMonthTabLabel,
   money,
   monthKey,
+  monthLabel,
   resolveTimeRange,
   type TimeFilter,
   ymd,
@@ -361,35 +363,38 @@ export default function PeriodReport({
   const isCurrentMonth = monthKey(cur) === monthKey(today)
   const elapsedDays = isCurrentMonth ? Math.max(1, today.getDate()) : getDaysInMonth(cur)
 
-  const prev2M = addMonths(nowMonth, -2)
-  const prev1M = addMonths(nowMonth, -1)
-  const curK = monthKey(cur)
+  const tabLeft = addMonths(cur, -1)
+  const tabCenter = cur
+  const tabRight = addMonths(cur, 1)
 
   const renderMonthBar = () =>
     resolvedRange.isMonthMode ? (
       <div className="ml-month-tabs">
-        <button className="m-arrow" onClick={() => updateMonth(addMonths(cur, -1))}>
+        <button className="m-arrow" onClick={() => updateMonth(tabLeft)} title="Tháng trước">
           ‹
         </button>
         <button
-          className={`m-tab ${curK === monthKey(prev2M) || cur < prev2M ? 'active' : ''}`}
-          onClick={() => updateMonth(prev2M)}
+          className="m-tab"
+          onClick={() => updateMonth(tabLeft)}
+          title={monthLabel(tabLeft)}
         >
-          {cur < prev2M ? format(cur, 'MM/yyyy') : format(prev2M, 'MM/yyyy')}
+          {getMonthTabLabel(tabLeft, nowMonth)}
         </button>
         <button
-          className={`m-tab ${curK === monthKey(prev1M) ? 'active' : ''}`}
-          onClick={() => updateMonth(prev1M)}
+          className="m-tab active"
+          onClick={() => updateMonth(tabCenter)}
+          title={monthLabel(tabCenter)}
         >
-          THÁNG TRƯỚC
+          {getMonthTabLabel(tabCenter, nowMonth)}
         </button>
         <button
-          className={`m-tab ${curK === monthKey(nowMonth) || cur > nowMonth ? 'active' : ''}`}
-          onClick={() => updateMonth(nowMonth)}
+          className="m-tab"
+          onClick={() => updateMonth(tabRight)}
+          title={monthLabel(tabRight)}
         >
-          {cur > nowMonth ? format(cur, 'MM/yyyy') : 'THÁNG NÀY'}
+          {getMonthTabLabel(tabRight, nowMonth)}
         </button>
-        <button className="m-arrow" onClick={() => updateMonth(addMonths(cur, 1))}>
+        <button className="m-arrow" onClick={() => updateMonth(tabRight)} title="Tháng kế tiếp">
           ›
         </button>
       </div>
