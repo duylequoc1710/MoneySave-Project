@@ -14,7 +14,7 @@ export interface SafetySnapshot {
   json: string
 }
 
-const MAX_SNAPSHOTS = 10
+const MAX_SNAPSHOTS = 15
 
 class SafetyDB extends Dexie {
   snapshots!: Table<SafetySnapshot, number>
@@ -43,6 +43,17 @@ export async function saveSafetySnapshot(json: string, reason: string): Promise<
     await sdb().snapshots.add({ createdAt: Date.now(), reason, txCount, fundCount, json })
     const all = await sdb().snapshots.orderBy('createdAt').primaryKeys()
     if (all.length > MAX_SNAPSHOTS) await sdb().snapshots.bulkDelete(all.slice(0, all.length - MAX_SNAPSHOTS))
+  } catch {
+    /* bỏ qua */
+  }
+}
+
+/** Mỗi ngày tự lưu tối đa 1 bản (nếu bản gần nhất đã quá 24 giờ). Không bao giờ ném lỗi. */
+export async function ensureDailySnapshot(getJson: () => Promise<string>): Promise<void> {
+  try {
+    const last = await sdb().snapshots.orderBy('createdAt').last()
+    if (last && Date.now() - last.createdAt < 24 * 3600 * 1000) return
+    await saveSafetySnapshot(await getJson(), 'Tự động hằng ngày')
   } catch {
     /* bỏ qua */
   }

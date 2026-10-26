@@ -102,6 +102,11 @@ export function FundForm({
             <input inputMode="numeric" value={initialBalance} onChange={e => setInitialBalance(e.target.value)} />
           </label>
         </div>
+        {kind === 'credit' && Number(initialBalance) > 0 && (
+          <p className="exp" style={{ margin: '-4px 0 10px', fontSize: 12.5, lineHeight: 1.4 }}>
+            ⚠️ Số dư đầu đang là số dương. Thẻ tín dụng nên để <b>0</b> (chưa nợ) hoặc <b>số âm</b> (đang nợ sẵn); số dương sẽ làm Dư nợ luôn hiển thị 0 ₫.
+          </p>
+        )}
 
         {kind === 'credit' && (
           <>
@@ -109,20 +114,26 @@ export function FundForm({
               <span>Hạn mức tín dụng được cấp (₫)</span>
               <input inputMode="numeric" value={creditLimit} onChange={e => setCreditLimit(e.target.value)} />
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <label className="fld">
-                <span>Ngày chốt sao kê hàng tháng (1-31)</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'end' }}>
+              <label className="fld" style={{ marginBottom: 0 }}>
+                <span style={{ whiteSpace: 'nowrap' }}>Ngày chốt sao kê (1-31)</span>
                 <input
-                  type="number"
-                  min={1}
-                  max={31}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={statementDay}
-                  onChange={e => setStatementDay(e.target.value)}
+                  onChange={e => setStatementDay(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
                 />
               </label>
-              <label className="fld">
-                <span>Ngày hạn thanh toán (1-31)</span>
-                <input type="number" min={1} max={31} value={dueDay} onChange={e => setDueDay(e.target.value)} />
+              <label className="fld" style={{ marginBottom: 0 }}>
+                <span style={{ whiteSpace: 'nowrap' }}>Hạn thanh toán (1-31)</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={dueDay}
+                  onChange={e => setDueDay(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
+                />
               </label>
             </div>
           </>

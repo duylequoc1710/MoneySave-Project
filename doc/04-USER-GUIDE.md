@@ -117,3 +117,10 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
 * **Bàn phím số:** chỉ hiện khi chạm vào ô *Số tiền*; chạm ra ngoài, cuộn form hoặc bấm *XONG* để ẩn.
 * **Ngày cố định (định kỳ):** nhập thẳng số ngày 1–31 (không còn lỗi `020`).
 * **Cập nhật app:** app tự kiểm tra và nạp bản mới khi mở hoặc quay lại; nếu vẫn thấy bản cũ, vuốt tắt rồi mở lại.
+
+## 10. Thẻ tín dụng, đồng bộ & an toàn dữ liệu (2026-10-26)
+* **Thẻ tín dụng + "Không tính vào tổng":** dư nợ thẻ không cộng vào Tổng số dư, nhưng **chi tiêu bằng thẻ vẫn hiện trong báo cáo tổng và Sổ giao dịch**. Khi tất toán thẻ (Chuyển quỹ) khoản tiền mới rời khỏi ví thanh toán.
+* **Chi trong kỳ sao kê:** tính từ sau ngày chốt kỳ trước đến ngày chốt kỳ tới, gồm cả giao dịch bạn đã ghi trước (ví dụ dồn về ngày 01 tháng sau).
+* **Số dư đầu của thẻ:** để **0** nếu chưa nợ, **số âm** nếu đang nợ sẵn. Số dương làm Dư nợ luôn hiện 0 ₫ (app sẽ cảnh báo).
+* **Đồng bộ:** khi đã đăng nhập, dữ liệu tự động mã hoá và đồng bộ; không còn nút bật/tắt hay cấu hình Firebase thủ công.
+* **An toàn dữ liệu:** Cài đặt → *Bản sao an toàn tự động* (mỗi ngày 1 bản + trước mọi thao tác ghi đè) và *Kiểm tra toàn vẹn dữ liệu*. Nên bấm **Sao lưu (JSON)** và cất file ở nơi khác (Google Drive/iCloud/máy tính).

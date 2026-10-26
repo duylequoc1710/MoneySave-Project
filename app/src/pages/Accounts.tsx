@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Category, type Fund, type Tx } from '../db'
-import { analyzeCreditFund, effectOn, groupCategoriesHierarchy, money } from '../lib'
+import { analyzeCreditFund, effectOn, fmtDmy, groupCategoriesHierarchy, money } from '../lib'
 import { FundForm } from '../components/accounts/FundForm'
 import { AdjustBalanceModal } from '../components/accounts/AdjustBalanceModal'
 import { TransferWalletModal } from '../components/accounts/TransferWalletModal'
@@ -240,10 +240,20 @@ export default function Accounts() {
             )}
 
             <div className={`credit-advice ${info.statusTag}`}>{info.advice}</div>
+            {info.balance > 0 && (
+              <div className="credit-advice due-soon" style={{ marginTop: 8 }}>
+                ⚠️ Số dư thẻ đang <b>dương (+{money(info.balance)})</b> nên Dư nợ hiển thị 0 ₫. Nếu thẻ chưa nợ, hãy vào
+                "Cài đặt ví" và đặt <b>Số dư đầu = 0</b> (hoặc số âm nếu đang nợ sẵn) để dư nợ &amp; hạn mức khả dụng tính đúng.
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 8 }}>
               <small className="mut">
-                Chi trong kỳ sao kê mới (từ sau {info.lastStatementDate}): <b>{money(info.currentCycleSpend)}</b>
+                Chi trong kỳ sao kê hiện tại ({fmtDmy(info.lastStatementDate)} → {fmtDmy(info.nextStatementDate)}):{' '}
+                <b>{money(info.currentCycleSpend)}</b>
+                {info.scheduledCycleSpend > 0 && (
+                  <> · trong đó đã ghi trước (sau hôm nay): <b>{money(info.scheduledCycleSpend)}</b></>
+                )}
               </small>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button className="btn" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => setFundEdit(f)}>

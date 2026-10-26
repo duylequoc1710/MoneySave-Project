@@ -48,7 +48,7 @@ export default function SafetySnapshotsCard() {
         <div className="grow">
           <b>Bản sao an toàn tự động</b>
           <small>
-            Tự lưu trên máy trước khi Khôi phục / Đồng bộ ghi đè / Xoá sạch (giữ 10 bản gần nhất, không ảnh hưởng dữ liệu chính)
+            Tự lưu trên máy trước khi Khôi phục / Đồng bộ ghi đè / Xoá sạch và mỗi ngày 1 bản (giữ 15 bản gần nhất, không ảnh hưởng dữ liệu chính)
           </small>
         </div>
       </div>

@@ -11,15 +11,10 @@ import {
 } from '../lib'
 import SafetySnapshotsCard from '../components/SafetySnapshotsCard'
 import { markBackupDownloaded } from '../safetyBackup'
+import { auditData, type DataIssue } from '../dataAudit'
 import { clearAllToCleanState, seedDemoData3Months } from '../demoData'
 import {
-  deriveVaultDocId,
-  getCloudSyncConfig,
   getDeviceId,
-  parseFirebaseConfigInput,
-  pullCloudToLocal,
-  pushLocalToCloud,
-  saveCloudSyncConfig,
   subscribeSyncState,
   syncNowSmart,
   type SyncStateSnapshot,
@@ -31,43 +26,11 @@ const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
 const NO_TXS: Tx[] = []
 
-const REALTIME_DB_RULES_SNIPPET = `{
-  "rules": {
-    "moneysave_vaults": {
-      "$vaultId": {
-        ".read": true,
-        ".write": true
-      }
-    }
-  }
-}`
-
-const FIRESTORE_RULES_SNIPPET = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /moneysave_vaults/{vaultId} {
-      allow read, write: if request.resource == null
-        || (request.resource.data.ciphertext is string
-            && request.resource.data.ciphertext.size() < 950000);
-    }
-  }
-}`
-
 export default function Settings() {
   const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme())
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Cloud Sync E2EE state
-  const initCfg = getCloudSyncConfig()
-  const [syncEnabled, setSyncEnabled] = useState(initCfg.enabled)
-  const [rawFirebaseInput, setRawFirebaseInput] = useState(initCfg.projectId)
-  const [apiKey, setApiKey] = useState(initCfg.apiKey ?? '')
-  const [syncId, setSyncId] = useState(initCfg.syncId)
-  const [passphrase, setPassphrase] = useState(initCfg.passphrase)
-  const [showPass, setShowPass] = useState(false)
-  const [vaultDocId, setVaultDocId] = useState<string>('')
-  const [showAdvancedSync, setShowAdvancedSync] = useState(false)
-  const [showGuide, setShowGuide] = useState(false)
+  // Cloud Sync: luôn tự động đồng bộ khi đã đăng nhập tài khoản
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const [syncSnap, setSyncSnap] = useState<SyncStateSnapshot>({
     status: 'idle',
@@ -77,6 +40,7 @@ export default function Settings() {
   })
   const [authUser, setAuthUser] = useState<AuthUser | null>(getAuthUser())
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [auditIssues, setAuditIssues] = useState<DataIssue[] | null>(null)
 
   useEffect(() => {
     return subscribeAuth(setAuthUser)
@@ -85,14 +49,6 @@ export default function Settings() {
   useEffect(() => {
     return subscribeSyncState(setSyncSnap)
   }, [])
-
-  useEffect(() => {
-    if (syncId.trim() && passphrase) {
-      deriveVaultDocId(syncId, passphrase).then(setVaultDocId).catch(() => setVaultDocId(''))
-    } else {
-      setVaultDocId('')
-    }
-  }, [syncId, passphrase])
 
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
@@ -105,80 +61,23 @@ export default function Settings() {
     applyTheme(next)
   }
 
-  function handleFirebaseInputPaste(val: string) {
-    const parsed = parseFirebaseConfigInput(val)
-    if (parsed.databaseUrl) {
-      setRawFirebaseInput(parsed.databaseUrl)
-    } else if (parsed.projectId) {
-      setRawFirebaseInput(parsed.projectId)
-    } else {
-      setRawFirebaseInput(val)
-    }
-    if (parsed.apiKey) setApiKey(parsed.apiKey)
+  async function handleAudit() {
+    const [f, c, t, b, r] = await Promise.all([
+      db.funds.toArray(),
+      db.categories.toArray(),
+      db.txs.toArray(),
+      db.budgets.toArray(),
+      db.recurrings.toArray(),
+    ])
+    setAuditIssues(auditData({ funds: f, categories: c, txs: t, budgets: b, recurrings: r }))
   }
 
-  function currentDraftConfig(enabledOverride = syncEnabled) {
-    const parsed = parseFirebaseConfigInput(rawFirebaseInput)
-    return {
-      enabled: enabledOverride,
-      projectId: parsed.projectId || rawFirebaseInput.trim(),
-      apiKey: parsed.apiKey || apiKey.trim(),
-      databaseUrl: parsed.databaseUrl || (rawFirebaseInput.includes('http') ? rawFirebaseInput.trim() : ''),
-      syncId: syncId.trim(),
-      passphrase,
-    }
-  }
-
-  async function handleSaveAndSync() {
+  async function handleSyncNow() {
     setSyncMsg(null)
-    const cfg = currentDraftConfig(syncEnabled)
-    saveCloudSyncConfig(cfg)
-    if (!cfg.enabled) {
-      setSyncMsg('Đã lưu cấu hình (Chế độ Offline-first, tắt đồng bộ tự động).')
-      return
-    }
-    if ((!cfg.projectId && !cfg.databaseUrl) || !cfg.syncId || !cfg.passphrase) {
-      setSyncMsg('⚠️ Vui lòng nhập URL Realtime Database (hoặc Project ID), Mã định danh (Sync ID) và Mật khẩu mã hóa.')
-      return
-    }
     const res = await syncNowSmart()
-    if (res === 'pushed') {
-      setSyncMsg('✅ Đã mã hóa AES-256 và đẩy dữ liệu lên Firebase thành công!')
-    } else if (res === 'pulled') {
-      setSyncMsg('✅ Đã tải và giải mã bản cập nhật mới nhất từ Firebase!')
-    } else if (syncSnap.status !== 'error') {
-      setSyncMsg('✅ Đã lưu cấu hình và kết nối đồng bộ thành công!')
-    }
-  }
-
-  async function handleManualPush() {
-    setSyncMsg(null)
-    const cfg = currentDraftConfig(true)
-    setSyncEnabled(true)
-    saveCloudSyncConfig(cfg)
-    try {
-      await pushLocalToCloud(cfg)
-      setSyncMsg('✅ Đã mã hóa AES-256 và ghi đè dữ liệu máy này lên Cloud thành công!')
-    } catch (e) {
-      setSyncMsg('❌ ' + (e as Error).message)
-    }
-  }
-
-  async function handleManualPull() {
-    setSyncMsg(null)
-    const cfg = currentDraftConfig(true)
-    setSyncEnabled(true)
-    saveCloudSyncConfig(cfg)
-    try {
-      const ok = await pullCloudToLocal(cfg)
-      if (ok) {
-        setSyncMsg('✅ Đã tải và giải mã dữ liệu từ Cloud về máy này thành công!')
-      } else {
-        setSyncMsg('ℹ️ Trên Cloud chưa có dữ liệu cho Mã phòng & Mật khẩu này. Hãy bấm "Đẩy lên Cloud" trước.')
-      }
-    } catch (e) {
-      setSyncMsg('❌ ' + (e as Error).message)
-    }
+    if (res === 'pushed') setSyncMsg('✅ Đã mã hoá và đẩy dữ liệu máy này lên Cloud.')
+    else if (res === 'pulled') setSyncMsg('✅ Đã tải và giải mã bản cập nhật mới nhất từ Cloud.')
+    else setSyncMsg('✅ Dữ liệu đã được đồng bộ, không có thay đổi mới.')
   }
 
   function download(name: string, content: string, mimeType: string) {
@@ -219,9 +118,8 @@ export default function Settings() {
         <h1 style={{ margin: 0 }}>⚙️ Cài đặt</h1>
       </div>
 
-      {/* 1. ĐỒNG BỘ ĐÁM MÂY REALTIME (FIREBASE FIRESTORE + E2EE AES-256) */}
       {/* 1. ĐỒNG BỘ ĐA THIẾT BỊ (FIREBASE AUTH & REALTIME E2EE) */}
-      <h2>☁️ TÀI KHOẢN & ĐỒNG BỘ ĐA THIẾT BỊ (REALTIME E2EE)</h2>
+      <h2>☁️ TÀI KHOẢN & ĐỒNG BỘ</h2>
       <div className="card">
         {authUser ? (
           <div
@@ -272,7 +170,7 @@ export default function Settings() {
                   type="button"
                   className="btn on"
                   style={{ fontSize: 12.5, padding: '6px 12px' }}
-                  onClick={() => handleSaveAndSync()}
+                  onClick={handleSyncNow}
                 >
                   🔄 Đồng Bộ Ngay
                 </button>
@@ -340,34 +238,6 @@ export default function Settings() {
           </div>
         )}
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingBottom: 12,
-            marginBottom: 12,
-            borderBottom: '1px solid var(--bd)',
-          }}
-        >
-          <div>
-            <b style={{ fontSize: 15 }}>Tự động đồng bộ Realtime</b>
-            <small className="mut" style={{ display: 'block', marginTop: 2 }}>
-              Mã hóa đầu cuối <b>AES-GCM 256-bit</b> trước khi gửi lên Cloud
-            </small>
-          </div>
-          <button
-            type="button"
-            className={`ios-switch ${syncEnabled ? 'on' : ''}`}
-            onClick={() => {
-              const next = !syncEnabled
-              setSyncEnabled(next)
-              saveCloudSyncConfig(currentDraftConfig(next))
-            }}
-            aria-label="Bật đồng bộ đám mây"
-          />
-        </div>
-
         {/* Trạng thái đồng bộ hiện tại */}
         <div
           className="trend-callout"
@@ -396,9 +266,9 @@ export default function Settings() {
                     ? '✅ Đã đồng bộ an toàn (E2EE)'
                     : syncSnap.status === 'error'
                       ? '⚠️ Lỗi kết nối / giải mã'
-                      : syncEnabled
+                      : authUser
                         ? '⏳ Sẵn sàng đồng bộ'
-                        : '🔒 Đang tắt (Chỉ lưu trên máy này)'}
+                        : '🔒 Chưa đăng nhập (Chỉ lưu trên máy này)'}
               </b>
             </div>
             {syncSnap.lastSyncedAt && (
@@ -408,11 +278,6 @@ export default function Settings() {
               </div>
             )}
           </div>
-          {vaultDocId && (
-            <span className="pill-tag" title={`Mã định danh Két sắt: ${vaultDocId}`}>
-              🔑 {vaultDocId.slice(0, 12)}…
-            </span>
-          )}
         </div>
 
         {(syncMsg || syncSnap.lastError) && (
@@ -423,196 +288,6 @@ export default function Settings() {
             {syncMsg || syncSnap.lastError}
           </div>
         )}
-
-        {/* Cấu hình nâng cao (Dành cho Developer / Tự cấu hình Firebase Server thủ công) */}
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--bd)' }}>
-          <button
-            type="button"
-            className="link-green"
-            style={{
-              background: 'none',
-              border: 0,
-              padding: '4px 0',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-            onClick={() => setShowAdvancedSync(v => !v)}
-          >
-            <span>{showAdvancedSync ? '▾' : '▸'}</span>
-            <span>⚙️ Cấu hình máy chủ Firebase tùy chỉnh (Dành cho Developer / Tự lưu trữ)</span>
-          </button>
-
-          {showAdvancedSync && (
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <label className="fld">
-                <span>1. URL Realtime Database hoặc Firebase Project ID</span>
-                <input
-                  value={rawFirebaseInput}
-                  onChange={e => handleFirebaseInputPaste(e.target.value)}
-                  placeholder="VD: https://moneysave-project-default-rtdb.asia-southeast1.firebasedatabase.app"
-                />
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <label className="fld">
-                  <span>2. Mã định danh cá nhân (Sync ID)</span>
-                  <input
-                    value={syncId}
-                    onChange={e => setSyncId(e.target.value)}
-                    placeholder="VD: moneysave-vault"
-                  />
-                </label>
-                <label className="fld">
-                  <span>Web API Key (Tuỳ chọn)</span>
-                  <input
-                    value={apiKey}
-                    onChange={e => setApiKey(e.target.value)}
-                    placeholder="Tự điền nếu dán firebaseConfig"
-                  />
-                </label>
-              </div>
-
-              <label className="fld">
-                <span>3. Mật khẩu Mã hóa đầu cuối (Passphrase E2EE – AES-256)</span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    type={showPass ? 'text' : 'password'}
-                    value={passphrase}
-                    onChange={e => setPassphrase(e.target.value)}
-                    placeholder="Nhập mật khẩu bí mật dùng chung giữa Điện thoại & Mac..."
-                  />
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ flex: 'none' }}
-                    onClick={() => setShowPass(v => !v)}
-                    title="Hiện/ẩn mật khẩu"
-                  >
-                    {showPass ? '🙈' : '👁'}
-                  </button>
-                </div>
-                <small className="mut" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
-                  🛡️ <b>Zero-Knowledge E2EE:</b> Mật khẩu này không bao giờ gửi lên mạng. Dữ liệu được mã hóa bằng thuật toán{' '}
-                  <code>PBKDF2 (100,000 vòng) + AES-GCM 256-bit</code> ngay trên máy trước khi đẩy lên Firestore.
-                </small>
-              </label>
-
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="btn pri"
-                  style={{ flex: 1, minWidth: 160 }}
-                  onClick={handleSaveAndSync}
-                >
-                  🔄 Lưu & Đồng bộ ngay
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={handleManualPush}
-                  title="Mã hóa dữ liệu máy này và ghi đè lên Cloud"
-                >
-                  ⬆️ Đẩy máy này lên Cloud
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={handleManualPull}
-                  title="Tải dữ liệu từ Cloud về và giải mã vào máy này"
-                >
-                  ⬇️ Tải từ Cloud về máy
-                </button>
-              </div>
-
-              <div style={{ marginTop: 6, paddingTop: 10, borderTop: '1px dashed var(--bd)' }}>
-                <button
-                  type="button"
-                  className="link-green"
-                  style={{ background: 'none', border: 0, padding: 0, fontSize: 13 }}
-                  onClick={() => setShowGuide(g => !g)}
-                >
-                  {showGuide ? '▾ Ẩn hướng dẫn cài đặt Firebase' : '▸ 📖 Hướng dẫn cấu hình Firebase (Realtime Database hoặc Firestore)'}
-                </button>
-
-                {showGuide && (
-                  <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.55 }} className="mut">
-                    <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid var(--bd)' }}>
-                      <b style={{ color: 'var(--fg)', display: 'block', marginBottom: 4 }}>
-                        🟢 Cách 1: Sử dụng Realtime Database (Đơn giản nhất, copy link database dán vào ô số 1):
-                      </b>
-                      <p style={{ marginBottom: 4 }}>
-                        Vào tab <b>Rules</b> của Realtime Database, dán đoạn JSON sau rồi bấm <b>Publish</b>:
-                      </p>
-                      <pre
-                        style={{
-                          background: 'var(--bg)',
-                          border: '1px solid var(--bd)',
-                          borderRadius: 10,
-                          padding: 10,
-                          overflowX: 'auto',
-                          fontSize: 11.5,
-                          color: 'var(--fg)',
-                          marginBottom: 6,
-                        }}
-                      >
-                        {REALTIME_DB_RULES_SNIPPET}
-                      </pre>
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ fontSize: 12, padding: '5px 10px' }}
-                        onClick={() => {
-                          navigator.clipboard?.writeText(REALTIME_DB_RULES_SNIPPET)
-                          setSyncMsg('📋 Đã copy Realtime Database Rules vào bộ nhớ tạm!')
-                        }}
-                      >
-                        📋 Copy Realtime Database Rules
-                      </button>
-                    </div>
-
-                    <div>
-                      <b style={{ color: 'var(--fg)', display: 'block', marginBottom: 4 }}>
-                        🔵 Cách 2: Sử dụng Cloud Firestore:
-                      </b>
-                      <p style={{ marginBottom: 4 }}>
-                        Vào tab <b>Rules</b> của Firestore Database, dán đoạn mã sau rồi bấm <b>Publish</b>:
-                      </p>
-                      <pre
-                        style={{
-                          background: 'var(--bg)',
-                          border: '1px solid var(--bd)',
-                          borderRadius: 10,
-                          padding: 10,
-                          overflowX: 'auto',
-                          fontSize: 11.5,
-                          color: 'var(--fg)',
-                          marginBottom: 6,
-                        }}
-                      >
-                        {FIRESTORE_RULES_SNIPPET}
-                      </pre>
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ fontSize: 12, padding: '5px 10px' }}
-                        onClick={() => {
-                          navigator.clipboard?.writeText(FIRESTORE_RULES_SNIPPET)
-                          setSyncMsg('📋 Đã copy Firestore Rules vào bộ nhớ tạm!')
-                        }}
-                      >
-                        📋 Copy Firestore Rules
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* 2. GIAO DIỆN (DARK THEME / LIGHT THEME) */}
@@ -805,6 +480,32 @@ export default function Settings() {
             }}
           />
         </div>
+
+        <div className="row" style={{ borderBottom: auditIssues ? undefined : 0 }}>
+          <div className="ico round" style={{ background: '#14b8a624' }}>
+            🔍
+          </div>
+          <div className="grow">
+            <b>Kiểm tra toàn vẹn dữ liệu</b>
+            <small>Rà soát giao dịch/ví/định kỳ có lỗi hoặc bất thường (chỉ đọc, không sửa dữ liệu)</small>
+          </div>
+          <button type="button" className="btn" onClick={handleAudit}>
+            Kiểm tra
+          </button>
+        </div>
+        {auditIssues && (
+          <div style={{ padding: '4px 0 12px', fontSize: 13, lineHeight: 1.5 }}>
+            {auditIssues.length === 0 ? (
+              <span className="inc">✅ Dữ liệu toàn vẹn, không phát hiện vấn đề.</span>
+            ) : (
+              auditIssues.map((i, idx) => (
+                <div key={idx} className={i.level === 'error' ? 'exp' : 'mut'}>
+                  {i.level === 'error' ? '❌' : '⚠️'} {i.message}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       <SafetySnapshotsCard />
@@ -918,7 +619,6 @@ export default function Settings() {
         onClose={() => setShowAuthModal(false)}
         onSuccess={user => {
           setSyncMsg(`🎉 Chào mừng ${user.email}! Ứng dụng đang tự động đồng bộ ví của bạn...`)
-          setTimeout(() => handleSaveAndSync(), 400)
         }}
       />
     </>

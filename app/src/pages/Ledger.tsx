@@ -6,6 +6,7 @@ import { db, type Category, type Fund, type Tx } from '../db'
 import {
   effectOn,
   getMonthTabLabel,
+  getFlowFundIds,
   getIncludedFunds,
   money,
   moneySigned,
@@ -65,6 +66,8 @@ export default function Ledger() {
 
   const activeFunds = useMemo(() => getIncludedFunds(funds, fundFilter), [funds, fundFilter])
   const activeFundIds = useMemo(() => new Set(activeFunds.map(f => f.id!)), [activeFunds])
+  // Chế độ Tổng cộng: hiển thị cả chi tiêu/thu của thẻ tín dụng (dù thẻ "Không tính vào tổng")
+  const flowFundIds = useMemo(() => getFlowFundIds(funds, fundFilter), [funds, fundFilter])
 
   const effectOnSelection = useCallback((t: Tx) => activeFunds.reduce((s, f) => s + effectOn(t, f.id!), 0), [activeFunds])
 
@@ -91,10 +94,12 @@ export default function Ledger() {
       t =>
         t.date >= from &&
         t.date <= to &&
-        (activeFundIds.has(t.fundId) || (t.toFundId != null && activeFundIds.has(t.toFundId))) &&
+        (((t.type === 'income' || t.type === 'expense') && flowFundIds.has(t.fundId)) ||
+          activeFundIds.has(t.fundId) ||
+          (t.toFundId != null && activeFundIds.has(t.toFundId))) &&
         (!q || (t.note + ' ' + (cMap.get(t.categoryId ?? -1)?.name ?? '')).toLowerCase().includes(q.toLowerCase())),
     )
-  }, [allTxs, from, to, activeFundIds, q, cMap])
+  }, [allTxs, from, to, activeFundIds, flowFundIds, q, cMap])
 
   const days = useMemo(() => {
     const m = new Map<string, Tx[]>()

@@ -451,13 +451,24 @@ export function computeTotalBalance(funds: Fund[], txs: Tx[], fundFilter = 0): n
  */
 export function filterReportableTxs(txs: Tx[], funds: Fund[], fundFilter = 0): Tx[] {
   const includedIds = new Set(getIncludedFunds(funds, fundFilter).map(f => f.id!))
+  // Thẻ tín dụng (xài trước trả sau): dù bật "Không tính vào tổng" (để dư nợ không lẫn vào Tổng số dư),
+  // CHI TIÊU / THU của thẻ vẫn được tính vào báo cáo tổng để kiểm soát chi tiêu hằng tháng.
+  const flowIds = new Set(includedIds)
+  if (fundFilter === 0) funds.filter(f => f.kind === 'credit').forEach(f => flowIds.add(f.id!))
   return txs.filter(t => {
     if (t.excludeFromReport) return false
     if (t.type === 'income' || t.type === 'expense') {
-      return includedIds.has(t.fundId)
+      return flowIds.has(t.fundId)
     }
     return includedIds.has(t.fundId) || (t.toFundId != null && includedIds.has(t.toFundId))
   })
+}
+
+/** Tập id ví mà danh sách giao dịch ở chế độ "Tổng cộng" cần hiển thị thu/chi (gồm cả thẻ tín dụng) */
+export function getFlowFundIds(funds: Fund[], fundFilter = 0): Set<number> {
+  const ids = new Set(getIncludedFunds(funds, fundFilter).map(f => f.id!))
+  if (fundFilter === 0) funds.filter(f => f.kind === 'credit').forEach(f => ids.add(f.id!))
+  return ids
 }
 
 function clampDay(monthBase: Date, day: number): Date {
@@ -489,6 +500,8 @@ export interface CreditCardAnalysis {
   daysUntilDue: number
   interestFreeDaysToday: number
   currentCycleSpend: number
+  /** Phần chi trong kỳ đã ghi trước (ngày sau hôm nay nhưng vẫn thuộc kỳ sao kê hiện tại) */
+  scheduledCycleSpend: number
   statusTag: 'optimal' | 'due-soon' | 'closing-soon' | 'normal'
   advice: string
 }
@@ -532,9 +545,14 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
 
   const lastStmtYmd = ymd(lastStmt)
   const todayYmd = ymd(today)
-  const currentCycleSpend = txs
-    .filter(t => t.fundId === fund.id && t.type === 'expense' && t.date > lastStmtYmd && t.date <= todayYmd)
-    .reduce((s, t) => s + t.amount, 0)
+  // Kỳ sao kê hiện tại = (ngày chốt kỳ trước, ngày chốt kỳ tới]. Gồm cả giao dịch ĐÃ GHI TRƯỚC (ngày tương lai
+  // nhưng vẫn trong kỳ, ví dụ dồn các bill về ngày 01 của tháng sau) để dư nợ/chi tiêu kỳ không bị bỏ sót.
+  const nextStmtYmd = ymd(nextStmt)
+  const cycleExpenses = txs.filter(
+    t => t.fundId === fund.id && t.type === 'expense' && t.date > lastStmtYmd && t.date <= nextStmtYmd,
+  )
+  const currentCycleSpend = cycleExpenses.reduce((s, t) => s + t.amount, 0)
+  const scheduledCycleSpend = cycleExpenses.filter(t => t.date > todayYmd).reduce((s, t) => s + t.amount, 0)
 
   let statusTag: CreditCardAnalysis['statusTag'] = 'normal'
   let advice = `Chi tiêu hôm nay được miễn lãi ${interestFreeDaysToday} ngày (hạn trả ${format(dueOfNextStmt, 'dd/MM')}).`
@@ -565,6 +583,7 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
     daysUntilDue,
     interestFreeDaysToday,
     currentCycleSpend,
+    scheduledCycleSpend,
     statusTag,
     advice,
   }

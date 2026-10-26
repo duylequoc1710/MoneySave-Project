@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
-import { processRecurringTransactions, seedIfEmpty } from './db'
+import { exportAll, processRecurringTransactions, seedIfEmpty } from './db'
+import { ensureDailySnapshot } from './safetyBackup'
 import './index.css'
 import { installSheetScrollLock } from './scrollLock'
 
@@ -48,6 +49,8 @@ document.addEventListener('visibilitychange', () => {
 // tuyệt đối không bao giờ tự động xóa hay can thiệp vào giao dịch thực tế của người dùng.
 async function initApp() {
   await seedIfEmpty()
+  // Bản sao an toàn hằng ngày (trước khi bất kỳ tiến trình tự động nào ghi dữ liệu)
+  await ensureDailySnapshot(() => exportAll())
   await processRecurringTransactions().catch(() => {})
 }
 

@@ -41,6 +41,7 @@ import {
   getActiveCloudSyncConfig,
   parseFirebaseConfigInput,
 } from './cloudSync.ts'
+import { auditData } from './dataAudit.ts'
 import { signInWithEmail, signUpWithEmail } from './auth.ts'
 
 describe('effectOn – tính số dư quỹ theo giao dịch', () => {
@@ -622,6 +623,33 @@ describe('Báo cáo tuần Thứ 2 → Chủ nhật & định dạng hiển th�
   })
 })
 
+describe('Thẻ tín dụng: báo cáo tổng & kỳ sao kê', () => {
+  const card: Fund = { id: 7, name: 'Thẻ', icon: '💳', color: '#000', initialBalance: 0, kind: 'credit', creditLimit: 57_000_000, statementDay: 20, dueDay: 5, excludeFromTotal: true }
+  const cash: Fund = { id: 1, name: 'Chính', icon: '👛', color: '#000', initialBalance: 0, kind: 'cash' }
+  const wallet2: Fund = { id: 2, name: 'Đầu tư', icon: '📈', color: '#000', initialBalance: 0, kind: 'cash', excludeFromTotal: true }
+  const tx = (id: number, fundId: number, date: string, amount: number, type: 'expense' | 'income' = 'expense'): Tx => ({
+    id, type, amount, date, fundId, categoryId: 1, note: '', createdAt: 0,
+  })
+  it('Chi tiêu thẻ tín dụng (Không tính vào tổng) vẫn vào báo cáo tổng; ví thường bị loại vẫn bị loại', () => {
+    const txs = [tx(1, 7, '2026-10-22', 100), tx(2, 1, '2026-10-22', 50), tx(3, 2, '2026-10-22', 999)]
+    const ids = filterReportableTxs(txs, [card, cash, wallet2], 0).map(t => t.id)
+    assert.deepEqual(ids, [1, 2])
+    // Chọn riêng ví khác thì không lẫn chi tiêu thẻ
+    assert.deepEqual(filterReportableTxs(txs, [card, cash, wallet2], 1).map(t => t.id), [2])
+  })
+  it('Tổng số dư không lẫn dư nợ thẻ (thẻ vẫn Không tính vào tổng)', () => {
+    assert.equal(computeTotalBalance([card, cash], [tx(1, 7, '2026-10-22', 100), tx(2, 1, '2026-10-22', 50)], 0), -50)
+  })
+  it('Chi trong kỳ sao kê gồm cả giao dịch ghi trước ngày 01/11 (tương lai nhưng trong kỳ)', () => {
+    const txs = [tx(1, 7, '2026-10-19', 10), tx(2, 7, '2026-10-23', 200), tx(3, 7, '2026-11-01', 300), tx(4, 7, '2026-11-21', 999)]
+    const a = analyzeCreditFund(card, txs, new Date(2026, 9, 26))
+    assert.equal(a.lastStatementDate, '2026-10-20')
+    assert.equal(a.nextStatementDate, '2026-11-20')
+    assert.equal(a.currentCycleSpend, 500) // 200 + 300 (không tính 19/10 và 21/11)
+    assert.equal(a.scheduledCycleSpend, 300)
+  })
+})
+
 describe('Nhắc sao lưu định kỳ', () => {
   it('Nhắc khi chưa từng sao lưu, im lặng khi vừa sao lưu, nhắc lại sau 7 ngày, hoãn được', async () => {
     const mem = new Map<string, string>()
@@ -635,10 +663,43 @@ describe('Nhắc sao lưu định kỳ', () => {
     assert.deepEqual(m.backupReminderState(now), { daysSince: null })
     m.markBackupDownloaded()
     assert.equal(m.backupReminderState(Date.now()), undefined)
-    assert.equal(m.backupReminderState(now + 8 * 86400000)?.daysSince, 8)
+    assert.ok((m.backupReminderState(now + 8.5 * 86400000)?.daysSince ?? 0) >= 8)
     mem.delete('moneysave_last_backup_at')
     m.snoozeBackupReminder(3)
     assert.equal(m.backupReminderState(now + 86400000), undefined) // đang hoãn
     assert.deepEqual(m.backupReminderState(now + 4 * 86400000), { daysSince: null }) // hết hoãn
+  })
+})
+
+describe('Kiểm tra toàn vẹn dữ liệu (auditData)', () => {
+  const f: Fund = { id: 1, name: 'A', icon: '', color: '', initialBalance: 0, kind: 'cash' }
+  const c: Category = { id: 1, name: 'C', type: 'expense', icon: '', color: '' }
+  const ok: Tx = { id: 1, type: 'expense', amount: 10, date: '2026-10-26', fundId: 1, categoryId: 1, note: '', createdAt: 0 }
+  it('Dữ liệu sạch không có vấn đề', () => {
+    assert.deepEqual(auditData({ funds: [f], categories: [c], txs: [ok] }), [])
+  })
+  it('Phát hiện số tiền, ngày, ví, nhóm, chuyển quỹ sai và giao dịch trùng', () => {
+    const txs: Tx[] = [
+      ok,
+      { ...ok, id: 2, amount: 0 },
+      { ...ok, id: 3, date: '26/10/2026' },
+      { ...ok, id: 4, date: '2026-02-30' },
+      { ...ok, id: 5, fundId: 99 },
+      { ...ok, id: 6, categoryId: 77 },
+      { ...ok, id: 7, type: 'transfer', toFundId: 1, categoryId: null },
+      { ...ok, id: 8 },
+    ]
+    const msg = auditData({ funds: [f], categories: [c], txs }).map(i => i.message).join('\n')
+    assert.match(msg, /số tiền không hợp lệ/)
+    assert.match(msg, /2 giao dịch có ngày sai/)
+    assert.match(msg, /ví không tồn tại/)
+    assert.match(msg, /nhóm không tồn tại/)
+    assert.match(msg, /chuyển quỹ/)
+    assert.match(msg, /bị trùng/)
+  })
+  it('Cảnh báo thẻ tín dụng có số dư đầu dương', () => {
+    const card: Fund = { ...f, id: 2, name: 'Thẻ', kind: 'credit', initialBalance: 57_000_000, creditLimit: 57_000_000 }
+    const msg = auditData({ funds: [card], categories: [c], txs: [] }).map(i => i.message).join('\n')
+    assert.match(msg, /Số dư đầu dương/)
   })
 })

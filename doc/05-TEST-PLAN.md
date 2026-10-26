@@ -20,5 +20,6 @@
 | T-16 | Kiểm thử Hệ thống Nhóm Cha & Nhóm Con (Category Hierarchy), gom nhóm phân cấp, gán nhanh nhóm con, chọn nhóm optgroup trong form giao dịch, hiển thị `Nhóm cha › Nhóm con` trên báo cáo | ✅ Pass (22/22 unit tests) |
 | T-17 | Kiểm thử định dạng `MM/yyyy` & `dd/MM/yyyy`, màn Chi tiết thu nhập ròng theo tuần, khoá cuộn nền, ô ngày định kỳ, bàn phím số nổi, PWA tự cập nhật (tsc + build + unit test; xác nhận bản live trên Vercel và điện thoại) | ✅ Pass (24/24 unit tests) |
 | T-18 | Test biên Định kỳ (ngày 31, năm nhuận 2028, tuần/ngày, không trùng kỳ), chia tuần Thứ 2–CN (tháng 10/2026: 1-4, 5-11…), `monthLabel`/`fmtDmy`, nhắc sao lưu; benchmark 50.000 giao dịch ≈ 1 ms/lần tính | ✅ Pass (34/34 unit tests) |
+| T-19 | Thẻ tín dụng: báo cáo tổng gồm chi tiêu thẻ, kỳ sao kê gồm giao dịch ghi trước (01/11), tổng số dư không lẫn dư nợ; `auditData` (số tiền/ngày/ví/nhóm/chuyển quỹ/trùng/thẻ dương); sửa test nhắc sao lưu bị chập chờn | ✅ Pass (40/40 unit tests) |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.
