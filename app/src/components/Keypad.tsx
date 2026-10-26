@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, type Ref } from 'react'
 import { evaluateKeypadExpression } from '../lib'
 
 interface KeypadProps {
@@ -6,6 +6,7 @@ interface KeypadProps {
   onChange: (val: string) => void
   onDone: () => void
   suggestions?: number[]
+  containerRef?: Ref<HTMLDivElement>
 }
 
 export default function Keypad({
@@ -13,6 +14,7 @@ export default function Keypad({
   onChange,
   onDone,
   suggestions = [50000, 100000, 200000, 500000],
+  containerRef,
 }: KeypadProps) {
   const handleKeyPress = (btn: string) => {
     if (btn === 'C') {
@@ -126,7 +128,7 @@ export default function Keypad({
   }, [value])
 
   return (
-    <div className="ml-keypad-container">
+    <div className="ml-keypad-container" ref={containerRef}>
       {/* Hàng gợi ý số tiền nhanh */}
       {suggestions.length > 0 && (
         <div className="ml-keypad-chips">

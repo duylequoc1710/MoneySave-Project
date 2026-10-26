@@ -8,6 +8,22 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Tự đăng ký SW trong main.tsx (virtual:pwa-register) để chủ động kiểm tra bản mới
+      injectRegister: false,
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        // index.html luôn lấy từ mạng trước (fallback cache khi offline) -> không kẹt bản cũ
+        navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: { cacheName: 'pages', networkTimeoutSeconds: 3 },
+          },
+        ],
+      },
       includeAssets: [
         'favicon.ico',
         'favicon-16x16.png',

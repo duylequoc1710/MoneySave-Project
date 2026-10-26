@@ -86,9 +86,9 @@ describe('Định dạng tiền tệ & ngày tháng', () => {
     assert.equal(getMonthTabLabel(new Date(2026, 9, 1), now), 'THÁNG NÀY')
     assert.equal(getMonthTabLabel(new Date(2026, 8, 1), now), 'THÁNG TRƯỚC')
     assert.equal(getMonthTabLabel(new Date(2026, 10, 1), now), 'TƯƠNG LAI')
-    assert.equal(getMonthTabLabel(new Date(2026, 7, 1), now), 'THÁNG 8, 2026')
-    assert.equal(getMonthTabLabel(new Date(2026, 5, 1), now), 'THÁNG 6, 2026')
-    assert.equal(getMonthTabLabel(new Date(2027, 0, 1), now), 'THÁNG 1, 2027')
+    assert.equal(getMonthTabLabel(new Date(2026, 7, 1), now), '08/2026')
+    assert.equal(getMonthTabLabel(new Date(2026, 5, 1), now), '06/2026')
+    assert.equal(getMonthTabLabel(new Date(2027, 0, 1), now), '01/2027')
   })
 
   it('evaluateKeypadExpression & formatKeypadDisplay tính toán và định dạng chuẩn dấu phân cách', () => {

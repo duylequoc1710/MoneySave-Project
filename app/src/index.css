@@ -817,6 +817,8 @@ h2 {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 .sheet {
   background: var(--card);
@@ -827,6 +829,11 @@ h2 {
   max-height: 94dvh;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.sheet.kp-open {
+  padding-bottom: 380px;
 }
 @media (min-width: 900px) {
   .sheetbg {
@@ -950,8 +957,18 @@ h2 {
 
 /* In-App Calculator Keypad (1 khối chung chuẩn MoneyLover) */
 .ml-keypad-container {
-  margin-top: 14px;
-  padding-top: 12px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 520px;
+  z-index: 60;
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 28px #0006;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+  touch-action: manipulation;
   border-top: 1px solid var(--bd);
   user-select: none;
   -webkit-user-select: none;

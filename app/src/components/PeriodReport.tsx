@@ -17,6 +17,7 @@ import { type Category, type Fund, type Tx } from '../db'
 import {
   effectOn,
   filterReportableTxs,
+  fmtDmy,
   getCategoryFullName,
   getIncludedFunds,
   getMonthTabLabel,
@@ -43,7 +44,7 @@ interface Props {
   funds: Fund[]
   cats: Category[]
   onClose: () => void
-  initialScreen?: 'main' | 'expense' | 'income'
+  initialScreen?: 'main' | 'expense' | 'income' | 'net'
 }
 
 interface CatSummary {
@@ -251,7 +252,7 @@ export default function PeriodReport({
   onClose,
   initialScreen = 'main',
 }: Props) {
-  const [screen, setScreen] = useState<'main' | 'expense' | 'income'>(initialScreen)
+  const [screen, setScreen] = useState<'main' | 'expense' | 'income' | 'net'>(initialScreen)
   const [subMode, setSubMode] = useState<'detail' | 'trend'>('detail')
   const [showAvgCompare, setShowAvgCompare] = useState(true)
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
@@ -412,6 +413,151 @@ export default function PeriodReport({
         </button>
       </div>
     )
+
+  // ================= MÀN HÌNH: CHI TIẾT THU NHẬP RÒNG THEO TUẦN (Thứ 2 → Chủ nhật) =================
+  if (screen === 'net') {
+    const incB = buildCalendarWeekBuckets(cur, today, monthTxs, 'income')
+    const expB = buildCalendarWeekBuckets(cur, today, monthTxs, 'expense')
+    const netBuckets = incB.map((b, i) => {
+      const e = expB[i]
+      return {
+        label: b.label,
+        fromDay: b.fromDay,
+        toDay: b.toDay,
+        income: b.amount,
+        expense: e.amount,
+        net: b.amount - e.amount,
+        negExpense: -e.amount,
+        txs: [...b.txs, ...e.txs].sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0)),
+      }
+    })
+    return (
+      <div className="period-report-overlay">
+        <div className="period-report-shell">
+          <div className="ledger-topbar">
+            <button
+              className="circle-pill-btn"
+              onClick={() => {
+                setExpandedKey(null)
+                setScreen('main')
+              }}
+            >
+              ‹
+            </button>
+            <b style={{ fontSize: 17 }}>Chi tiết thu nhập ròng</b>
+            <button className="circle-pill-btn" onClick={() => setShowTimeModal(true)} title="Chọn khoảng thời gian">
+              📅
+            </button>
+          </div>
+
+          {renderMonthBar()}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 4px 14px' }}>
+            <b style={{ fontSize: 20 }}>Tổng cộng</b>
+            <b style={{ fontSize: 20, color: netIncome >= 0 ? '#1d9bf0' : '#f0534f' }}>{money(netIncome)}</b>
+          </div>
+
+          <div className="card" style={{ paddingTop: 18 }}>
+            <div style={{ width: '100%', height: 220 }}>
+              <ResponsiveContainer>
+                <BarChart data={netBuckets} stackOffset="sign" margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
+                  <CartesianGrid vertical={false} stroke="#8884" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
+                  <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
+                  <ReferenceLine y={0} stroke="#8e98a4" />
+                  <Bar dataKey="income" name="Khoản thu" stackId="n" fill="#1d9bf0" barSize={44} />
+                  <Bar dataKey="negExpense" name="Khoản chi" stackId="n" fill="#f0534f" barSize={44} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '4px 16px' }}>
+            {netBuckets.map(b => {
+              const key = `net-${b.label}`
+              const isOpen = expandedKey === key
+              const byDay = new Map<string, Tx[]>()
+              b.txs.forEach(t => byDay.set(t.date, [...(byDay.get(t.date) ?? []), t]))
+              return (
+                <div key={b.label} style={{ borderBottom: '1px solid var(--bd)' }}>
+                  <div
+                    className="row"
+                    style={{ borderBottom: 0, cursor: 'pointer', alignItems: 'flex-start' }}
+                    onClick={() => setExpandedKey(isOpen ? null : key)}
+                  >
+                    <div className="grow">
+                      <span style={{ fontSize: 16, color: 'var(--mut)' }}>{b.label}</span>
+                    </div>
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <b style={{ color: '#1d9bf0' }}>{money(b.income)}</b>
+                      <b style={{ color: '#f0534f' }}>{money(b.expense)}</b>
+                      <b>
+                        {b.net > 0 ? '+' : ''}
+                        {money(b.net)}
+                      </b>
+                    </div>
+                    <span className="mut" style={{ fontSize: 18, marginLeft: 6, alignSelf: 'center' }}>
+                      {isOpen ? '⌄' : '›'}
+                    </span>
+                  </div>
+                  {isOpen && b.txs.length > 0 && (
+                    <div style={{ padding: '0 0 10px 12px' }}>
+                      {[...byDay.entries()].map(([day, list]) => (
+                        <div key={day} style={{ marginBottom: 6 }}>
+                          <div className="mut" style={{ fontSize: 12, fontWeight: 600, padding: '4px 0' }}>
+                            {fmtDmy(day)}
+                          </div>
+                          {list.map(t => (
+                            <div
+                              key={t.id}
+                              onClick={() => setViewingTx(t)}
+                              style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', cursor: 'pointer' }}
+                              className="mut"
+                            >
+                              <span>
+                                {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'} {t.note ? `(${t.note})` : ''}
+                              </span>
+                              <b style={{ color: t.type === 'income' ? '#1d9bf0' : '#f0534f' }}>{money(t.amount)}</b>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {showTimeModal && (
+            <TimeRangeModal
+              filter={effectiveFilter}
+              onChange={next => {
+                setCur(next.month)
+                if (setTimeFilter) setTimeFilter(next)
+              }}
+              onClose={() => setShowTimeModal(false)}
+            />
+          )}
+          {viewingTx && (
+            <TxDetailModal
+              tx={viewingTx}
+              onClose={() => setViewingTx(null)}
+              onEdit={t => {
+                setViewingTx(null)
+                setEditTx(t)
+              }}
+              onDuplicate={draft => {
+                setViewingTx(null)
+                setDraftTx(draft)
+              }}
+            />
+          )}
+          {editTx && <TxForm tx={editTx} onClose={() => setEditTx(null)} />}
+          {draftTx && <TxForm draft={draftTx} onClose={() => setDraftTx(null)} />}
+        </div>
+      </div>
+    )
+  }
 
   if (screen === 'expense' || screen === 'income') {
     const isExp = screen === 'expense'
@@ -718,7 +864,7 @@ export default function PeriodReport({
             <b style={{ fontSize: 17 }}>
               Thu nhập ròng <span className="mut">?</span>
             </b>
-            <span className="link-green" onClick={() => setScreen('expense')}>
+            <span className="link-green" onClick={() => setScreen('net')}>
               Xem chi tiết
             </span>
           </div>

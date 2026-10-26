@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
 import { evaluateKeypadExpression, formatKeypadDisplay, groupCategoriesHierarchy, money, ymd } from '../lib'
@@ -27,7 +27,7 @@ export default function TxForm({
   const cats = useLiveQuery(() => db.categories.toArray(), []) ?? []
   const [type, setType] = useState<TxType>(tx?.type ?? draft?.type ?? 'expense')
   const [amount, setAmount] = useState(tx ? String(tx.amount) : draft?.amount ? String(draft.amount) : '')
-  const [showKeypad, setShowKeypad] = useState<boolean>(!tx)
+  const [showKeypad, setShowKeypad] = useState<boolean>(false)
   const [date, setDate] = useState(() => tx?.date ?? ymd(new Date()))
   const [fundId, setFundId] = useState<number | ''>(tx?.fundId ?? draft?.fundId ?? '')
   const [toFundId, setToFundId] = useState<number | ''>(tx?.toFundId ?? draft?.toFundId ?? '')
@@ -40,8 +40,33 @@ export default function TxForm({
   const [feeAmount, setFeeAmount] = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
   const [frequency, setFrequency] = useState<RecFrequency>('monthly')
-  const [dayOfMonth, setDayOfMonth] = useState<number>(() => new Date().getDate())
+  const [dayOfMonth, setDayOfMonth] = useState<string>(() => String(new Date().getDate()))
   const [err, setErr] = useState('')
+
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const keypadRef = useRef<HTMLDivElement>(null)
+  const amountBoxRef = useRef<HTMLDivElement>(null)
+
+  // Ẩn bàn phím số khi chạm ra ngoài vùng (bàn phím + ô số tiền) hoặc khi cuộn form
+  useEffect(() => {
+    if (!showKeypad) return
+    const sheet = sheetRef.current
+    const startTop = sheet?.scrollTop ?? 0
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node
+      if (keypadRef.current?.contains(t) || amountBoxRef.current?.contains(t)) return
+      setShowKeypad(false)
+    }
+    const onScroll = () => {
+      if (Math.abs((sheet?.scrollTop ?? 0) - startTop) > 12) setShowKeypad(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    sheet?.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      sheet?.removeEventListener('scroll', onScroll)
+    }
+  }, [showKeypad])
 
   const list = cats.filter(c => c.type === type)
   const selCat = type === 'transfer' ? undefined : (cats.find(c => c.id === categoryId) ?? list[0])
@@ -65,7 +90,7 @@ export default function TxForm({
         categoryId: cat,
         note: note.trim(),
         frequency,
-        dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, dayOfMonth)) : undefined,
+        dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, Number(dayOfMonth) || new Date().getDate())) : undefined,
         startDate: date,
         lastGeneratedDate: null,
         active: true,
@@ -126,7 +151,7 @@ export default function TxForm({
 
   return (
     <div className="sheetbg" onClick={onClose}>
-      <div className="sheet" onClick={e => e.stopPropagation()}>
+      <div ref={sheetRef} className={`sheet ${showKeypad ? 'kp-open' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="ml-tx-header">
           <button type="button" className="ml-tx-cancel-btn" onClick={onClose}>
             Huỷ
@@ -155,6 +180,7 @@ export default function TxForm({
 
         {/* Khối hiển thị Số tiền kiểu MoneyLover – không kích hoạt bàn phím hệ thống của OS */}
         <div
+          ref={amountBoxRef}
           className={`ml-amount-display-box ${showKeypad ? 'active' : ''}`}
           onClick={() => setShowKeypad(true)}
         >
@@ -188,6 +214,7 @@ export default function TxForm({
         {/* Bàn phím số tích hợp liền mạch chuẩn MoneyLover */}
         {showKeypad && (
           <Keypad
+            containerRef={keypadRef}
             value={amount}
             onChange={setAmount}
             onDone={() => setShowKeypad(false)}
@@ -198,7 +225,7 @@ export default function TxForm({
         {type !== 'transfer' && (() => {
           const { parentGroups, independent } = groupCategoriesHierarchy(list)
           return (
-            <label className="fld" style={{ marginTop: showKeypad ? 14 : 0 }}>
+            <label className="fld" style={{ marginTop: 14 }}>
               <span>Nhóm</span>
               <select
                 value={selCat?.id ?? ''}
@@ -266,7 +293,7 @@ export default function TxForm({
             onChange={val => {
               setDate(val)
               const d = Number(val.split('-')[2])
-              if (d >= 1 && d <= 31) setDayOfMonth(d)
+              if (d >= 1 && d <= 31) setDayOfMonth(String(d))
             }}
           />
         </label>
@@ -348,11 +375,19 @@ export default function TxForm({
                   <label className="fld" style={{ marginBottom: 0 }}>
                     <span>Ngày cố định (1-31)</span>
                     <input
-                      type="number"
-                      min={1}
-                      max={31}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={dayOfMonth}
-                      onChange={e => setDayOfMonth(Number(e.target.value))}
+                      onChange={e => {
+                        // Chỉ giữ chữ số, bỏ số 0 đứng đầu (tránh "020"), tối đa 2 chữ số
+                        const digits = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2)
+                        setDayOfMonth(digits)
+                      }}
+                      onBlur={() => {
+                        const n = Number(dayOfMonth)
+                        setDayOfMonth(String(!n ? new Date().getDate() : Math.min(31, n)))
+                      }}
                     />
                   </label>
                 )}

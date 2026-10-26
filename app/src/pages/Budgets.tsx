@@ -14,7 +14,7 @@ import {
   type Tx,
   type TxType,
 } from '../db'
-import { filterReportableTxs, money, monthKey, monthLabel, ymd } from '../lib'
+import { filterReportableTxs, fmtDmy, money, monthKey, monthLabel, ymd } from '../lib'
 
 const NO_CATS: Category[] = []
 const NO_FUNDS: Fund[] = []
@@ -164,8 +164,8 @@ export default function Budgets() {
                       Quỹ: {fund?.name ?? '—'}
                       {fund?.archived ? ' (❄️ Ví đang lưu trữ/đóng băng)' : ''}
                       {rec.type === 'transfer' ? ` → ${fMap.get(rec.toFundId ?? -1)?.name ?? '—'}` : ''} · Kỳ tới:{' '}
-                      <b>{nextDate}</b>
-                      {rec.lastGeneratedDate ? ` (Đã chạy: ${rec.lastGeneratedDate})` : ''}
+                      <b>{fmtDmy(nextDate)}</b>
+                      {rec.lastGeneratedDate ? ` (Đã chạy: ${fmtDmy(rec.lastGeneratedDate)})` : ''}
                     </small>
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -281,7 +281,7 @@ function RecurringForm({
   const [type, setType] = useState<TxType>(rec?.type ?? 'expense')
   const [amount, setAmount] = useState(rec ? String(rec.amount) : '')
   const [frequency, setFrequency] = useState<RecFrequency>(rec?.frequency ?? 'monthly')
-  const [dayOfMonth, setDayOfMonth] = useState<number>(rec?.dayOfMonth ?? new Date().getDate())
+  const [dayOfMonth, setDayOfMonth] = useState<string>(String(rec?.dayOfMonth ?? new Date().getDate()))
   const [startDate, setStartDate] = useState(rec?.startDate ?? ymd(new Date()))
   const [fundId, setFundId] = useState<number | ''>(rec?.fundId ?? funds[0]?.id ?? '')
   const [toFundId, setToFundId] = useState<number | ''>(rec?.toFundId ?? '')
@@ -309,7 +309,7 @@ function RecurringForm({
       categoryId: type === 'transfer' ? null : (selCat?.id ?? null),
       note: note.trim(),
       frequency,
-      dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, dayOfMonth)) : undefined,
+      dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, Number(dayOfMonth) || new Date().getDate())) : undefined,
       startDate,
       lastGeneratedDate: rec?.lastGeneratedDate ?? null,
       active: rec?.active ?? true,
@@ -417,11 +417,15 @@ function RecurringForm({
             <label className="fld">
               <span>Ngày tự động chi (1-31)</span>
               <input
-                type="number"
-                min={1}
-                max={31}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={dayOfMonth}
-                onChange={e => setDayOfMonth(Number(e.target.value))}
+                onChange={e => setDayOfMonth(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
+                onBlur={() => {
+                  const n = Number(dayOfMonth)
+                  setDayOfMonth(String(!n ? new Date().getDate() : Math.min(31, n)))
+                }}
               />
             </label>
           ) : (

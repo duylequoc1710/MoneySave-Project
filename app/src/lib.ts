@@ -402,7 +402,12 @@ export function formatKeypadDisplay(raw: string): string {
 
 export const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
 export const monthKey = (d: Date) => format(d, 'yyyy-MM')
-export const monthLabel = (d: Date) => format(d, "'Tháng' M, yyyy", { locale: vi })
+export const monthLabel = (d: Date) => format(d, 'MM/yyyy')
+/** Chuyển 'YYYY-MM-DD' (lưu trữ) sang 'dd/MM/yyyy' (hiển thị) */
+export const fmtDmy = (s: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s
+}
 
 /**
  * Nhãn hiển thị cho thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneyLover
