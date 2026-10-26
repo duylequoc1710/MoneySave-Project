@@ -18,5 +18,6 @@
 | T-14 | Kiểm thử Đồng bộ Cloud Realtime qua Firebase Firestore kèm Mã hóa đầu cuối (E2EE `AES-GCM 256-bit` + `PBKDF2-SHA256`) & tích hợp Logo/Favicon MoneySave trong suốt | ✅ Pass |
 | T-15 | Kiểm thử Xác thực Tài khoản Cá nhân/Gia đình (Firebase Auth Email/Password), cô lập dữ liệu theo User UID, tích hợp sẵn `firebaseConfig`, và quy trình CI/CD GitHub Pages PWA | ✅ Pass (20/20 unit tests) |
 | T-16 | Kiểm thử Hệ thống Nhóm Cha & Nhóm Con (Category Hierarchy), gom nhóm phân cấp, gán nhanh nhóm con, chọn nhóm optgroup trong form giao dịch, hiển thị `Nhóm cha › Nhóm con` trên báo cáo | ✅ Pass (22/22 unit tests) |
+| T-17 | Kiểm thử định dạng `MM/yyyy` & `dd/MM/yyyy`, màn Chi tiết thu nhập ròng theo tuần, khoá cuộn nền, ô ngày định kỳ, bàn phím số nổi, PWA tự cập nhật (tsc + build + unit test; xác nhận bản live trên Vercel và điện thoại) | ✅ Pass (24/24 unit tests) |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.

@@ -111,4 +111,9 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
   * **Hiện lại ngay lập tức:** Chỉ cần cuộn nhẹ ngón tay lên (scroll up), toàn bộ thanh điều hướng và nút thêm giao dịch sẽ xuất hiện trở lại ngay lập tức.
   * **Chuẩn Touch Target & Haptic Feedback:** Kích thước nút bấm trên thanh dock đạt chuẩn tối thiểu 48px, phản hồi phóng/thu scale `:active` tức thì khi ngón tay vừa chạm vào màn hình và khóa phóng to ngoài ý muốn (`maximum-scale=1, user-scalable=no`).
 
-
+## 9. Cập nhật 2026-10-26
+* **Định dạng:** tháng `07/2026`, ngày `dd/MM/yyyy` trên toàn app (kể cả Ngân sách & Định kỳ).
+* **Chi tiết thu nhập ròng:** ở Báo cáo, thẻ *Thu nhập ròng* → *Xem chi tiết*: xem thu/chi/ròng theo tuần (Thứ 2 → Chủ nhật), bấm một tuần để xem giao dịch theo ngày.
+* **Bàn phím số:** chỉ hiện khi chạm vào ô *Số tiền*; chạm ra ngoài, cuộn form hoặc bấm *XONG* để ẩn.
+* **Ngày cố định (định kỳ):** nhập thẳng số ngày 1–31 (không còn lỗi `020`).
+* **Cập nhật app:** app tự kiểm tra và nạp bản mới khi mở hoặc quay lại; nếu vẫn thấy bản cũ, vuốt tắt rồi mở lại.

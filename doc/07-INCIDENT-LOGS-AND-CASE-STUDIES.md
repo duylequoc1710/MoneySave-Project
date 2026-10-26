@@ -18,6 +18,10 @@
 | **INC-07** | Data Safety / Startup | Giao dịch người dùng vừa nhập bị mất khi tải lại app sau bản cập nhật | Bật cờ `PURGE_KEY` tự động xóa IndexedDB trong `initApp()` trên `main.tsx` | Xóa bỏ hoàn toàn mã purge tự động trên startup; chỉ cho phép dọn dẹp khi người dùng chủ động bấm trong Cài đặt |
 | **INC-08** | Performance / UI Glitch | Giao diện bị chớp nháy (flicker) sáng/tối khi mở trang và giật định kỳ | FOUC do theme set trễ trong `useEffect` và Polling 12s kích hoạt re-render toàn bộ `App.tsx` | Đưa script set theme đồng bộ vào `<head>` của `index.html`, áp dụng chế độ Silent Sync cho polling |
 | **INC-09** | Mobile UX / In-App Keypad | Bàn phím hệ thống OS bung lên tách rời làm vỡ bố cục; thiếu dấu phân cách số tiền; dock menu choán màn hình khi xem | Dùng `<input>` trần gọi native virtual keyboard; thiếu in-app calculator keypad; fixed dock thiếu logic tự ẩn khi cuộn | Xây dựng Bàn phím số In-App liền khối chuẩn MoneyLover, thêm logic ẩn/hiện thông minh khi cuộn, nâng touch target 48px |
+| **INC-10** | PWA / Cache | Deploy xong nhưng điện thoại (iOS & Android) vẫn hiện bản cũ (ví dụ ngày `yyyy-mm-dd`) | Service worker mới tải xong nhưng trang đang mở vẫn chạy bản cũ đến khi đóng hẳn app; không chủ động kiểm tra bản mới | `skipWaiting` + `clientsClaim` + `cleanupOutdatedCaches`, `index.html` NetworkFirst, `registerSW` kiểm tra bản mới khi mở/quay lại/30 phút và tự reload (hoãn nếu đang mở form) |
+| **INC-11** | Mobile UX / Modal | Cuộn trong form thêm/sửa giao dịch làm nền phía sau cuộn theo; bàn phím số đẩy dài form | Không khoá cuộn body khi mở `.sheetbg`; bàn phím số nằm trong luồng nội dung | `scrollLock.ts` khoá body khi có sheet, `overscroll-behavior: contain`; bàn phím số dạng panel nổi, ẩn khi chạm ngoài/cuộn |
+| **INC-12** | Form / Input | Ô "Ngày cố định" không xoá hết số 0, phải gõ `020` mới ra 20 | `input type=number` gắn state kiểu number: xoá rỗng → `0` hiện lại, gõ tiếp thành `020` | Ô text numeric, state chuỗi, bỏ số 0 đầu, tối đa 2 chữ số, chuẩn hoá 1–31 khi blur (TxForm & Budgets) |
+| **INC-13** | UI / Định dạng | Nhãn tháng `Tháng 7, 2026` và ngày định kỳ `yyyy-mm-dd` không đồng nhất | `monthLabel` dùng mẫu cũ; Budgets in thẳng chuỗi lưu trữ | `monthLabel` → `MM/yyyy`; `fmtDmy()` cho mọi ngày hiển thị (dữ liệu lưu vẫn `YYYY-MM-DD`) |
 
 ---
 
@@ -230,6 +234,16 @@
      * Cập nhật thẻ viewport meta `maximum-scale=1, user-scalable=no, viewport-fit=cover` và đặt màu nền `html { background: var(--bg); }` để loại bỏ hiện tượng phóng to méo mó và lộ nền trắng khi cuộn nảy overscroll trên iOS.
 * **Quy tắc cho kỹ sư:**
   > Trong các ứng dụng quản lý tài chính di động mô phỏng native app, việc nhập số tiền không nên sử dụng bàn phím ảo của hệ điều hành mà phải dùng Bàn phím số tích hợp in-app. Thanh bottom navigation bar phải biết tự ẩn khi người dùng cuộn xuống để dành trọn vẹn không gian hiển thị cho dữ liệu, đồng thời mọi nút bấm phải có touch target tối thiểu 48px và phản hồi `:active` thị giác tức thì.
+
+---
+
+### CASE STUDY 10: Bản Deploy Mới Không Tới Được Điện Thoại (PWA Cache Cũ)
+* **Mã sự cố:** `INC-10`
+* **Mô tả:** Sau khi push/deploy, app trên màn hình chính iOS/Android vẫn hiển thị bản cũ.
+* **RCA:** Service worker `autoUpdate` chỉ thay bản khi toàn bộ tab/app đóng; không có chủ động kiểm tra cập nhật.
+* **Giải pháp:** Xem `vite.config.ts` và `main.tsx` (registerSW + kiểm tra định kỳ + reload an toàn khi không mở form).
+* **Quy tắc cho kỹ sư:**
+  > Mọi thay đổi phải push lên `main` (Vercel tự deploy tại https://moneysavedl.vercel.app) và kiểm tra bản live. Không bao giờ reload tự động khi người dùng đang mở form nhập liệu. Cache của SW chỉ chứa file giao diện, không chứa dữ liệu IndexedDB.
 
 ---
 

@@ -104,3 +104,9 @@ Trong dự án đã tích hợp sẵn workflow GitHub Actions tại [`.github/wo
 * Tuyệt đối không commit file chứa khóa bí mật cá nhân (`.env.local`, `.env`) lên Git.
 * Kho mã nguồn của dự án đã cấu hình sẵn `.gitignore` để loại trừ tất cả các file cấu hình cục bộ.
 * Mọi dữ liệu tài chính thực tế của người dùng được lưu trữ trong **IndexedDB** trên trình duyệt của chính họ và chỉ được mã hóa đẩy lên phân vùng tài khoản riêng biệt.
+
+---
+
+## Ghi chú vận hành hiện tại
+* Bản live: https://moneysavedl.vercel.app (Vercel, tự deploy khi push lên `main`).
+* PWA tự cập nhật: cấu hình trong `app/vite.config.ts` và `app/src/main.tsx` (xem INC-10 trong file 07).
