@@ -2,6 +2,9 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   analyzeCreditFund,
+  buildCalendarWeekBuckets,
+  fmtDmy,
+  monthLabel,
   buildCsvContent,
   buildExcelXml,
   computeTotalBalance,
@@ -563,4 +566,79 @@ describe('Đồng bộ Cloud Realtime & Mã hóa đầu cuối E2EE (cloudSync.t
   })
 })
 
+describe('Định kỳ – các trường hợp biên', () => {
+  const base: RecurringTx = {
+    id: 9, name: 'X', type: 'expense', amount: 1, fundId: 1, categoryId: 1, note: '',
+    frequency: 'monthly', dayOfMonth: 31, startDate: '2027-12-01', lastGeneratedDate: null, active: true,
+  }
+  it('Ngày 31 rơi vào cuối tháng ngắn và Tháng 2 năm nhuận (2028)', () => {
+    const due = computeDueDates(base, '2028-03-01')
+    assert.deepEqual(due, ['2027-12-31', '2028-01-31', '2028-02-29'])
+  })
+  it('Không phát sinh trùng sau khi đã chạy (lastGeneratedDate)', () => {
+    const due = computeDueDates({ ...base, lastGeneratedDate: '2028-01-31' }, '2028-03-01')
+    assert.deepEqual(due, ['2028-02-29'])
+  })
+  it('Hàng tuần & hàng ngày tăng đúng bước', () => {
+    const w = computeDueDates({ ...base, frequency: 'weekly', startDate: '2026-10-01' }, '2026-10-22')
+    assert.deepEqual(w, ['2026-10-01', '2026-10-08', '2026-10-15', '2026-10-22'])
+    const d = computeDueDates({ ...base, frequency: 'daily', startDate: '2026-10-01' }, '2026-10-03')
+    assert.equal(d.length, 3)
+  })
+  it('Không phát sinh khi chưa đến ngày bắt đầu hoặc đang tắt', () => {
+    assert.deepEqual(computeDueDates({ ...base, startDate: '2030-01-01' }, '2026-10-01'), [])
+    assert.deepEqual(computeDueDates({ ...base, active: false }, '2028-03-01'), [])
+  })
+  it('getNextOccurrence hàng tháng ngày 31 sau lần chạy 30/01', () => {
+    const next = getNextOccurrence({ ...base, lastGeneratedDate: '2028-01-31' }, '2028-02-01')
+    assert.equal(next, '2028-02-29')
+  })
+})
 
+describe('Báo cáo tuần Thứ 2 → Chủ nhật & định dạng hiển thị', () => {
+  const mk = (date: string, type: 'income' | 'expense', amount: number): Tx => ({
+    id: 1, type, amount, date, fundId: 1, categoryId: 1, note: '', createdAt: 0,
+  })
+  it('Tháng 10/2026 (ngày 1 là Thứ Năm): tuần đầu chỉ 1-4, rồi 5-11, 12-18, 19-25, 26-31', () => {
+    const b = buildCalendarWeekBuckets(new Date(2026, 9, 1), new Date(2026, 10, 15), [], 'expense')
+    assert.deepEqual(b.map(x => x.label), ['1-4', '5-11', '12-18', '19-25', '26-31'])
+  })
+  it('Tháng hiện tại chỉ tính đến hôm nay (26/10 → bucket 26)', () => {
+    const b = buildCalendarWeekBuckets(new Date(2026, 9, 1), new Date(2026, 9, 26), [], 'expense')
+    assert.equal(b[b.length - 1].label, '26')
+  })
+  it('Cộng tiền đúng vào tuần chứa ngày giao dịch', () => {
+    const txs = [mk('2026-10-03', 'income', 10_500_000), mk('2026-10-01', 'expense', 100), mk('2026-10-06', 'expense', 50)]
+    const inc = buildCalendarWeekBuckets(new Date(2026, 9, 1), new Date(2026, 10, 15), txs, 'income')
+    const exp = buildCalendarWeekBuckets(new Date(2026, 9, 1), new Date(2026, 10, 15), txs, 'expense')
+    assert.equal(inc[0].amount, 10_500_000)
+    assert.equal(exp[0].amount, 100)
+    assert.equal(exp[1].amount, 50)
+  })
+  it('monthLabel = MM/yyyy và fmtDmy = dd/MM/yyyy', () => {
+    assert.equal(monthLabel(new Date(2026, 6, 1)), '07/2026')
+    assert.equal(fmtDmy('2026-11-10'), '10/11/2026')
+    assert.equal(fmtDmy('không phải ngày'), 'không phải ngày')
+  })
+})
+
+describe('Nhắc sao lưu định kỳ', () => {
+  it('Nhắc khi chưa từng sao lưu, im lặng khi vừa sao lưu, nhắc lại sau 7 ngày, hoãn được', async () => {
+    const mem = new Map<string, string>()
+    ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, v),
+      removeItem: (k: string) => void mem.delete(k),
+    } as unknown as Storage
+    const m = await import('./safetyBackup.ts')
+    const now = Date.now()
+    assert.deepEqual(m.backupReminderState(now), { daysSince: null })
+    m.markBackupDownloaded()
+    assert.equal(m.backupReminderState(Date.now()), undefined)
+    assert.equal(m.backupReminderState(now + 8 * 86400000)?.daysSince, 8)
+    mem.delete('moneysave_last_backup_at')
+    m.snoozeBackupReminder(3)
+    assert.equal(m.backupReminderState(now + 86400000), undefined) // đang hoãn
+    assert.deepEqual(m.backupReminderState(now + 4 * 86400000), { daysSince: null }) // hết hoãn
+  })
+})

@@ -628,3 +628,49 @@ export function getCategoryFullName(category: Category, allCategories: Category[
   }
   return category.name
 }
+
+export interface WeekBucket {
+  label: string
+  fromDay: number
+  toDay: number
+  amount: number
+  txs: Tx[]
+}
+
+/**
+ * Chia tháng thành các cụm ngày theo tuần lịch (Thứ Hai -> Chủ Nhật), ví dụ: 1-4, 5-11, 12-18, 19-24
+ */
+export function buildCalendarWeekBuckets(curMonth: Date, today: Date, monthTxs: Tx[], type: 'expense' | 'income'): WeekBucket[] {
+  const year = curMonth.getFullYear()
+  const month = curMonth.getMonth()
+  const totalDays = getDaysInMonth(curMonth)
+  const isCurrentMonth = monthKey(curMonth) === monthKey(today)
+  const maxDay = isCurrentMonth ? Math.min(totalDays, today.getDate()) : totalDays
+
+  const buckets: WeekBucket[] = []
+  let startDay = 1
+
+  while (startDay <= maxDay) {
+    let endDay = startDay
+    while (endDay < maxDay) {
+      const d = new Date(year, month, endDay)
+      // getDay() === 0 là Chủ Nhật -> kết thúc cụm tuần
+      if (d.getDay() === 0) break
+      endDay++
+    }
+    const mStr = format(curMonth, 'yyyy-MM')
+    const fromYmd = `${mStr}-${String(startDay).padStart(2, '0')}`
+    const toYmd = `${mStr}-${String(endDay).padStart(2, '0')}`
+    const rangeTxs = monthTxs.filter(t => t.type === type && t.date >= fromYmd && t.date <= toYmd)
+    const amount = rangeTxs.reduce((s, t) => s + t.amount, 0)
+    buckets.push({
+      label: startDay === endDay ? `${startDay}` : `${startDay}-${endDay}`,
+      fromDay: startDay,
+      toDay: endDay,
+      amount,
+      txs: rangeTxs,
+    })
+    startDay = endDay + 1
+  }
+  return buckets
+}

@@ -25,7 +25,14 @@ const updateSW = registerSW({
   onNeedRefresh() {
     const tryReload = () => {
       if (document.querySelector('.sheetbg')) setTimeout(tryReload, 3000)
-      else updateSW(true)
+      else {
+        try {
+          sessionStorage.setItem('moneysave_just_updated', '1')
+        } catch {
+          /* ignore */
+        }
+        updateSW(true)
+      }
     }
     tryReload()
   },

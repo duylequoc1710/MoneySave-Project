@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import Overview from './pages/Overview'
-import Ledger from './pages/Ledger'
-import Budgets from './pages/Budgets'
-import Accounts from './pages/Accounts'
-import Settings from './pages/Settings'
+const Overview = lazy(() => import('./pages/Overview'))
+const Ledger = lazy(() => import('./pages/Ledger'))
+const Budgets = lazy(() => import('./pages/Budgets'))
+const Accounts = lazy(() => import('./pages/Accounts'))
+const Settings = lazy(() => import('./pages/Settings'))
 import TxForm from './components/TxForm'
 import AuthLanding from './components/AuthLanding'
+import BackupReminder from './components/BackupReminder'
 import { applyTheme, getStoredTheme } from './lib'
 import {
   startRealtimeCloudSyncEngine,
@@ -26,6 +27,20 @@ export default function App() {
   })
   const [authUser, setAuthUser] = useState<AuthUser | null>(getAuthUser())
   const [skipAuth, setSkipAuth] = useState(false)
+  const [updatedToast, setUpdatedToast] = useState<string | null>(() => {
+    try {
+      const v = sessionStorage.getItem('moneysave_just_updated')
+      if (v) sessionStorage.removeItem('moneysave_just_updated')
+      return v
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    if (!updatedToast) return
+    const t = setTimeout(() => setUpdatedToast(null), 5000)
+    return () => clearTimeout(t)
+  }, [updatedToast])
   const nav = useNavigate()
   const location = useLocation()
 
@@ -178,6 +193,8 @@ export default function App() {
             {accountLabel}
           </button>
         </header>
+        <BackupReminder />
+        <Suspense fallback={<div className="mut" style={{ padding: 24, textAlign: 'center' }}>Đang tải…</div>}>
         <Routes>
           <Route path="/" element={<Overview />} />
           <Route path="/ledger" element={<Ledger />} />
@@ -185,6 +202,7 @@ export default function App() {
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
+        </Suspense>
       </main>
       <button
         className={`ml-fab-pill ${!isNavVisible ? 'fab-hidden' : ''}`}
@@ -192,6 +210,28 @@ export default function App() {
       >
         <span style={{ fontSize: 20, fontWeight: 400 }}>＋</span> Thêm giao dịch
       </button>
+      {updatedToast && (
+        <div
+          role="status"
+          onClick={() => setUpdatedToast(null)}
+          style={{
+            position: 'fixed',
+            top: 'calc(12px + env(safe-area-inset-top))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 100,
+            background: 'var(--acc)',
+            color: '#fff',
+            padding: '10px 16px',
+            borderRadius: 99,
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: '0 6px 20px #0006',
+          }}
+        >
+          ✨ Đã cập nhật phiên bản mới ({__APP_VERSION__.split(' · ')[0]})
+        </div>
+      )}
       {addingTx && <TxForm onClose={() => setAddingTx(false)} />}
     </div>
   )

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -66,13 +66,13 @@ export default function Ledger() {
   const activeFunds = useMemo(() => getIncludedFunds(funds, fundFilter), [funds, fundFilter])
   const activeFundIds = useMemo(() => new Set(activeFunds.map(f => f.id!)), [activeFunds])
 
-  const effectOnSelection = (t: Tx) => activeFunds.reduce((s, f) => s + effectOn(t, f.id!), 0)
+  const effectOnSelection = useCallback((t: Tx) => activeFunds.reduce((s, f) => s + effectOn(t, f.id!), 0), [activeFunds])
 
   // Số dư hiện tại (tất cả thời gian) của phạm vi ví đang chọn
   const currentTotalBalance = useMemo(() => {
     const init = activeFunds.reduce((s, f) => s + f.initialBalance, 0)
     return init + allTxs.reduce((s, t) => s + effectOnSelection(t), 0)
-  }, [activeFunds, allTxs])
+  }, [activeFunds, allTxs, effectOnSelection])
 
   // Số dư đầu kỳ & Số dư cuối kỳ giống hệt MoneyLover
   const { openingBalance, closingBalance, netChange } = useMemo(() => {
@@ -84,7 +84,7 @@ export default function Ledger() {
     const open = init + beforePeriod
     const close = open + inPeriod
     return { openingBalance: open, closingBalance: close, netChange: inPeriod }
-  }, [activeFunds, allTxs, from, to])
+  }, [activeFunds, allTxs, from, to, effectOnSelection])
 
   const shown = useMemo(() => {
     return allTxs.filter(

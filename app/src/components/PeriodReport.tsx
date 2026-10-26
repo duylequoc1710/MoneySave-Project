@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -15,6 +15,7 @@ import {
 import { addMonths, endOfMonth, format, getDaysInMonth, startOfMonth } from 'date-fns'
 import { type Category, type Fund, type Tx } from '../db'
 import {
+  buildCalendarWeekBuckets,
   effectOn,
   filterReportableTxs,
   fmtDmy,
@@ -55,52 +56,6 @@ interface CatSummary {
   amount: number
   pct: number
   txs: Tx[]
-}
-
-interface WeekBucket {
-  label: string
-  fromDay: number
-  toDay: number
-  amount: number
-  txs: Tx[]
-}
-
-/**
- * Chia tháng thành các cụm ngày theo tuần lịch (Thứ Hai -> Chủ Nhật), ví dụ: 1-4, 5-11, 12-18, 19-24
- */
-function buildCalendarWeekBuckets(curMonth: Date, today: Date, monthTxs: Tx[], type: 'expense' | 'income'): WeekBucket[] {
-  const year = curMonth.getFullYear()
-  const month = curMonth.getMonth()
-  const totalDays = getDaysInMonth(curMonth)
-  const isCurrentMonth = monthKey(curMonth) === monthKey(today)
-  const maxDay = isCurrentMonth ? Math.min(totalDays, today.getDate()) : totalDays
-
-  const buckets: WeekBucket[] = []
-  let startDay = 1
-
-  while (startDay <= maxDay) {
-    let endDay = startDay
-    while (endDay < maxDay) {
-      const d = new Date(year, month, endDay)
-      // getDay() === 0 là Chủ Nhật -> kết thúc cụm tuần
-      if (d.getDay() === 0) break
-      endDay++
-    }
-    const mStr = format(curMonth, 'yyyy-MM')
-    const fromYmd = `${mStr}-${String(startDay).padStart(2, '0')}`
-    const toYmd = `${mStr}-${String(endDay).padStart(2, '0')}`
-    const rangeTxs = monthTxs.filter(t => t.type === type && t.date >= fromYmd && t.date <= toYmd)
-    const amount = rangeTxs.reduce((s, t) => s + t.amount, 0)
-    buckets.push({
-      label: startDay === endDay ? `${startDay}` : `${startDay}-${endDay}`,
-      fromDay: startDay,
-      toDay: endDay,
-      amount,
-      txs: rangeTxs,
-    })
-    startDay = endDay + 1
-  }
-  return buckets
 }
 
 function DonutWithBadges({
@@ -295,12 +250,12 @@ export default function PeriodReport({
   }
 
   const activeFunds = useMemo(() => getIncludedFunds(funds, fundFilter), [funds, fundFilter])
-  const effectOnSelection = (t: Tx) => activeFunds.reduce((s, f) => s + effectOn(t, f.id!), 0)
+  const effectOnSelection = useCallback((t: Tx) => activeFunds.reduce((s, f) => s + effectOn(t, f.id!), 0), [activeFunds])
 
   const currentTotalBalance = useMemo(() => {
     const init = activeFunds.reduce((s, f) => s + f.initialBalance, 0)
     return init + allTxs.reduce((s, t) => s + effectOnSelection(t), 0)
-  }, [activeFunds, allTxs])
+  }, [activeFunds, allTxs, effectOnSelection])
 
   const { openingBalance, closingBalance } = useMemo(() => {
     const init = activeFunds.reduce((s, f) => s + f.initialBalance, 0)
@@ -309,7 +264,7 @@ export default function PeriodReport({
       .filter(t => t.date >= from && t.date <= to)
       .reduce((s, t) => s + effectOnSelection(t), 0)
     return { openingBalance: init + before, closingBalance: init + before + inMonth }
-  }, [activeFunds, allTxs, from, to])
+  }, [activeFunds, allTxs, from, to, effectOnSelection])
 
   // Chỉ lấy các giao dịch được phép đưa vào báo cáo (loại bỏ ví "Không tính vào tổng" khi xem Tổng cộng và giao dịch "Không tính vào báo cáo")
   const reportableTxs = useMemo(() => filterReportableTxs(allTxs, funds, fundFilter), [allTxs, funds, fundFilter])

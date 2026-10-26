@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import { addDays, addMonths, addWeeks, addYears, format, getDaysInMonth, parseISO, setDate } from 'date-fns'
+import { saveSafetySnapshot } from './safetyBackup.ts'
 
 export type TxType = 'expense' | 'income' | 'transfer'
 export type FundKind = 'cash' | 'credit'
@@ -280,6 +281,10 @@ export async function importAll(
   const d = JSON.parse(json)
   if (d?.app !== 'MoneyGo' || !Array.isArray(d.funds) || !Array.isArray(d.categories) || !Array.isArray(d.txs)) {
     throw new Error('File không phải bản sao lưu MoneyGo')
+  }
+  // An toàn dữ liệu: tự lưu bản sao dữ liệu hiện tại (CSDL riêng) trước khi bị ghi đè
+  if (store === (db as unknown)) {
+    await saveSafetySnapshot(await exportAll(db), 'Trước khi khôi phục / đồng bộ ghi đè')
   }
   const tables = [store.funds, store.categories, store.txs, store.budgets, ...(store.recurrings ? [store.recurrings] : [])]
   await store.transaction('rw', tables, async () => {

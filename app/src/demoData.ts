@@ -1,4 +1,5 @@
-import { db, type Budget, type Category, type Fund, type RecurringTx, type Tx } from './db'
+import { saveSafetySnapshot } from './safetyBackup.ts'
+import { db, exportAll, type Budget, type Category, type Fund, type RecurringTx, type Tx } from './db'
 import { getActiveCloudSyncConfig, markLocalMutated, pushLocalToCloud } from './cloudSync'
 
 const DEMO_FLAG_KEY = 'moneygo_demo_3m_v2'
@@ -268,6 +269,8 @@ export async function seedDemoData3Months(force = false) {
     mkTx('2026-11-14', 'expense', 2_200_000, 3, 6, 'Vé máy bay Đà Lạt cuối năm (Đã lên lịch)'),
   ]
 
+  // An toàn dữ liệu: lưu bản sao trước khi xoá/ghi đè dữ liệu thật
+  await saveSafetySnapshot(await exportAll(db), 'Trước khi nạp dữ liệu mẫu')
   await db.transaction('rw', [db.funds, db.categories, db.txs, db.budgets, db.recurrings], async () => {
     await Promise.all([
       db.funds.clear(),
@@ -294,6 +297,8 @@ export async function clearAllToCleanState() {
     { name: 'Quỹ Chính', icon: '👛', color: '#f97316', initialBalance: 0, kind: 'cash' },
     { name: 'Ngân hàng', icon: '🏦', color: '#3b82f6', initialBalance: 0, kind: 'cash' },
   ]
+  // An toàn dữ liệu: lưu bản sao trước khi xoá/ghi đè dữ liệu thật
+  await saveSafetySnapshot(await exportAll(db), 'Trước khi xoá sạch dữ liệu')
   await db.transaction('rw', [db.funds, db.categories, db.txs, db.budgets, db.recurrings], async () => {
     await Promise.all([
       db.funds.clear(),

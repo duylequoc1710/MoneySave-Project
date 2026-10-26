@@ -9,6 +9,8 @@ import {
   getStoredTheme,
   type ThemeMode,
 } from '../lib'
+import SafetySnapshotsCard from '../components/SafetySnapshotsCard'
+import { markBackupDownloaded } from '../safetyBackup'
 import { clearAllToCleanState, seedDemoData3Months } from '../demoData'
 import {
   deriveVaultDocId,
@@ -774,6 +776,7 @@ export default function Settings() {
             onClick={async () => {
               const dateStr = new Date().toISOString().slice(0, 10)
               download(`moneysave-backup-${dateStr}.json`, await exportAll(), 'application/json')
+              markBackupDownloaded()
             }}
           >
             Sao lưu
@@ -804,6 +807,8 @@ export default function Settings() {
         </div>
       </div>
 
+      <SafetySnapshotsCard />
+
       {/* 4. QUẢN LÝ DỮ LIỆU KIỂM THỬ (DEMO) */}
       <h2>🧪 CÔNG CỤ DỮ LIỆU KIỂM THỬ (TEST DATA)</h2>
       <div className="card" style={{ padding: '4px 16px' }}>
@@ -819,7 +824,7 @@ export default function Settings() {
             type="button"
             className="btn"
             onClick={async () => {
-              if (confirm('Nạp lại bộ dữ liệu mẫu 3 tháng để kiểm thử?')) {
+              if (confirm('⚠️ Thao tác này GHI ĐÈ toàn bộ dữ liệu hiện tại bằng dữ liệu mẫu (một bản sao an toàn sẽ được lưu tự động trước đó). Tiếp tục?')) {
                 await seedDemoData3Months(true)
                 alert('Đã nạp đầy đủ dữ liệu mẫu 3 tháng!')
               }
@@ -841,7 +846,7 @@ export default function Settings() {
             type="button"
             className="btn dng"
             onClick={async () => {
-              if (confirm('Xoá sạch toàn bộ dữ liệu test để bắt đầu dùng thực tế từ 0 ₫?')) {
+              if (confirm('⚠️ Thao tác này XOÁ SẠCH toàn bộ dữ liệu hiện tại (kể cả dữ liệu thật). Một bản sao an toàn sẽ được lưu tự động trước đó. Tiếp tục?')) {
                 await clearAllToCleanState()
                 alert('Đã xoá sạch dữ liệu test về 0 ₫.')
               }
@@ -904,7 +909,7 @@ export default function Settings() {
           Tác giả: <b>Duylequoc1710</b>
         </div>
         <div className="mut" style={{ fontSize: 11.5, marginTop: 2 }}>
-          Bản quyền © {new Date().getFullYear()} · Phiên bản 2.1.0
+          Bản quyền © {new Date().getFullYear()} · Phiên bản {__APP_VERSION__}
         </div>
       </footer>
 

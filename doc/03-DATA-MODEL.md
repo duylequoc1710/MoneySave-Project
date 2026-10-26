@@ -26,3 +26,6 @@ JSON `{app:'MoneyGo', version:1, exportedAt, funds, categories, txs, budgets}`. 
 
 ## Quy tắc thay đổi schema
 Thêm `this.version(n+1).stores(...)` trong `db.ts`, không sửa version cũ; cập nhật tài liệu này.
+
+## CSDL phụ: bản sao an toàn (không thuộc schema chính)
+IndexedDB riêng `moneysave_safety` (bảng `snapshots`: `++id, createdAt`; trường `reason, txCount, fundCount, json`), tối đa 10 bản. Tách biệt hoàn toàn với `MoneyDB` nên **không tăng version Dexie chính** và không bị `importAll`/đồng bộ Cloud ghi đè. Dùng để hoàn tác khi lỡ Khôi phục/Đồng bộ/Xoá sạch.

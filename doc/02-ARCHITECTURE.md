@@ -36,3 +36,11 @@ Xem `adr/0001-pwa-offline-first.md`.
 
 ## Hiệu năng
 Giao dịch được truy vấn theo index `date` (theo tháng); Tổng quan hiện đọc toàn bộ bảng txs – đủ tốt tới vài chục nghìn dòng; nếu cần sẽ chuyển sang bảng tổng hợp theo tháng.
+
+## Cập nhật 2026-10-26
+- `safetyBackup.ts` – bản sao an toàn tự động + nhắc sao lưu; `scrollLock.ts` – khoá cuộn nền khi mở sheet.
+- `pages/*` được nạp lười (`React.lazy`); Recharts tách chunk riêng (`vite.config.ts`).
+- `components/accounts/*` – các form/modal của trang Ví (tách từ `Accounts.tsx`).
+- Hàm chia tuần `buildCalendarWeekBuckets` nằm trong `lib.ts` (có unit test).
+- Phiên bản app `__APP_VERSION__` được inject lúc build (`package.json` version · ngày giờ · mã commit).
+- Hiệu năng: đo 50.000 giao dịch chỉ ≈ 1 ms/lần tính trong bộ nhớ nên **chưa cần** truy vấn theo tháng; sẽ xem lại nếu dữ liệu vượt vài trăm nghìn dòng.

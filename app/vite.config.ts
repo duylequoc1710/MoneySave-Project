@@ -1,8 +1,39 @@
+import { readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+function appVersion() {
+  const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+  let hash = (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7)
+  if (!hash) {
+    try {
+      hash = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    } catch {
+      hash = 'local'
+    }
+  }
+  // Giờ Việt Nam (UTC+7) để dễ đối chiếu
+  const vn = new Date(Date.now() + 7 * 3600 * 1000).toISOString()
+  const stamp = `${vn.slice(8, 10)}/${vn.slice(5, 7)}/${vn.slice(0, 4)} ${vn.slice(11, 16)}`
+  return `${pkg.version} · ${stamp} · ${hash}`
+}
+
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        // Tách thư viện nặng ra chunk riêng để tải song song & cache lâu dài
+        manualChunks(id: string) {
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-') || id.includes('node_modules/victory-vendor')) {
+            return 'recharts'
+          }
+        },
+      },
+    },
+  },
+  define: { __APP_VERSION__: JSON.stringify(appVersion()) },
   base: './',
   plugins: [
     react(),

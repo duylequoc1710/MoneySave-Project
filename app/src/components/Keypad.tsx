@@ -125,7 +125,8 @@ export default function Keypad({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [value])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, onChange, onDone])
 
   return (
     <div className="ml-keypad-container" ref={containerRef}>
