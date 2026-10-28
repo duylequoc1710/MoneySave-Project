@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
-import { evaluateKeypadExpression, formatKeypadDisplay, groupCategoriesHierarchy, money, ymd } from '../lib'
+import { evaluateKeypadExpression, formatKeypadDisplay, money, ymd } from '../lib'
 import DateInput from './DateInput'
 import Keypad from './Keypad'
+import CategoryPickerModal from './CategoryPickerModal'
 
 export interface TxFormDraft {
   type?: TxType
@@ -32,6 +33,7 @@ export default function TxForm({
   const [fundId, setFundId] = useState<number | ''>(tx?.fundId ?? draft?.fundId ?? '')
   const [toFundId, setToFundId] = useState<number | ''>(tx?.toFundId ?? draft?.toFundId ?? '')
   const [categoryId, setCategoryId] = useState<number | ''>(tx?.categoryId ?? draft?.categoryId ?? '')
+  const [showCatPicker, setShowCatPicker] = useState(false)
   const [note, setNote] = useState(tx?.note ?? draft?.note ?? '')
   const [excludeFromReport, setExcludeFromReport] = useState<boolean>(
     tx?.excludeFromReport ?? (type === 'transfer' ? true : false),
@@ -222,45 +224,34 @@ export default function TxForm({
           />
         )}
 
-        {type !== 'transfer' && (() => {
-          const { parentGroups, independent } = groupCategoriesHierarchy(list)
-          return (
-            <label className="fld" style={{ marginTop: 14 }}>
-              <span>Nhóm</span>
-              <select
-                value={selCat?.id ?? ''}
-                onChange={e => {
-                  const id = Number(e.target.value)
-                  setCategoryId(id)
-                  const cf = cats.find(c => c.id === id)?.fundId
-                  if (cf) setFundId(cf)
+        {type !== 'transfer' && (
+          <div className="fld" style={{ marginTop: 14 }}>
+            <span>Nhóm chi tiêu / thu nhập</span>
+            <div
+              className="ml-select-tile"
+              onClick={() => setShowCatPicker(true)}
+              role="button"
+              tabIndex={0}
+            >
+              <div
+                className="ico round"
+                style={{
+                  background: (selCat?.color || 'var(--acc)') + '25',
+                  color: selCat?.color || 'var(--acc)',
+                  width: 36,
+                  height: 36,
+                  fontSize: 18,
                 }}
               >
-                {parentGroups.map(grp => (
-                  <optgroup key={grp.parent.id} label={`${grp.parent.icon} ${grp.parent.name}`}>
-                    <option value={grp.parent.id}>
-                      {grp.parent.icon} {grp.parent.name} (Chung)
-                    </option>
-                    {grp.children.map(ch => (
-                      <option key={ch.id} value={ch.id}>
-                        &nbsp;&nbsp;&nbsp;&nbsp;↳ {ch.icon} {ch.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-                {independent.length > 0 && (
-                  <optgroup label={parentGroups.length > 0 ? 'Nhóm khác' : 'Danh sách nhóm'}>
-                    {independent.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.icon} {c.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-            </label>
-          )
-        })()}
+                {selCat?.icon || '🏷️'}
+              </div>
+              <div className="grow" style={{ marginLeft: 8 }}>
+                <b style={{ fontSize: 15, display: 'block' }}>{selCat?.name || 'Chọn nhóm'}</b>
+              </div>
+              <span className="mut" style={{ fontSize: 18 }}>›</span>
+            </div>
+          </div>
+        )}
         <label className="fld">
           <span>{type === 'transfer' ? 'Từ quỹ (nguồn)' : 'Quỹ / Thẻ thanh toán'}</span>
           <select value={fid ?? ''} onChange={e => setFundId(Number(e.target.value))}>
@@ -412,6 +403,18 @@ export default function TxForm({
             {isRecurring && !tx ? 'Lưu & Bật tự động' : 'Lưu'}
           </button>
         </div>
+        {showCatPicker && (
+          <CategoryPickerModal
+            type={type}
+            selectedId={selCat?.id ?? ''}
+            categories={cats}
+            onSelect={cat => {
+              setCategoryId(cat.id!)
+              if (cat.fundId) setFundId(cat.fundId)
+            }}
+            onClose={() => setShowCatPicker(false)}
+          />
+        )}
       </div>
     </div>
   )

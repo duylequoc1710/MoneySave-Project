@@ -22,6 +22,7 @@
 | **INC-11** | Mobile UX / Modal | Cuộn trong form thêm/sửa giao dịch làm nền phía sau cuộn theo; bàn phím số đẩy dài form | Không khoá cuộn body khi mở `.sheetbg`; bàn phím số nằm trong luồng nội dung | `scrollLock.ts` khoá body khi có sheet, `overscroll-behavior: contain`; bàn phím số dạng panel nổi, ẩn khi chạm ngoài/cuộn |
 | **INC-12** | Form / Input | Ô "Ngày cố định" không xoá hết số 0, phải gõ `020` mới ra 20 | `input type=number` gắn state kiểu number: xoá rỗng → `0` hiện lại, gõ tiếp thành `020` | Ô text numeric, state chuỗi, bỏ số 0 đầu, tối đa 2 chữ số, chuẩn hoá 1–31 khi blur (TxForm & Budgets) |
 | **INC-13** | UI / Định dạng | Nhãn tháng `Tháng 7, 2026` và ngày định kỳ `yyyy-mm-dd` không đồng nhất | `monthLabel` dùng mẫu cũ; Budgets in thẳng chuỗi lưu trữ | `monthLabel` → `MM/yyyy`; `fmtDmy()` cho mọi ngày hiển thị (dữ liệu lưu vẫn `YYYY-MM-DD`) |
+| **INC-14** | Mobile UI & Layering | Nút FAB dính sát dock menu; picker Nhóm và Lịch dùng UI hệ thống khổng lồ lệch theme; sửa nhanh nhóm thiếu an toàn; xem chi tiết giao dịch trong Báo cáo bị che khuất | FAB `bottom` thiếu đệm khoảng cách; dùng thẻ `<select>` & `<input type=date>` gốc; thiếu modal chi tiết nhóm đệm; `PeriodReport` con thiếu `TxDetailModal` và `z-index` sheet (30) thấp hơn report (40) | Nâng FAB `bottom: calc(100px + safe-area)`; thay bằng `CategoryPickerModal` & `DatePickerModal` in-app; tạo `CatDetailModal` xem chi tiết trước khi sửa; nhúng `TxDetailModal` vào `PeriodReport` và nâng `.sheetbg` lên `z-index: 60` |
 
 ---
 
@@ -244,6 +245,29 @@
 * **Giải pháp:** Xem `vite.config.ts` và `main.tsx` (registerSW + kiểm tra định kỳ + reload an toàn khi không mở form).
 * **Quy tắc cho kỹ sư:**
   > Mọi thay đổi phải push lên `main` (Vercel tự deploy tại https://moneysavedl.vercel.app) và kiểm tra bản live. Không bao giờ reload tự động khi người dùng đang mở form nhập liệu. Cache của SW chỉ chứa file giao diện, không chứa dữ liệu IndexedDB.
+
+---
+
+### CASE STUDY 14: Lỗi Chồng Lớp Modal Báo Cáo, Bàn Phím / Picker Trình Duyệt Quá Khổ & Nút FAB Dính Chùm Dock Menu
+* **Mã sự cố:** `INC-14`
+* **Mức độ:** Trung bình – Cao (Trực tiếp gây ức chế và hỏng trải nghiệm người dùng mobile).
+* **Mô tả hiện tượng:**
+  1. Trên một số dòng điện thoại, nút tròn `+ Thêm giao dịch` (FAB) có vị trí `bottom: 84px`, chỉ cách mép trên thanh dock menu khoảng vài pixel hoặc chạm dính chùm vào nhau.
+  2. Bấm chọn Nhóm hoặc chọn Ngày trong form thêm/sửa giao dịch thì trình duyệt bung dialog khổng lồ màu xám/trắng che kín màn hình, làm mất đi tính đồng bộ dark theme của app.
+  3. Tại trang Ví của tôi (`Accounts.tsx`), chạm vào nhóm thì nhảy thẳng vào form sửa kèm nút xoá, khiến người dùng cảm thấy không an toàn vì sợ ấn nhầm đổi tên hoặc xoá mất nhóm.
+  4. Trong màn hình Báo cáo giai đoạn (Chi tiết khoản chi/khoản thu), bấm vào giao dịch con dưới nhóm để xem chi tiết thì không thấy gì; khi đóng báo cáo chi tiết thì màn hình chi tiết giao dịch mới bất ngờ lộ ra.
+* **Nguyên nhân gốc rễ (RCA):**
+  1. Khoảng cách tính toán của FAB `84px` không tính đến độ giãn dòng hoặc padding an toàn khi dock menu có chữ tiếng Việt.
+  2. Dùng thẻ HTML `<select>` và `<input type="date">` trần khiến iOS Safari và Android kích hoạt UI Wheel / Dialog gốc của hệ thống.
+  3. Thiếu một bước xem chi tiết (View Details) trước khi mở form Edit đối với danh mục tài khoản.
+  4. Màn hình con của `PeriodReport` (`screen === 'expense' || screen === 'income'`) quên render `{viewingTx && <TxDetailModal ...>}`, đồng thời lớp `.sheetbg` có `z-index: 30` thấp hơn `.period-report-overlay` (`z-index: 40`).
+* **Giải pháp khắc phục:**
+  1. Nâng vị trí FAB: `bottom: calc(100px + env(safe-area-inset-bottom, 0px))` đảm bảo tối thiểu 24-30px khoảng trống lơ lửng thoáng đãng.
+  2. Xây dựng 2 component In-App Modal chuyên dụng: [`CategoryPickerModal.tsx`](../app/src/components/CategoryPickerModal.tsx) và [`DatePickerModal.tsx`](../app/src/components/DatePickerModal.tsx) chuẩn theme MoneySave.
+  3. Xây dựng [`CatDetailModal.tsx`](../app/src/components/CatDetailModal.tsx): Bấm vào nhóm chỉ xem thông tin tổng quan, số lượng giao dịch, tổng tiền phát sinh; chỉ khi bấm "✏️ Chỉnh sửa nhóm" mới mở form sửa.
+  4. Nhúng `TxDetailModal`, `TxForm` vào màn hình con của `PeriodReport.tsx`, chuyển các giao dịch con thành dạng bảng kẻ line rõ ràng, đồng thời nâng `.sheetbg` lên `z-index: 60` cao hơn mọi overlay báo cáo.
+* **Quy tắc cho kỹ sư:**
+  > Tuyệt đối không dùng các dialog gốc của trình duyệt cho picker trong app di động. Mọi modal chi tiết (Detail) hoặc chỉnh sửa (Form) luôn phải có `z-index` tối thiểu 60 để luôn hiển thị nổi trên các trang báo cáo toàn màn hình.
 
 ---
 

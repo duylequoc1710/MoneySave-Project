@@ -7,6 +7,7 @@ import { FundForm } from '../components/accounts/FundForm'
 import { AdjustBalanceModal } from '../components/accounts/AdjustBalanceModal'
 import { TransferWalletModal } from '../components/accounts/TransferWalletModal'
 import { CatForm } from '../components/accounts/CatForm'
+import CatDetailModal from '../components/CatDetailModal'
 import { COLORS } from '../components/accounts/palette'
 
 
@@ -21,6 +22,7 @@ export default function Accounts() {
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
 
   const [fundEdit, setFundEdit] = useState<Fund | null>(null)
+  const [catDetail, setCatDetail] = useState<Category | null>(null)
   const [catEdit, setCatEdit] = useState<Category | null>(null)
   const [adjustFund, setAdjustFund] = useState<Fund | null>(null)
   const [transferModal, setTransferModal] = useState<{
@@ -310,7 +312,7 @@ export default function Accounts() {
                 {/* Hàng Nhóm Cha */}
                 <div
                   className="row"
-                  onClick={() => setCatEdit(grp.parent)}
+                  onClick={() => setCatDetail(grp.parent)}
                   style={{ cursor: 'pointer', paddingBottom: 6 }}
                 >
                   <div className="ico" style={{ background: grp.parent.color + '25', fontWeight: 700 }}>
@@ -338,7 +340,7 @@ export default function Accounts() {
                     <div
                       className="row"
                       key={ch.id}
-                      onClick={() => setCatEdit(ch)}
+                      onClick={() => setCatDetail(ch)}
                       style={{ cursor: 'pointer', padding: '8px 0', borderBottom: '1px dashed var(--bd)' }}
                     >
                       <div className="ico" style={{ background: ch.color + '20', width: 34, height: 34, fontSize: 16 }}>
@@ -370,7 +372,7 @@ export default function Accounts() {
                   </div>
                 )}
                 {independent.map(c => (
-                  <div className="row" key={c.id} onClick={() => setCatEdit(c)} style={{ cursor: 'pointer' }}>
+                  <div className="row" key={c.id} onClick={() => setCatDetail(c)} style={{ cursor: 'pointer' }}>
                     <div className="ico" style={{ background: c.color + '22' }}>
                       {c.icon}
                     </div>
@@ -417,6 +419,23 @@ export default function Accounts() {
             setFundEdit(null)
             setAdjustFund(f)
           }}
+        />
+      )}
+      {catDetail && (
+        <CatDetailModal
+          c={catDetail}
+          allCats={cats}
+          funds={funds}
+          txs={txs}
+          onEdit={c => {
+            setCatDetail(null)
+            setCatEdit(c)
+          }}
+          onDel={c => {
+            setCatDetail(null)
+            delCat(c)
+          }}
+          onClose={() => setCatDetail(null)}
         />
       )}
       {catEdit && (

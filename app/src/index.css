@@ -683,7 +683,7 @@ h2 {
 .ml-fab-pill {
   position: fixed;
   right: 16px;
-  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px));
   background: var(--acc);
   color: #fff;
   border: 0;
@@ -773,25 +773,16 @@ h2 {
   font-weight: normal;
   margin-left: 2px;
 }
-.date-input-native {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
-  -webkit-appearance: none;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  margin: 0;
+.date-input-arrow {
+  color: var(--mut);
+  font-size: 18px;
+  margin-left: auto;
+  padding-right: 2px;
+  line-height: 1;
 }
-.date-input-native:focus + .date-input-display,
-.date-input-unified:focus-within .date-input-display {
+.date-input-unified:active .date-input-display {
   border-color: var(--acc);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 25%, transparent);
+  background: color-mix(in srgb, var(--acc) 6%, var(--card));
 }
 .btn {
   background: var(--card);
@@ -813,7 +804,7 @@ h2 {
   position: fixed;
   inset: 0;
   background: #0009;
-  z-index: 30;
+  z-index: 60;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1293,6 +1284,249 @@ h2 {
 }
 .detail-action-btn:active {
   background: color-mix(in srgb, var(--fg) 10%, transparent) !important;
+}
+
+/* Custom In-App Category Tile in TxForm */
+.ml-select-tile {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ml-select-tile:active {
+  background: color-mix(in srgb, var(--fg) 6%, var(--card));
+  border-color: var(--acc);
+}
+
+/* Custom Category Picker Modal */
+.cat-picker-group {
+  margin-bottom: 12px;
+}
+.cat-group-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--mut);
+  letter-spacing: 0.5px;
+  padding: 8px 4px 4px;
+}
+.cat-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.cat-picker-item:hover,
+.cat-picker-item:active {
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+.cat-picker-item.selected {
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+}
+.cat-picker-children {
+  margin-left: 20px;
+  padding-left: 12px;
+  border-left: 2px solid color-mix(in srgb, var(--acc) 30%, var(--bd));
+}
+.cat-picker-item.child-item {
+  padding: 7px 10px;
+}
+.cat-picker-item.child-item .child-ico {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+}
+.cat-check {
+  color: var(--acc);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+/* Custom Date Picker Modal */
+.date-quick-chips {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.date-quick-chip {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 99px;
+  border: 1px solid var(--bd);
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  color: var(--fg);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s ease;
+}
+.date-quick-chip:active {
+  transform: scale(0.95);
+}
+.date-quick-chip.highlight {
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+  border-color: var(--acc);
+  color: var(--acc);
+}
+.date-month-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.date-nav-arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--bd);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  color: var(--fg);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.date-nav-arrow:active {
+  transform: scale(0.92);
+}
+.date-month-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+.date-weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mut);
+  margin-bottom: 8px;
+}
+.date-weekday-cell {
+  padding: 4px 0;
+}
+.date-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.date-day-cell {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+.date-day-cell:active {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+}
+.date-day-cell.today {
+  border: 1.5px solid var(--acc);
+  font-weight: 700;
+}
+.date-day-cell.selected {
+  background: var(--acc) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--acc) 40%, transparent);
+}
+.date-picker-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bd);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Period Report Sub-Transactions Table */
+.report-subtx-container {
+  margin: 6px 0 10px 14px;
+  padding-left: 12px;
+  border-left: 2px solid color-mix(in srgb, var(--acc) 40%, var(--bd));
+}
+.report-subtx-table {
+  background: color-mix(in srgb, var(--fg) 3%, transparent);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.report-subtx-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--bd);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+  gap: 10px;
+}
+.report-subtx-item:last-child {
+  border-bottom: 0;
+}
+.report-subtx-item:active {
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+.report-subtx-date-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mut);
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+  padding: 2px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.report-subtx-content {
+  flex: 1;
+  min-width: 0;
+}
+.report-subtx-note {
+  font-size: 13.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-subtx-money {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.report-subtx-chevron {
+  color: var(--mut);
+  font-size: 16px;
 }
 
 

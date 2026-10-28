@@ -636,26 +636,34 @@ export default function PeriodReport({
                         </span>
                       </div>
                       {isOpen && (
-                        <div style={{ padding: '0 0 10px 54px' }}>
-                          {c.txs.map(t => (
-                            <div
-                              key={t.id}
-                              onClick={() => setViewingTx(t)}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontSize: 13,
-                                padding: '6px 0',
-                                cursor: 'pointer',
-                              }}
-                              className="mut"
-                            >
-                              <span>
-                                {format(new Date(t.date), 'dd/MM')} · {t.note || fMap.get(t.fundId)?.name}
-                              </span>
-                              <b>{money(t.amount)}</b>
-                            </div>
-                          ))}
+                        <div className="report-subtx-container">
+                          <div className="report-subtx-table">
+                            {c.txs.map(t => (
+                              <div
+                                key={t.id}
+                                onClick={() => setViewingTx(t)}
+                                className="report-subtx-item"
+                              >
+                                <div className="report-subtx-date-badge">
+                                  {format(new Date(t.date), 'dd/MM')}
+                                </div>
+                                <div className="report-subtx-content">
+                                  <div className="report-subtx-note">
+                                    {t.note || fMap.get(t.fundId)?.name || 'Giao dịch'}
+                                  </div>
+                                  {t.note && (
+                                    <small className="mut" style={{ fontSize: 11 }}>
+                                      {fMap.get(t.fundId)?.name}
+                                    </small>
+                                  )}
+                                </div>
+                                <div className="report-subtx-money">
+                                  <b style={{ color: accentColor }}>{money(t.amount)}</b>
+                                  <span className="report-subtx-chevron">›</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -726,27 +734,33 @@ export default function PeriodReport({
                         </span>
                       </div>
                       {isOpen && b.txs.length > 0 && (
-                        <div style={{ padding: '0 0 10px 12px' }}>
-                          {b.txs.map(t => (
-                            <div
-                              key={t.id}
-                              onClick={() => setViewingTx(t)}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontSize: 13,
-                                padding: '6px 0',
-                                cursor: 'pointer',
-                              }}
-                              className="mut"
-                            >
-                              <span>
-                                {format(new Date(t.date), 'dd/MM')} · {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'}{' '}
-                                {t.note ? `(${t.note})` : ''}
-                              </span>
-                              <b>{money(t.amount)}</b>
-                            </div>
-                          ))}
+                        <div className="report-subtx-container">
+                          <div className="report-subtx-table">
+                            {b.txs.map(t => (
+                              <div
+                                key={t.id}
+                                onClick={() => setViewingTx(t)}
+                                className="report-subtx-item"
+                              >
+                                <div className="report-subtx-date-badge">
+                                  {format(new Date(t.date), 'dd/MM')}
+                                </div>
+                                <div className="report-subtx-content">
+                                  <div className="report-subtx-note">
+                                    {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'}
+                                    {t.note ? ` · ${t.note}` : ''}
+                                  </div>
+                                  <small className="mut" style={{ fontSize: 11 }}>
+                                    {fMap.get(t.fundId)?.name}
+                                  </small>
+                                </div>
+                                <div className="report-subtx-money">
+                                  <b style={{ color: accentColor }}>{money(t.amount)}</b>
+                                  <span className="report-subtx-chevron">›</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -765,6 +779,22 @@ export default function PeriodReport({
               onClose={() => setShowTimeModal(false)}
             />
           )}
+          {viewingTx && (
+            <TxDetailModal
+              tx={viewingTx}
+              onClose={() => setViewingTx(null)}
+              onEdit={t => {
+                setViewingTx(null)
+                setEditTx(t)
+              }}
+              onDuplicate={draft => {
+                setViewingTx(null)
+                setDraftTx(draft)
+              }}
+            />
+          )}
+          {editTx && <TxForm tx={editTx} onClose={() => setEditTx(null)} />}
+          {draftTx && <TxForm draft={draftTx} onClose={() => setDraftTx(null)} />}
         </div>
       </div>
     )
