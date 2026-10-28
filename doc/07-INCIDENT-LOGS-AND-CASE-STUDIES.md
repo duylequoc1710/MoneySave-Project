@@ -23,6 +23,7 @@
 | **INC-12** | Form / Input | Ô "Ngày cố định" không xoá hết số 0, phải gõ `020` mới ra 20 | `input type=number` gắn state kiểu number: xoá rỗng → `0` hiện lại, gõ tiếp thành `020` | Ô text numeric, state chuỗi, bỏ số 0 đầu, tối đa 2 chữ số, chuẩn hoá 1–31 khi blur (TxForm & Budgets) |
 | **INC-13** | UI / Định dạng | Nhãn tháng `Tháng 7, 2026` và ngày định kỳ `yyyy-mm-dd` không đồng nhất | `monthLabel` dùng mẫu cũ; Budgets in thẳng chuỗi lưu trữ | `monthLabel` → `MM/yyyy`; `fmtDmy()` cho mọi ngày hiển thị (dữ liệu lưu vẫn `YYYY-MM-DD`) |
 | **INC-14** | Mobile UI & Layering | Nút FAB dính sát dock menu; picker Nhóm và Lịch dùng UI hệ thống khổng lồ lệch theme; sửa nhanh nhóm thiếu an toàn; xem chi tiết giao dịch trong Báo cáo bị che khuất | FAB `bottom` thiếu đệm khoảng cách; dùng thẻ `<select>` & `<input type=date>` gốc; thiếu modal chi tiết nhóm đệm; `PeriodReport` con thiếu `TxDetailModal` và `z-index` sheet (30) thấp hơn report (40) | Nâng FAB `bottom: calc(100px + safe-area)`; thay bằng `CategoryPickerModal` & `DatePickerModal` in-app; tạo `CatDetailModal` xem chi tiết trước khi sửa; nhúng `TxDetailModal` vào `PeriodReport` và nâng `.sheetbg` lên `z-index: 60` |
+| **INC-15** | UI / Modal & Event Delegation | Click vào ô Ngày giao dịch (`DateInput`) trong form không mở lịch chọn ngày trên cả Web và Mobile | Thẻ `<label className="fld">` kích hoạt synthetic click vào nút Huỷ đầu tiên bên trong `DatePickerModal` khiến modal đóng ngay lập tức; modal con không dùng `createPortal` bị giới hạn bởi overflow của sheet cha | Đổi `<label>` sang `<div>`; chặn nổi bọt `e.stopPropagation()`; dùng `createPortal(..., document.body)` với `z-index: 75`; hợp nhất cấu trúc `.date-input-unified` chuẩn MoneyLover; nâng app lên v2.2.1 |
 
 ---
 
@@ -268,6 +269,26 @@
   4. Nhúng `TxDetailModal`, `TxForm` vào màn hình con của `PeriodReport.tsx`, chuyển các giao dịch con thành dạng bảng kẻ line rõ ràng, đồng thời nâng `.sheetbg` lên `z-index: 60` cao hơn mọi overlay báo cáo.
 * **Quy tắc cho kỹ sư:**
   > Tuyệt đối không dùng các dialog gốc của trình duyệt cho picker trong app di động. Mọi modal chi tiết (Detail) hoặc chỉnh sửa (Form) luôn phải có `z-index` tối thiểu 60 để luôn hiển thị nổi trên các trang báo cáo toàn màn hình.
+
+---
+
+### CASE STUDY 15: Lỗi Không Thể Mở Modal Chọn Ngày (Synthetic Click Do Thẻ `<label>` & Sheet Stacking Context)
+* **Mã sự cố:** `INC-15`
+* **Mức độ:** Nghiêm trọng (Chặn tính năng chọn ngày của người dùng trên toàn bộ Web và Mobile).
+* **Mô tả hiện tượng:**
+  Sau khi cập nhật component `DatePickerModal` thay thế cho date picker mặc định của trình duyệt, người dùng bấm vào ô "Ngày giao dịch" (hoặc "Ngày bắt đầu áp dụng") trong form Thêm/Sửa giao dịch thì modal chọn ngày không xuất hiện, hoặc chớp tắt tức thì không thể tương tác.
+* **Nguyên nhân gốc rễ (RCA):**
+  1. **HTML `<label>` Activation Delegation:** Thẻ bao ngoài trường nhập liệu trong `TxForm.tsx` (và `Budgets.tsx`, `TimeRangeModal.tsx`) dùng thẻ HTML `<label className="fld">`. Theo đặc tả HTML chuẩn, khi người dùng click vào bất kỳ phần tử nào bên trong thẻ `<label>` không phải là form control đã gán, trình duyệt tự động kích hoạt một "synthetic click" lên nút bấm/input đầu tiên tìm thấy bên trong nó. Khi `DatePickerModal` vừa mount vào DOM con của `DateInput`, nút bấm đầu tiên của modal là `<button className="ml-tx-cancel-btn" onClick={onClose}>Huỷ</button>`. Synthetic click từ thẻ `<label>` ngay lập tức kích hoạt nút này, dẫn tới `onClose()` được gọi trong cùng 1 tick event loop (modal mở và đóng trong 0ms).
+  2. **Modal lồng không dùng React Portal:** `DatePickerModal` được đặt trực tiếp bên trong component `DateInput`, nằm dưới `.sheet` (vốn có `overflow: auto; -webkit-overflow-scrolling: touch;`). Trên WebKit (Safari iOS/macOS), các thuộc tính này tạo một stacking context riêng, có thể gây xô lệch hoặc giới hạn kích thước vùng cố định (`position: fixed`).
+  3. **CSS Pointer Events & Layout:** Lớp con `.date-input-display` có `pointer-events: none` và tách mũi tên `›` ra ngoài hộp border, gây bất tiện khi bấm vào rìa.
+* **Giải pháp khắc phục:**
+  1. Chuyển toàn bộ các thẻ `<label className="fld">` bọc `DateInput` sang thẻ ngữ nghĩa `<div className="fld">` (áp dụng tại [`TxForm.tsx`](../app/src/components/TxForm.tsx), [`Budgets.tsx`](../app/src/pages/Budgets.tsx), [`TimeRangeModal.tsx`](../app/src/components/TimeRangeModal.tsx)).
+  2. Chặn nổi bọt sự kiện `e.preventDefault()` và `e.stopPropagation()` tại `handleClick` và hỗ trợ phím Enter/Space trong [`DateInput.tsx`](../app/src/components/DateInput.tsx).
+  3. Áp dụng `createPortal(..., document.body)` với `z-index: 75` cho [`DatePickerModal.tsx`](../app/src/components/DatePickerModal.tsx) và [`CategoryPickerModal.tsx`](../app/src/components/CategoryPickerModal.tsx), đảm bảo overlay luôn gắn thẳng vào body cấp cao nhất của viewport.
+  4. Hợp nhất cấu trúc CSS `.date-input-unified` theo chuẩn single tile của `.ml-select-tile`.
+  5. Tăng phiên bản ứng dụng lên **2.2.1** trong `package.json`.
+* **Quy tắc cho kỹ sư:**
+  > Không bao giờ bọc các custom component tương tác hoặc các component có khả năng mở Modal/Popup bên trong thẻ `<label>`. Các Modal hoặc Floating Overlay nằm trong form/sheet luôn phải dùng `createPortal(..., document.body)` để tránh hiện tượng bị kẹt trong stacking context hoặc scroll container của phần tử cha.
 
 ---
 

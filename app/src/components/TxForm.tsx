@@ -277,7 +277,7 @@ export default function TxForm({
             </select>
           </label>
         )}
-        <label className="fld">
+        <div className="fld">
           <span>{isRecurring ? 'Ngày bắt đầu áp dụng' : 'Ngày giao dịch'}</span>
           <DateInput
             value={date}
@@ -287,7 +287,7 @@ export default function TxForm({
               if (d >= 1 && d <= 31) setDayOfMonth(String(d))
             }}
           />
-        </label>
+        </div>
         <label className="fld">
           <span>Ghi chú / Tên hóa đơn</span>
           <input value={note} onChange={e => setNote(e.target.value)} placeholder="VD: Tiền điện, Xăng rửa xe..." />

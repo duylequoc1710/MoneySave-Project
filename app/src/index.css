@@ -741,22 +741,28 @@ h2 {
   display: flex;
   align-items: center;
   width: 100%;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-radius: 14px;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  gap: 8px;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+.date-input-unified:active {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 6%, var(--card));
 }
 .date-input-display {
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 11px 12px;
-  background: var(--card);
-  border: 1px solid var(--bd);
-  border-radius: 12px;
-  font-size: 14.5px;
-  color: var(--fg);
-  user-select: none;
-  pointer-events: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+  user-select: none;
 }
 .date-input-icon {
   font-size: 16px;
@@ -765,6 +771,8 @@ h2 {
 }
 .date-input-value {
   font-weight: 600;
+  font-size: 14.5px;
+  color: var(--fg);
   letter-spacing: -0.01em;
 }
 .date-input-dow {
@@ -777,12 +785,8 @@ h2 {
   color: var(--mut);
   font-size: 18px;
   margin-left: auto;
-  padding-right: 2px;
   line-height: 1;
-}
-.date-input-unified:active .date-input-display {
-  border-color: var(--acc);
-  background: color-mix(in srgb, var(--acc) 6%, var(--card));
+  flex-shrink: 0;
 }
 .btn {
   background: var(--card);

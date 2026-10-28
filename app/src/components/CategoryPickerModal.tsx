@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Category, TxType } from '../db'
 import { groupCategoriesHierarchy } from '../lib'
 
@@ -21,8 +22,10 @@ export default function CategoryPickerModal({
   const list = categories.filter(c => c.type === filterType)
   const { parentGroups, independent } = groupCategoriesHierarchy(list)
 
-  return (
-    <div className="sheetbg" onClick={onClose} style={{ zIndex: 65 }}>
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 75 }}>
       <div
         className="sheet cat-picker-sheet"
         onClick={e => e.stopPropagation()}
@@ -169,6 +172,7 @@ export default function CategoryPickerModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

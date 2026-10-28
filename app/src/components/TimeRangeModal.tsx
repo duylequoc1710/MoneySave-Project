@@ -81,14 +81,14 @@ export default function TimeRangeModal({ filter, onChange, onClose }: Props) {
         <h2 style={{ margin: '4px 4px 8px' }}>🔍 LỌC THEO KHOẢNG NGÀY CỤ THỂ</h2>
         <div className="card" style={{ padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-            <label className="fld" style={{ margin: 0 }}>
+            <div className="fld" style={{ margin: 0 }}>
               <span>Từ ngày</span>
               <DateInput value={startDate} onChange={setStartDate} showDayOfWeek={false} />
-            </label>
-            <label className="fld" style={{ margin: 0 }}>
+            </div>
+            <div className="fld" style={{ margin: 0 }}>
               <span>Đến ngày</span>
               <DateInput value={endDate} onChange={setEndDate} showDayOfWeek={false} />
-            </label>
+            </div>
           </div>
           <button
             type="button"

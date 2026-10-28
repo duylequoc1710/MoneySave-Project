@@ -432,10 +432,10 @@ function RecurringForm({
             <div />
           )}
         </div>
-        <label className="fld">
+        <div className="fld">
           <span>Bắt đầu áp dụng từ ngày</span>
           <DateInput value={startDate} onChange={setStartDate} />
-        </label>
+        </div>
         <label className="fld">
           <span>Ghi chú thêm</span>
           <input value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú tự động đính kèm..." />

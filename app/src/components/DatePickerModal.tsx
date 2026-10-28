@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   addDays,
   addMonths,
@@ -38,8 +39,14 @@ export default function DatePickerModal({
   // Thứ 2 là 0, CN là 6 (theo chuẩn Việt Nam)
   const startDayOfWeek = (monthStart.getDay() + 6) % 7
 
-  const handlePrevMonth = () => setViewMonth(prev => subMonths(prev, 1))
-  const handleNextMonth = () => setViewMonth(prev => addMonths(prev, 1))
+  const handlePrevMonth = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setViewMonth(prev => subMonths(prev, 1))
+  }
+  const handleNextMonth = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setViewMonth(prev => addMonths(prev, 1))
+  }
 
   const handleSelectDay = (day: number) => {
     const next = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), day)
@@ -55,8 +62,23 @@ export default function DatePickerModal({
     onClose()
   }
 
-  return (
-    <div className="sheetbg" onClick={onClose} style={{ zIndex: 65 }}>
+  const formattedSelected = (() => {
+    try {
+      const raw = format(selectedDate, "EEEE, 'ngày' dd/MM/yyyy", { locale: vi })
+      return raw.charAt(0).toUpperCase() + raw.slice(1)
+    } catch {
+      return format(selectedDate, 'dd/MM/yyyy')
+    }
+  })()
+
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div
+      className="sheetbg"
+      onClick={onClose}
+      style={{ zIndex: 75 }}
+    >
       <div
         className="sheet date-picker-sheet"
         onClick={e => e.stopPropagation()}
@@ -164,11 +186,12 @@ export default function DatePickerModal({
           <div className="date-selected-preview">
             <span className="mut" style={{ fontSize: 12 }}>Đã chọn:</span>
             <b style={{ marginLeft: 6, color: 'var(--acc)' }}>
-              {format(selectedDate, "EEEE, dd/MM/yyyy", { locale: vi })}
+              {formattedSelected}
             </b>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

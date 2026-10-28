@@ -703,3 +703,22 @@ describe('Kiểm tra toàn vẹn dữ liệu (auditData)', () => {
     assert.match(msg, /Số dư đầu dương/)
   })
 })
+
+describe('Đồng bộ DatePickerModal & DateInput', () => {
+  it('Chuyển đổi ngày YYYY-MM-DD sang chuẩn Việt Nam dd/MM/yyyy và Thứ trong tuần', () => {
+    const testDate = '2026-10-28'
+    const parts = testDate.split('-')
+    assert.equal(parts.length, 3)
+    assert.equal(`${parts[2]}/${parts[1]}/${parts[0]}`, '28/10/2026')
+    const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+    assert.equal(parsed.getDay(), 3) // Thứ 4
+  })
+
+  it('Tính đúng ngày đầu tháng, ngày trong tuần bắt đầu từ Thứ Hai theo chuẩn VN', () => {
+    // Tháng 10/2026: ngày 1/10/2026 là Thứ 5 (getDay() = 4).
+    // Thứ 2 là 0 -> Thứ 5 là (4 + 6) % 7 = 3 ô trống trước ngày 1
+    const d = new Date(2026, 9, 1)
+    const startDayOfWeek = (d.getDay() + 6) % 7
+    assert.equal(startDayOfWeek, 3)
+  })
+})

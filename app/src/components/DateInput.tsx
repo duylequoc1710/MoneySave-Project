@@ -44,7 +44,9 @@ export default function DateInput({
     }
   }
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (!disabled) {
       setShowModal(true)
     }
@@ -59,6 +61,13 @@ export default function DateInput({
         role="button"
         tabIndex={0}
         aria-label="Chọn ngày giao dịch"
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.stopPropagation()
+            if (!disabled) setShowModal(true)
+          }
+        }}
       >
         <div className="date-input-display">
           <span className="date-input-icon">📅</span>
