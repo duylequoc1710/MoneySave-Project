@@ -735,25 +735,20 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
   const remainingInstallmentBalance = installmentStatuses.reduce((s, st) => s + st.remainingBalance, 0)
 
   let statusTag: CreditCardAnalysis['statusTag'] = 'normal'
-  let advice = `Chi tiêu hôm nay thuộc kỳ sao kê ${format(lastStmt, 'dd/MM')} → ${format(nextStmt, 'dd/MM')}, được miễn lãi ${interestFreeDaysToday} ngày (hạn thanh toán ${format(dueOfNextStmt, 'dd/MM/yyyy')}).`
+  let advice = `Miễn lãi ${interestFreeDaysToday} ngày · Hạn TT kỳ mới: ${format(dueOfNextStmt, 'dd/MM/yyyy')}.`
 
   if (previousStatementDebt > 0 && daysUntilDue <= 5) {
     statusTag = 'due-soon'
-    advice = `⚠️ Kỳ sao kê chốt ${format(lastStmt, 'dd/MM/yyyy')} còn ${money(previousStatementDebt)} đến hạn thanh toán vào ngày ${format(nextDue, 'dd/MM/yyyy')} (còn ${daysUntilDue} ngày). Hãy tất toán đúng hạn để tránh phí phạt & lãi!`
+    advice = `⚠️ Kỳ chốt ${format(lastStmt, 'dd/MM')} còn ${money(previousStatementDebt)} đến hạn TT ngày ${format(nextDue, 'dd/MM/yyyy')} (${daysUntilDue} ngày).`
   } else if (previousStatementDebt === 0 && debt > 0 && daysUntilDue <= 5 && dueOfLastStmt >= today) {
-    // Trường hợp thực tế của người dùng: Kỳ sao kê trước (20/10) đã thanh toán xong (0 ₫),
-    // dư nợ hiện tại hoàn toàn là chi tiêu của kỳ sao kê mới (20/10 -> 20/11) với hạn thanh toán kỳ kế tiếp (05/12).
     statusTag = 'normal'
-    advice = `✅ Kỳ thanh toán ${format(nextDue, 'dd/MM/yyyy')} (sao kê chốt ${format(lastStmt, 'dd/MM')}): Đã hoàn tất (0 ₫ cần trả). Khoản chi ${money(currentCycleSpend)} phát sinh trong kỳ mới (${format(lastStmt, 'dd/MM')} → ${format(nextStmt, 'dd/MM')}) sẽ chốt ngày ${format(nextStmt, 'dd/MM')} và hạn thanh toán là ${format(dueOfNextStmt, 'dd/MM/yyyy')}.`
+    advice = `✅ Kỳ ${format(nextDue, 'dd/MM')} đã xong (0 ₫) · Dư nợ kỳ mới hạn TT ${format(dueOfNextStmt, 'dd/MM/yyyy')}.`
   } else if (daysUntilStatement <= 3) {
     statusTag = 'closing-soon'
-    advice = `⏳ Còn ${daysUntilStatement} ngày chốt sao kê (${format(nextStmt, 'dd/MM/yyyy')}). Khoản chi lớn nên dời qua sau ngày ${format(nextStmt, 'dd/MM')} để hưởng trọn chu kỳ miễn lãi mới.`
+    advice = `⏳ Còn ${daysUntilStatement} ngày chốt sao kê (${format(nextStmt, 'dd/MM/yyyy')}).`
   } else if (differenceInCalendarDays(today, lastStmt) <= 7) {
     statusTag = 'optimal'
-    advice =
-      debt > 0 && previousStatementDebt === 0
-        ? `✨ Vừa qua kỳ chốt sao kê ${format(lastStmt, 'dd/MM')}: Chi tiêu kỳ mới (${money(currentCycleSpend)}) có hạn thanh toán vào ngày ${format(dueOfNextStmt, 'dd/MM/yyyy')} (còn ${interestFreeDaysToday} ngày miễn lãi).`
-        : `✨ Thời điểm vàng quẹt thẻ! Vừa qua kỳ chốt sao kê — chi hôm nay được giữ tiền mặt tới ${interestFreeDaysToday} ngày (hạn trả ${format(dueOfNextStmt, 'dd/MM/yyyy')}).`
+    advice = `✨ Vừa qua kỳ sao kê ${format(lastStmt, 'dd/MM')} · Hạn TT kỳ mới: ${format(dueOfNextStmt, 'dd/MM/yyyy')} (${interestFreeDaysToday} ngày).`
   }
 
   return {

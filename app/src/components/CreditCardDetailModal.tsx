@@ -18,6 +18,8 @@ import {
   ymd,
 } from '../lib'
 import DateInput from './DateInput'
+import TxDetailModal from './TxDetailModal'
+import TxForm, { type TxFormDraft } from './TxForm'
 import { showAlert, showConfirm } from './AppDialog'
 
 const TERM_OPTIONS: InstallmentTermMonths[] = [3, 6, 12, 24]
@@ -115,8 +117,8 @@ export function InstallmentConvertModal({
         installment: info,
       })
       await showAlert({
-        title: 'Đã chuyển đổi trả góp thành công',
-        message: `Giao dịch "${tx.note || catName}" (${money(tx.amount)}) đã được chuyển sang trả góp ${termMonths} tháng (${money(monthlyAmount)}/kỳ), bắt đầu từ kỳ sao kê chốt ${fmtDmy(firstStatementDate)}.`,
+        title: 'Đã chuyển đổi trả góp',
+        message: `Khoản chi "${tx.note || catName}" (${money(tx.amount)}) đã chuyển sang trả góp ${termMonths} tháng (${money(monthlyAmount)}/kỳ), bắt đầu từ kỳ chốt ${fmtDmy(firstStatementDate)}.`,
         icon: '📅',
         tone: 'success',
       })
@@ -144,29 +146,42 @@ export function InstallmentConvertModal({
   }
 
   return (
-    <div className="sheetbg" onClick={onClose} style={{ zIndex: 90 }}>
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 92 }}>
       <div
         className="sheet"
         onClick={e => e.stopPropagation()}
         style={{
-          maxWidth: 520,
+          maxWidth: 500,
           margin: '0 auto',
           maxHeight: '90dvh',
           overflowY: 'auto',
           padding: '16px 16px calc(24px + env(safe-area-inset-bottom))',
         }}
       >
-        <div className="ledger-topbar" style={{ marginBottom: 14 }}>
-          <button type="button" className="close-pill-btn" onClick={onClose}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          <button
+            type="button"
+            className="close-pill-btn"
+            style={{ whiteSpace: 'nowrap' }}
+            onClick={onClose}
+          >
             Huỷ
           </button>
-          <b style={{ fontSize: 16 }}>
-            {existing ? 'Cập nhật trả góp thẻ' : 'Chuyển đổi trả góp'}
+          <b style={{ fontSize: 16, whiteSpace: 'nowrap' }}>
+            {existing ? 'Cập nhật trả góp' : 'Chuyển đổi trả góp'}
           </b>
           <button
             type="button"
             className="close-pill-btn"
-            style={{ color: 'var(--acc)', fontWeight: 700 }}
+            style={{ color: 'var(--acc)', fontWeight: 700, whiteSpace: 'nowrap' }}
             disabled={saving}
             onClick={handleSave}
           >
@@ -187,13 +202,23 @@ export function InstallmentConvertModal({
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
               <span style={{ fontSize: 22 }}>{catIcon}</span>
               <div style={{ minWidth: 0 }}>
-                <b style={{ fontSize: 15, display: 'block' }}>{tx.note || catName}</b>
+                <b
+                  style={{
+                    fontSize: 15,
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {tx.note || catName}
+                </b>
                 <small className="mut">
-                  Ngày giao dịch: {fmtDmy(tx.date)} · Thẻ: {fund?.name ?? 'Thẻ tín dụng'}
+                  {fmtDmy(tx.date)} · {fund?.name ?? 'Thẻ tín dụng'}
                 </small>
               </div>
             </div>
-            <b className="exp" style={{ fontSize: 16, flexShrink: 0 }}>
+            <b className="exp" style={{ fontSize: 16, flexShrink: 0, whiteSpace: 'nowrap' }}>
               {money(tx.amount)}
             </b>
           </div>
@@ -215,7 +240,7 @@ export function InstallmentConvertModal({
                     if (manualPaidCycles > m) setManualPaidCycles(m)
                   }}
                   style={{
-                    padding: '10px 6px',
+                    padding: '10px 4px',
                     borderRadius: 12,
                     border: active ? '1.5px solid var(--acc)' : '1px solid var(--bd)',
                     background: active
@@ -226,9 +251,9 @@ export function InstallmentConvertModal({
                     textAlign: 'center',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}>{m} tháng</div>
-                  <div className="mut" style={{ fontSize: 11, marginTop: 2 }}>
-                    ~{money(perMonth)}/kỳ
+                  <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>{m} tháng</div>
+                  <div className="mut" style={{ fontSize: 10.5, marginTop: 2, whiteSpace: 'nowrap' }}>
+                    {money(perMonth)}
                   </div>
                 </button>
               )
@@ -238,7 +263,7 @@ export function InstallmentConvertModal({
 
         {/* 2. Ngày bắt đầu chuyển đổi */}
         <div className="fld">
-          <span>Ngày bắt đầu chuyển đổi trả góp</span>
+          <span>Ngày bắt đầu chuyển đổi</span>
           <DateInput
             value={startDate}
             onChange={v => {
@@ -250,15 +275,16 @@ export function InstallmentConvertModal({
 
         {/* 3. Kỳ sao kê bắt đầu thanh toán */}
         <div className="fld">
-          <span>Thanh toán bắt đầu từ kỳ chốt sao kê</span>
+          <span>Bắt đầu thanh toán ở kỳ sao kê</span>
           <DateInput value={firstStatementDate} onChange={setFirstStatementDate} />
           {creditAnalysis && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
               <button
                 type="button"
                 className="pill-tag"
                 style={{
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                   border:
                     firstStatementDate === creditAnalysis.nextStatementDate
                       ? '1px solid var(--acc)'
@@ -273,6 +299,7 @@ export function InstallmentConvertModal({
                 className="pill-tag"
                 style={{
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                   border:
                     firstStatementDate === creditAnalysis.lastStatementDate
                       ? '1px solid var(--acc)'
@@ -288,7 +315,7 @@ export function InstallmentConvertModal({
 
         {/* 4. Phí chuyển đổi trả góp (%) */}
         <div className="fld">
-          <span>Phí chuyển đổi trả góp (% trên tổng gốc · để 0 nếu trả góp 0%)</span>
+          <span>Phí chuyển đổi (% · để 0 nếu miễn phí)</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               type="text"
@@ -296,15 +323,15 @@ export function InstallmentConvertModal({
               value={feePctStr}
               onChange={e => setFeePctStr(e.target.value.replace(/[^0-9.,]/g, ''))}
               placeholder="0"
-              style={{ maxWidth: 110 }}
+              style={{ maxWidth: 90 }}
             />
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6 }}>
               {[0, 1.5, 2, 3].map(p => (
                 <button
                   key={p}
                   type="button"
                   className="pill-tag"
-                  style={{ cursor: 'pointer', border: '1px solid var(--bd)' }}
+                  style={{ cursor: 'pointer', border: '1px solid var(--bd)', whiteSpace: 'nowrap' }}
                   onClick={() => setFeePctStr(String(p))}
                 >
                   {p}%
@@ -316,14 +343,14 @@ export function InstallmentConvertModal({
 
         {/* 5. Số kỳ đã thanh toán */}
         <div className="fld">
-          <span>Tiến độ các kỳ đã thanh toán</span>
+          <span>Số kỳ đã thanh toán</span>
           <div className="seg" style={{ marginBottom: 8 }}>
             <button
               type="button"
               className={paidCyclesMode === 'auto' ? 'on' : ''}
               onClick={() => setPaidCyclesMode('auto')}
             >
-              Tự động theo kỳ sao kê ({previewStatus?.autoPaidCycles ?? 0}/{termMonths} kỳ)
+              Tự động ({previewStatus?.autoPaidCycles ?? 0}/{termMonths} kỳ)
             </button>
             <button
               type="button"
@@ -333,11 +360,11 @@ export function InstallmentConvertModal({
                 setManualPaidCycles(previewStatus?.paidCycles ?? 0)
               }}
             >
-              Tuỳ chỉnh số kỳ đã trả
+              Tuỳ chỉnh
             </button>
           </div>
           {paidCyclesMode === 'manual' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
               <button
                 type="button"
                 className="btn"
@@ -345,7 +372,7 @@ export function InstallmentConvertModal({
               >
                 － 1 kỳ
               </button>
-              <b style={{ fontSize: 15 }}>
+              <b style={{ fontSize: 14.5, whiteSpace: 'nowrap' }}>
                 Đã trả {manualPaidCycles} / {termMonths} kỳ
               </b>
               <button
@@ -370,34 +397,29 @@ export function InstallmentConvertModal({
               background: 'color-mix(in srgb, var(--acc) 7%, var(--card))',
             }}
           >
-            <b style={{ fontSize: 13.5, color: 'var(--acc)', display: 'block', marginBottom: 8 }}>
-              📋 Tóm tắt lộ trình trả góp {termMonths} tháng
-            </b>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12.5 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 12.5 }}>
               <div>
-                <span className="mut">Trả mỗi kỳ sao kê:</span>
-                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--fg)' }}>
+                <span className="mut">Đóng mỗi kỳ:</span>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--fg)', whiteSpace: 'nowrap' }}>
                   {money(previewStatus.monthlyAmount)}/kỳ
                 </div>
               </div>
               <div>
-                <span className="mut">Tổng gốc + phí ({feePct}%):</span>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>
+                <span className="mut">Tổng sau phí ({feePct}%):</span>
+                <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
                   {money(previewStatus.totalAmountWithFee)}
                 </div>
               </div>
               <div>
-                <span className="mut">Kỳ sao kê đầu tiên:</span>
-                <div>
-                  <b>{fmtDmy(previewStatus.firstStatementDate)}</b> (Hạn TT:{' '}
-                  {fmtDmy(previewStatus.firstDueDate)})
+                <span className="mut">Kỳ thanh toán đầu:</span>
+                <div style={{ whiteSpace: 'nowrap' }}>
+                  <b>{fmtDmy(previewStatus.firstDueDate)}</b>
                 </div>
               </div>
               <div>
-                <span className="mut">Kỳ tất toán cuối cùng:</span>
-                <div>
-                  <b>{fmtDmy(previewStatus.finalStatementDate)}</b> (Hạn TT:{' '}
-                  {fmtDmy(previewStatus.finalDueDate)})
+                <span className="mut">Tất toán dự kiến:</span>
+                <div style={{ whiteSpace: 'nowrap' }}>
+                  <b>{fmtDmy(previewStatus.finalDueDate)}</b>
                 </div>
               </div>
             </div>
@@ -410,13 +432,14 @@ export function InstallmentConvertModal({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                gap: 8,
               }}
             >
-              <span>
-                Đã trả: <b>{previewStatus.paidCycles}/{termMonths} kỳ</b> ({money(previewStatus.paidAmount)})
+              <span style={{ whiteSpace: 'nowrap' }}>
+                Đã trả: <b>{previewStatus.paidCycles}/{termMonths} kỳ</b>
               </span>
-              <span style={{ color: 'var(--acc)', fontWeight: 700 }}>
-                Còn lại: {previewStatus.remainingCycles} kỳ ({money(previewStatus.remainingBalance)})
+              <span style={{ color: 'var(--acc)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                Còn {previewStatus.remainingCycles} kỳ ({money(previewStatus.remainingBalance)})
               </span>
             </div>
           </div>
@@ -429,9 +452,211 @@ export function InstallmentConvertModal({
             style={{ width: '100%', marginTop: 12 }}
             onClick={handleRemoveInstallment}
           >
-            Huỷ chế độ trả góp (Về giao dịch thường)
+            Huỷ trả góp (Về giao dịch thường)
           </button>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Hộp thoại chọn giao dịch chi tiêu trong tháng để chuyển đổi sang trả góp
+ */
+function SelectTxForInstallmentModal({
+  txs,
+  cats,
+  fund,
+  defaultMonthKey,
+  onSelect,
+  onClose,
+}: {
+  txs: Tx[]
+  cats: Category[]
+  fund: Fund
+  defaultMonthKey: string
+  onSelect: (tx: Tx) => void
+  onClose: () => void
+}) {
+  const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
+
+  // Tất cả giao dịch chi tiêu của thẻ này
+  const expenseTxs = useMemo(
+    () =>
+      txs
+        .filter(t => t.fundId === fund.id && t.type === 'expense')
+        .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt),
+    [txs, fund.id],
+  )
+
+  // Danh sách các tháng (YYYY-MM) có giao dịch chi tiêu
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>()
+    if (defaultMonthKey) set.add(defaultMonthKey)
+    for (const t of expenseTxs) {
+      set.add(t.date.slice(0, 7))
+    }
+    return [...set].sort((a, b) => b.localeCompare(a))
+  }, [expenseTxs, defaultMonthKey])
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    availableMonths[0] ?? defaultMonthKey,
+  )
+
+  const monthTxs = useMemo(
+    () =>
+      selectedMonth === 'all'
+        ? expenseTxs
+        : expenseTxs.filter(t => t.date.startsWith(selectedMonth)),
+    [expenseTxs, selectedMonth],
+  )
+
+  const fmtMonth = (ym: string) => {
+    if (ym === 'all') return 'Tất cả các tháng'
+    const [y, m] = ym.split('-')
+    return `Tháng ${m}/${y}`
+  }
+
+  return (
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 88 }}>
+      <div
+        className="sheet"
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: 500,
+          margin: '0 auto',
+          maxHeight: '86dvh',
+          overflowY: 'auto',
+          padding: '16px 16px calc(24px + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <button
+            type="button"
+            className="close-pill-btn"
+            style={{ whiteSpace: 'nowrap' }}
+            onClick={onClose}
+          >
+            ‹ Đóng
+          </button>
+          <b style={{ fontSize: 15.5, whiteSpace: 'nowrap' }}>Chọn giao dịch chuyển trả góp</b>
+          <span style={{ width: 52 }} />
+        </div>
+
+        {/* Bộ lọc chọn tháng gọn trên 1 hàng */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <span className="mut" style={{ fontSize: 13 }}>
+            Chọn khoản chi trong tháng:
+          </span>
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 99,
+              border: '1px solid var(--bd)',
+              background: 'var(--card)',
+              color: 'var(--fg)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {availableMonths.map(ym => (
+              <option key={ym} value={ym}>
+                {fmtMonth(ym)}
+              </option>
+            ))}
+            <option value="all">Tất cả ({expenseTxs.length})</option>
+          </select>
+        </div>
+
+        <div className="card" style={{ padding: '0 14px' }}>
+          {monthTxs.length === 0 && (
+            <div className="empty" style={{ padding: '22px 0' }}>
+              Không có giao dịch chi tiêu nào trong thời gian này.
+            </div>
+          )}
+          {monthTxs.map(t => {
+            const c = t.categoryId ? cMap.get(t.categoryId) : undefined
+            const catName = c ? getCategoryFullName(c, cats) : 'Chi tiêu thẻ'
+            const catIcon = c?.icon ?? '💳'
+            return (
+              <div
+                key={t.id}
+                className="row"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onSelect(t)}
+              >
+                <div
+                  className="ico"
+                  style={{
+                    background: (c?.color ?? fund.color) + '26',
+                    width: 38,
+                    height: 38,
+                    fontSize: 18,
+                  }}
+                >
+                  {catIcon}
+                </div>
+                <div className="grow" style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <b
+                      style={{
+                        fontSize: 14.5,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {catName}
+                    </b>
+                    {t.installment && (
+                      <span
+                        className="pill-tag"
+                        style={{
+                          fontSize: 10.5,
+                          color: 'var(--acc)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Đã trả góp {t.installment.termMonths}T
+                      </span>
+                    )}
+                  </div>
+                  <small className="mut" style={{ display: 'block', marginTop: 2 }}>
+                    {fmtDmy(t.date)}
+                    {t.note ? ` · ${t.note}` : ''}
+                  </small>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  <b className="exp" style={{ fontSize: 15 }}>
+                    -{money(t.amount)}
+                  </b>
+                  <div style={{ fontSize: 11, color: 'var(--acc)', marginTop: 2 }}>
+                    Chọn ›
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -445,7 +670,6 @@ export default function CreditCardDetailModal({
   onClose,
   onEditFund,
   onPayCard,
-  onSelectTx,
 }: {
   fund: Fund
   txs: Tx[]
@@ -459,8 +683,13 @@ export default function CreditCardDetailModal({
   const [fallbackToday] = useState(() => new Date())
   const today = todayProp ?? fallbackToday
   const [activeTab, setActiveTab] = useState<'txs' | 'installments'>('txs')
-  const [cycleFilter, setCycleFilter] = useState<'current' | 'previous' | 'all'>('current')
+  // Bộ lọc gọn: 'current_cycle' (mặc định) hoặc mã tháng 'YYYY-MM' hoặc 'all'
+  const [filterMode, setFilterMode] = useState<string>('current_cycle')
+  const [showPickTxModal, setShowPickTxModal] = useState(false)
   const [convertingTx, setConvertingTx] = useState<Tx | null>(null)
+  const [viewingTx, setViewingTx] = useState<Tx | null>(null)
+  const [editingTx, setEditingTx] = useState<Tx | null>(null)
+  const [dupDraft, setDupDraft] = useState<TxFormDraft | null>(null)
   const [expandedScheduleTxId, setExpandedScheduleTxId] = useState<number | null>(null)
 
   const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
@@ -475,20 +704,33 @@ export default function CreditCardDetailModal({
     [txs, fund.id],
   )
 
-  // Lọc theo kỳ sao kê
+  // Danh sách các tháng (YYYY-MM) có giao dịch để xem lại khi cần
+  const availableMonths = useMemo(() => {
+    const s = new Set<string>()
+    s.add(ymd(today).slice(0, 7))
+    for (const t of cardTxs) {
+      s.add(t.date.slice(0, 7))
+    }
+    return [...s].sort((a, b) => b.localeCompare(a))
+  }, [cardTxs, today])
+
+  // Lọc giao dịch theo Kỳ hiện tại hoặc theo Tháng được chọn
   const filteredTxs = useMemo(() => {
-    if (cycleFilter === 'current') {
+    if (filterMode === 'current_cycle') {
       return cardTxs.filter(
         t => t.date > info.lastStatementDate && t.date <= info.nextStatementDate,
       )
     }
-    if (cycleFilter === 'previous') {
+    if (filterMode === 'prev_cycle') {
       return cardTxs.filter(
         t => t.date > info.prevStatementDate && t.date <= info.lastStatementDate,
       )
     }
-    return cardTxs
-  }, [cardTxs, cycleFilter, info.prevStatementDate, info.lastStatementDate, info.nextStatementDate])
+    if (filterMode === 'all') {
+      return cardTxs
+    }
+    return cardTxs.filter(t => t.date.startsWith(filterMode))
+  }, [cardTxs, filterMode, info.prevStatementDate, info.lastStatementDate, info.nextStatementDate])
 
   const filteredSummary = useMemo(() => {
     let expense = 0
@@ -527,20 +769,25 @@ export default function CreditCardDetailModal({
     })
   }
 
+  const fmtMonthOption = (ym: string) => {
+    const [y, m] = ym.split('-')
+    return `Tháng ${m}/${y}`
+  }
+
   return (
     <div className="sheetbg" onClick={onClose} style={{ zIndex: 75 }}>
       <div
         className="sheet"
         onClick={e => e.stopPropagation()}
         style={{
-          maxWidth: 600,
+          maxWidth: 560,
           margin: '0 auto',
           maxHeight: '92dvh',
           overflowY: 'auto',
           padding: '16px 16px calc(28px + env(safe-area-inset-bottom))',
         }}
       >
-        {/* Topbar */}
+        {/* Topbar cân đối trên 1 hàng duy nhất */}
         <div
           style={{
             display: 'flex',
@@ -550,57 +797,71 @@ export default function CreditCardDetailModal({
             marginBottom: 14,
           }}
         >
-          <button type="button" className="close-pill-btn" onClick={onClose}>
+          <button
+            type="button"
+            className="close-pill-btn"
+            style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+            onClick={onClose}
+          >
             ‹ Đóng
           </button>
-          <div style={{ textAlign: 'center', minWidth: 0 }}>
-            <b style={{ fontSize: 16 }}>
-              {fund.icon} {fund.name}
-            </b>
-            <small className="mut" style={{ display: 'block', fontSize: 11.5 }}>
-              Chi tiết chi tiêu tín dụng & Trả góp
-            </small>
-          </div>
+          <b
+            style={{
+              fontSize: 16,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              textAlign: 'center',
+            }}
+          >
+            {fund.icon} {fund.name}
+          </b>
           {onEditFund ? (
             <button
               type="button"
               className="close-pill-btn"
+              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
               onClick={() => onEditFund(fund)}
             >
-              ⚙️ Cài đặt thẻ
+              ⚙️ Cài đặt
             </button>
           ) : (
-            <span style={{ width: 64 }} />
+            <span style={{ width: 64, flexShrink: 0 }} />
           )}
         </div>
 
-        {/* Thẻ Tổng quan hạn mức & Tách bạch 2 kỳ sao kê */}
+        {/* Thẻ Tổng quan hạn mức & Tách bạch 2 kỳ sao kê cân bằng */}
         <div className="card" style={{ marginBottom: 12 }}>
           <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
-              gap: 10,
+              gap: 12,
             }}
           >
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span className="pill-tag">Miễn lãi {info.interestFreeDaysToday} ngày</span>
+                <span className="pill-tag" style={{ whiteSpace: 'nowrap' }}>
+                  Miễn lãi {info.interestFreeDaysToday} ngày
+                </span>
                 {fund.excludeFromTotal && (
-                  <span className="pill-tag">Không tính vào tổng</span>
+                  <span className="pill-tag" style={{ whiteSpace: 'nowrap' }}>
+                    Không tính vào tổng
+                  </span>
                 )}
               </div>
-              <div className="mut" style={{ fontSize: 12.5, marginTop: 6 }}>
-                Chốt sao kê: <b>ngày {info.statementDay}</b> (còn {info.daysUntilStatement} ngày) · Hạn TT:{' '}
-                <b>ngày {info.dueDay}</b>
+              <div className="mut" style={{ fontSize: 12.5, marginTop: 6, whiteSpace: 'nowrap' }}>
+                Sao kê: <b>ngày {info.statementDay}</b> · Hạn TT: <b>ngày {info.dueDay}</b>
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <small className="mut">Tổng dư nợ hiện tại</small>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <small className="mut" style={{ display: 'block', whiteSpace: 'nowrap' }}>
+                Dư nợ hiện tại
+              </small>
               <div
                 className={info.debt > 0 ? 'exp' : 'inc'}
-                style={{ fontSize: 20, fontWeight: 800 }}
+                style={{ fontSize: 20, fontWeight: 800, whiteSpace: 'nowrap', marginTop: 2 }}
               >
                 {info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}
               </div>
@@ -615,10 +876,13 @@ export default function CreditCardDetailModal({
                   justifyContent: 'space-between',
                   fontSize: 12,
                   marginBottom: 4,
+                  gap: 8,
                 }}
               >
-                <span className="mut">Khả dụng: {money(info.availableCredit)}</span>
-                <span className="mut">
+                <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                  Khả dụng: {money(info.availableCredit)}
+                </span>
+                <span className="mut" style={{ whiteSpace: 'nowrap' }}>
                   Hạn mức: {money(info.creditLimit)} ({info.utilizationPct}%)
                 </span>
               </div>
@@ -633,7 +897,7 @@ export default function CreditCardDetailModal({
             </div>
           )}
 
-          {/* Bóc tách rõ 2 kỳ sao kê để tránh nhầm lẫn hạn thanh toán */}
+          {/* 2 Ô Kỳ sao kê cân xứng tuyệt đối (mỗi dòng 1 hàng, không xô lệch) */}
           <div
             style={{
               display: 'grid',
@@ -654,25 +918,27 @@ export default function CreditCardDetailModal({
                   info.previousStatementDebt > 0
                     ? 'rgba(242,85,81,0.1)'
                     : 'color-mix(in srgb, var(--fg) 4%, transparent)',
+                minWidth: 0,
               }}
             >
-              <div className="mut" style={{ fontSize: 11.5 }}>
-                Kỳ đã chốt ({fmtDmy(info.lastStatementDate)})
+              <div className="mut" style={{ fontSize: 11.5, whiteSpace: 'nowrap' }}>
+                Kỳ chốt {fmtDmy(info.lastStatementDate)}
               </div>
               <div
                 style={{
                   fontWeight: 700,
-                  fontSize: 14.5,
-                  marginTop: 3,
+                  fontSize: 14,
+                  marginTop: 4,
+                  whiteSpace: 'nowrap',
                   color: info.previousStatementDebt > 0 ? 'var(--exp)' : 'var(--inc)',
                 }}
               >
                 {info.previousStatementDebt > 0
                   ? money(info.previousStatementDebt)
-                  : '0 ₫ (Đã tất toán)'}
+                  : '0 ₫ · Đã tất toán'}
               </div>
-              <div className="mut" style={{ fontSize: 11, marginTop: 3 }}>
-                Hạn TT gần nhất: <b>{fmtDmy(info.nextDueDate)}</b>
+              <div className="mut" style={{ fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap' }}>
+                Hạn TT: <b>{fmtDmy(info.nextDueDate)}</b>
               </div>
             </div>
 
@@ -682,83 +948,82 @@ export default function CreditCardDetailModal({
                 borderRadius: 12,
                 border: '1px solid var(--bd)',
                 background: 'color-mix(in srgb, var(--fg) 4%, transparent)',
+                minWidth: 0,
               }}
             >
-              <div className="mut" style={{ fontSize: 11.5 }}>
-                Kỳ đang mở ({fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
-                {fmtDmy(info.nextStatementDate).slice(0, 5)})
+              <div className="mut" style={{ fontSize: 11.5, whiteSpace: 'nowrap' }}>
+                Kỳ mới {fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
+                {fmtDmy(info.nextStatementDate).slice(0, 5)}
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14.5, marginTop: 3 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4, whiteSpace: 'nowrap' }}>
                 {money(info.currentCycleSpend)}
               </div>
-              <div className="mut" style={{ fontSize: 11, marginTop: 3 }}>
-                Hạn TT kỳ này: <b>{fmtDmy(info.nextCycleDueDate)}</b>
+              <div className="mut" style={{ fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap' }}>
+                Hạn TT: <b>{fmtDmy(info.nextCycleDueDate)}</b>
               </div>
             </div>
           </div>
 
-          {/* Diễn giải thông minh */}
+          {/* Chỉ hiện cảnh báo khi thực sự có nợ kỳ cũ sắp đến hạn */}
+          {info.statusTag === 'due-soon' && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: '8px 10px',
+                borderRadius: 10,
+                fontSize: 12,
+                background: 'rgba(239,68,68,0.12)',
+                color: 'var(--exp)',
+              }}
+            >
+              {info.advice}
+            </div>
+          )}
+
+          {/* Hàng nút tác vụ chính cân đối */}
           <div
             style={{
-              marginTop: 10,
-              padding: '9px 11px',
-              borderRadius: 10,
-              fontSize: 12.5,
-              lineHeight: 1.45,
-              background:
-                info.statusTag === 'due-soon'
-                  ? 'rgba(239,68,68,0.12)'
-                  : info.statusTag === 'optimal'
-                    ? 'rgba(16,185,129,0.12)'
-                    : 'color-mix(in srgb, var(--fg) 6%, transparent)',
-              color:
-                info.statusTag === 'due-soon'
-                  ? 'var(--exp)'
-                  : info.statusTag === 'optimal'
-                    ? 'var(--inc)'
-                    : 'var(--fg)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 12,
             }}
           >
-            {info.advice}
-          </div>
-
-          {onPayCard && info.debt > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
-              {info.previousStatementDebt > 0 && info.previousStatementDebt < info.debt && (
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ padding: '7px 12px', fontSize: 12.5 }}
-                  onClick={() =>
-                    onPayCard(
-                      fund,
-                      info.previousStatementDebt,
-                      `Thanh toán sao kê kỳ ${fmtDmy(info.lastStatementDate)} thẻ ${fund.name}`,
-                    )
-                  }
-                >
-                  Trả kỳ cũ ({money(info.previousStatementDebt)})
-                </button>
-              )}
+            <button
+              type="button"
+              className="btn"
+              style={{ padding: '7px 12px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+              onClick={() => setShowPickTxModal(true)}
+            >
+              🔄 Chuyển đổi trả góp
+            </button>
+            {onPayCard && info.debt > 0 && (
               <button
                 type="button"
                 className="btn pri"
-                style={{ padding: '7px 14px', fontSize: 12.5 }}
+                style={{ padding: '7px 14px', fontSize: 12.5, whiteSpace: 'nowrap' }}
                 onClick={() =>
-                  onPayCard(fund, info.debt, `Tất toán dư nợ thẻ ${fund.name}`)
+                  onPayCard(
+                    fund,
+                    info.previousStatementDebt > 0 ? info.previousStatementDebt : info.debt,
+                    `Tất toán dư nợ thẻ ${fund.name}`,
+                  )
                 }
               >
-                Tất toán toàn bộ ({money(info.debt)})
+                Tất toán (
+                {money(info.previousStatementDebt > 0 ? info.previousStatementDebt : info.debt)})
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* 2 Tab chuyển đổi: Giao dịch chi tiêu vs Quản lý Trả góp */}
+        {/* 2 Tab chuyển đổi cân bằng 1 dòng */}
         <div className="seg" style={{ marginBottom: 12 }}>
           <button
             type="button"
             className={activeTab === 'txs' ? 'on' : ''}
+            style={{ whiteSpace: 'nowrap' }}
             onClick={() => setActiveTab('txs')}
           >
             📋 Giao dịch thẻ ({cardTxs.length})
@@ -766,67 +1031,80 @@ export default function CreditCardDetailModal({
           <button
             type="button"
             className={activeTab === 'installments' ? 'on' : ''}
+            style={{ whiteSpace: 'nowrap' }}
             onClick={() => setActiveTab('installments')}
           >
-            📅 Trả góp 3/6/12/24 tháng ({installmentItems.length})
+            📅 Trả góp ({installmentItems.length})
           </button>
         </div>
 
         {activeTab === 'txs' ? (
           <>
-            {/* Bộ lọc kỳ sao kê */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            {/* Bộ lọc gộp gọn trên 1 hàng: Kỳ hiện tại + Xem lại các tháng */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 10,
+              }}
+            >
               <button
                 type="button"
                 className="pill-tag"
                 style={{
                   cursor: 'pointer',
-                  padding: '5px 10px',
-                  fontSize: 12,
+                  padding: '6px 12px',
+                  fontSize: 12.5,
+                  whiteSpace: 'nowrap',
                   border:
-                    cycleFilter === 'current'
-                      ? '1px solid var(--acc)'
+                    filterMode === 'current_cycle'
+                      ? '1.5px solid var(--acc)'
                       : '1px solid var(--bd)',
-                  color: cycleFilter === 'current' ? 'var(--acc)' : 'var(--fg)',
+                  color: filterMode === 'current_cycle' ? 'var(--acc)' : 'var(--fg)',
+                  fontWeight: filterMode === 'current_cycle' ? 700 : 500,
                 }}
-                onClick={() => setCycleFilter('current')}
+                onClick={() => setFilterMode('current_cycle')}
               >
-                Kỳ đang mở ({fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
+                Kỳ hiện tại ({fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
                 {fmtDmy(info.nextStatementDate).slice(0, 5)})
               </button>
-              <button
-                type="button"
-                className="pill-tag"
+
+              <select
+                value={filterMode === 'current_cycle' ? '' : filterMode}
+                onChange={e => {
+                  const val = e.target.value
+                  setFilterMode(val || 'current_cycle')
+                }}
+                aria-label="Xem lại kỳ hoặc tháng khác"
                 style={{
-                  cursor: 'pointer',
-                  padding: '5px 10px',
-                  fontSize: 12,
+                  padding: '6px 10px',
+                  borderRadius: 99,
                   border:
-                    cycleFilter === 'previous'
-                      ? '1px solid var(--acc)'
+                    filterMode !== 'current_cycle'
+                      ? '1.5px solid var(--acc)'
                       : '1px solid var(--bd)',
-                  color: cycleFilter === 'previous' ? 'var(--acc)' : 'var(--fg)',
-                }}
-                onClick={() => setCycleFilter('previous')}
-              >
-                Kỳ trước ({fmtDmy(info.prevStatementDate).slice(0, 5)} →{' '}
-                {fmtDmy(info.lastStatementDate).slice(0, 5)})
-              </button>
-              <button
-                type="button"
-                className="pill-tag"
-                style={{
+                  background: 'var(--card)',
+                  color: filterMode !== 'current_cycle' ? 'var(--acc)' : 'var(--mut)',
+                  fontSize: 12.5,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  padding: '5px 10px',
-                  fontSize: 12,
-                  border:
-                    cycleFilter === 'all' ? '1px solid var(--acc)' : '1px solid var(--bd)',
-                  color: cycleFilter === 'all' ? 'var(--acc)' : 'var(--fg)',
+                  maxWidth: 175,
                 }}
-                onClick={() => setCycleFilter('all')}
               >
-                Tất cả ({cardTxs.length})
-              </button>
+                <option value="">📅 Xem lại các tháng...</option>
+                <option value="prev_cycle">
+                  Kỳ trước ({fmtDmy(info.prevStatementDate).slice(0, 5)} →{' '}
+                  {fmtDmy(info.lastStatementDate).slice(0, 5)})
+                </option>
+                {availableMonths.map(ym => (
+                  <option key={ym} value={ym}>
+                    {fmtMonthOption(ym)}
+                  </option>
+                ))}
+                <option value="all">Tất cả giao dịch ({cardTxs.length})</option>
+              </select>
             </div>
 
             {/* Tóm tắt nhanh của kỳ đang chọn */}
@@ -835,22 +1113,24 @@ export default function CreditCardDetailModal({
                 display: 'flex',
                 justifyContent: 'space-between',
                 fontSize: 12.5,
-                padding: '6px 4px 10px',
+                padding: '4px 4px 10px',
+                gap: 8,
               }}
               className="mut"
             >
-              <span>
-                Chi tiêu kỳ này: <b className="exp">{money(filteredSummary.expense)}</b>
+              <span style={{ whiteSpace: 'nowrap' }}>
+                Chi tiêu: <b className="exp">{money(filteredSummary.expense)}</b>
               </span>
-              <span>
-                Đã thanh toán / Hoàn: <b className="inc">+{money(filteredSummary.paid)}</b>
+              <span style={{ whiteSpace: 'nowrap' }}>
+                Đã trả / Hoàn: <b className="inc">+{money(filteredSummary.paid)}</b>
               </span>
             </div>
 
-            <div className="card" style={{ padding: '4px 14px' }}>
+            {/* Danh sách giao dịch thẳng hàng, không gắn nút lẻ gây lệch bố cục */}
+            <div className="card" style={{ padding: '0 14px' }}>
               {filteredTxs.length === 0 && (
                 <div className="empty" style={{ padding: '22px 0' }}>
-                  Chưa có giao dịch nào trong kỳ sao kê này.
+                  Chưa có giao dịch nào trong khoảng thời gian này.
                 </div>
               )}
               {filteredTxs.map(t => {
@@ -871,80 +1151,66 @@ export default function CreditCardDetailModal({
                 return (
                   <div
                     key={t.id}
-                    style={{
-                      padding: '11px 0',
-                      borderBottom: '1px solid var(--bd)',
-                    }}
+                    className="row"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setViewingTx(t)}
                   >
                     <div
+                      className="ico"
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        cursor: onSelectTx ? 'pointer' : 'default',
+                        background: (c?.color ?? fund.color) + '26',
+                        width: 38,
+                        height: 38,
+                        fontSize: 18,
                       }}
-                      onClick={() => onSelectTx?.(t)}
                     >
-                      <div
-                        className="ico"
-                        style={{
-                          background: (c?.color ?? fund.color) + '26',
-                          width: 38,
-                          height: 38,
-                          fontSize: 18,
-                        }}
-                      >
-                        {catIcon}
-                      </div>
-                      <div className="grow" style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <b style={{ fontSize: 14.5 }}>{catName}</b>
-                          {instStatus && (
-                            <span
-                              className="pill-tag"
-                              style={{
-                                fontSize: 10.5,
-                                color: 'var(--acc)',
-                                borderColor: 'var(--acc)',
-                              }}
-                            >
-                              📅 Trả góp {instStatus.termMonths} tháng ({instStatus.paidCycles}/
-                              {instStatus.termMonths} kỳ)
-                            </span>
-                          )}
-                        </div>
-                        <small className="mut" style={{ display: 'block', marginTop: 2 }}>
-                          {fmtDmy(t.date)}
-                          {t.note ? ` · ${t.note}` : ''}
-                        </small>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <b className={eff < 0 ? 'exp' : 'inc'} style={{ fontSize: 15 }}>
-                          {eff < 0 ? `-${money(-eff)}` : `+${money(eff)}`}
+                      {catIcon}
+                    </div>
+                    <div className="grow" style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <b
+                          style={{
+                            fontSize: 14.5,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {catName}
                         </b>
-                        {t.type === 'expense' && t.fundId === fund.id && (
-                          <div style={{ marginTop: 4 }}>
-                            <button
-                              type="button"
-                              className="pill-tag"
-                              style={{
-                                cursor: 'pointer',
-                                fontSize: 11,
-                                border: '1px solid var(--bd)',
-                                color: instStatus ? 'var(--acc)' : 'var(--fg)',
-                              }}
-                              onClick={e => {
-                                e.stopPropagation()
-                                setConvertingTx(t)
-                              }}
-                            >
-                              {instStatus
-                                ? `⚙️ Còn ${instStatus.remainingCycles} kỳ (${money(instStatus.monthlyAmount)}/kỳ)`
-                                : '🔄 Chuyển trả góp'}
-                            </button>
-                          </div>
+                        {instStatus && (
+                          <span
+                            className="pill-tag"
+                            style={{
+                              fontSize: 10.5,
+                              color: 'var(--acc)',
+                              borderColor: 'var(--acc)',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                            }}
+                          >
+                            Trả góp {instStatus.paidCycles}/{instStatus.termMonths} kỳ
+                          </span>
                         )}
                       </div>
+                      <small
+                        className="mut"
+                        style={{
+                          display: 'block',
+                          marginTop: 2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {fmtDmy(t.date)}
+                        {t.note ? ` · ${t.note}` : ''}
+                      </small>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      <b className={eff < 0 ? 'exp' : 'inc'} style={{ fontSize: 15 }}>
+                        {eff < 0 ? `-${money(-eff)}` : `+${money(eff)}`}
+                      </b>
                     </div>
                   </div>
                 )
@@ -958,52 +1224,66 @@ export default function CreditCardDetailModal({
               className="card"
               style={{
                 marginBottom: 12,
-                padding: '12px 14px',
+                padding: '12px 10px',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 8,
+                gap: 6,
                 textAlign: 'center',
               }}
             >
               <div>
-                <small className="mut">Đang trả góp</small>
-                <div style={{ fontWeight: 800, fontSize: 16, marginTop: 2 }}>
+                <small className="mut" style={{ whiteSpace: 'nowrap' }}>
+                  Đang trả góp
+                </small>
+                <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2, whiteSpace: 'nowrap' }}>
                   {info.activeInstallmentsCount} khoản
                 </div>
               </div>
               <div>
-                <small className="mut">Đóng mỗi kỳ sao kê</small>
+                <small className="mut" style={{ whiteSpace: 'nowrap' }}>
+                  Mỗi kỳ sao kê
+                </small>
                 <div
-                  style={{ fontWeight: 800, fontSize: 15, marginTop: 2, color: 'var(--exp)' }}
+                  style={{
+                    fontWeight: 800,
+                    fontSize: 14.5,
+                    marginTop: 2,
+                    color: 'var(--exp)',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  {money(info.monthlyInstallmentTotal)}/kỳ
+                  {money(info.monthlyInstallmentTotal)}
                 </div>
               </div>
               <div>
-                <small className="mut">Dư nợ trả góp còn lại</small>
-                <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2 }}>
+                <small className="mut" style={{ whiteSpace: 'nowrap' }}>
+                  Còn lại
+                </small>
+                <div style={{ fontWeight: 800, fontSize: 14.5, marginTop: 2, whiteSpace: 'nowrap' }}>
                   {money(info.remainingInstallmentBalance)}
                 </div>
               </div>
             </div>
 
+            <div style={{ marginBottom: 12 }}>
+              <button
+                type="button"
+                className="btn pri"
+                style={{ width: '100%', padding: '10px 14px', fontSize: 13.5 }}
+                onClick={() => setShowPickTxModal(true)}
+              >
+                + Chọn giao dịch trong tháng để chuyển trả góp
+              </button>
+            </div>
+
             {installmentItems.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '24px 16px' }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>📅</div>
-                <b>Chưa có giao dịch trả góp nào trên thẻ này</b>
-                <p className="mut" style={{ fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
-                  Hãy chuyển sang tab <b>"📋 Giao dịch thẻ"</b> và bấm nút{' '}
-                  <b>"🔄 Chuyển trả góp"</b> ở bất kỳ khoản chi tiêu nào để chia kỳ hạn{' '}
-                  <b>3, 6, 12 hoặc 24 tháng</b>.
+              <div className="card" style={{ textAlign: 'center', padding: '22px 16px' }}>
+                <div style={{ fontSize: 26, marginBottom: 6 }}>📅</div>
+                <b>Chưa có khoản trả góp nào</b>
+                <p className="mut" style={{ fontSize: 13, marginTop: 4 }}>
+                  Bấm nút phía trên để chọn giao dịch chi tiêu thẻ và chia kỳ hạn 3, 6, 12 hoặc 24
+                  tháng.
                 </p>
-                <button
-                  type="button"
-                  className="btn pri"
-                  style={{ marginTop: 12, padding: '8px 16px', fontSize: 13 }}
-                  onClick={() => setActiveTab('txs')}
-                >
-                  Chọn giao dịch để chuyển trả góp
-                </button>
               </div>
             ) : (
               installmentItems.map(({ tx, status: st }) => {
@@ -1019,87 +1299,107 @@ export default function CreditCardDetailModal({
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'flex-start',
+                        alignItems: 'center',
                         gap: 10,
+                        cursor: 'pointer',
                       }}
+                      onClick={() => setViewingTx(tx)}
                     >
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
                         <div
                           className="ico"
                           style={{
                             background: (c?.color ?? fund.color) + '26',
-                            width: 40,
-                            height: 40,
-                            fontSize: 20,
+                            width: 38,
+                            height: 38,
+                            fontSize: 18,
                           }}
                         >
                           {catIcon}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            <b style={{ fontSize: 15.5 }}>{tx.note || catName}</b>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <b
+                              style={{
+                                fontSize: 15,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {tx.note || catName}
+                            </b>
                             <span
                               className="pill-tag"
                               style={{
                                 color: st.isCompleted ? 'var(--inc)' : 'var(--acc)',
                                 fontWeight: 700,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
                               }}
                             >
-                              Kỳ hạn {st.termMonths} tháng
+                              {st.termMonths} tháng
                             </span>
                           </div>
                           <small className="mut" style={{ display: 'block', marginTop: 2 }}>
-                            {catName} · Giao dịch gốc: {fmtDmy(tx.date)} ({money(tx.amount)})
+                            Gốc: {money(tx.amount)} · Ngày {fmtDmy(tx.date)}
                           </small>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <small className="mut">Mỗi kỳ sao kê</small>
-                        <div className="exp" style={{ fontWeight: 800, fontSize: 16 }}>
+                      <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        <div className="exp" style={{ fontWeight: 800, fontSize: 15 }}>
                           {money(st.monthlyAmount)}/kỳ
                         </div>
+                        <small className="mut">Chi tiết ›</small>
                       </div>
                     </div>
 
-                    {/* Thông tin chi tiết: ngày bắt đầu chuyển đổi, kỳ sao kê, thời gian còn lại */}
+                    {/* 2x2 Ô thông tin gọn gàng, không rớt dòng */}
                     <div
                       style={{
                         display: 'grid',
                         gridTemplateColumns: '1fr 1fr',
                         gap: 8,
-                        marginTop: 12,
-                        padding: '10px 12px',
+                        marginTop: 10,
+                        padding: '9px 11px',
                         borderRadius: 12,
                         background: 'color-mix(in srgb, var(--fg) 4%, transparent)',
-                        fontSize: 12.5,
+                        fontSize: 12,
                       }}
                     >
                       <div>
-                        <span className="mut">Ngày bắt đầu chuyển đổi:</span>
-                        <div style={{ fontWeight: 600, marginTop: 2 }}>
+                        <span className="mut">Ngày chuyển đổi:</span>
+                        <div style={{ fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {fmtDmy(st.startDate)}
                         </div>
                       </div>
                       <div>
-                        <span className="mut">Bắt đầu ở kỳ sao kê:</span>
-                        <div style={{ fontWeight: 600, marginTop: 2 }}>
-                          Chốt {fmtDmy(st.firstStatementDate)} (TT: {fmtDmy(st.firstDueDate)})
+                        <span className="mut">Bắt đầu sao kê:</span>
+                        <div style={{ fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
+                          {fmtDmy(st.firstStatementDate)}
                         </div>
                       </div>
                       <div>
-                        <span className="mut">Kỳ sao kê thanh toán tới:</span>
-                        <div style={{ fontWeight: 600, marginTop: 2, color: 'var(--acc)' }}>
-                          {st.nextPaymentStatementDate && st.nextPaymentDueDate
-                            ? `Kỳ ${st.currentCycleNumber}/${st.termMonths} · Sao kê ${fmtDmy(st.nextPaymentStatementDate)} (TT ${fmtDmy(st.nextPaymentDueDate)})`
-                            : '✅ Đã hoàn tất đủ các kỳ'}
+                        <span className="mut">Kỳ TT tiếp theo:</span>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            marginTop: 2,
+                            color: 'var(--acc)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {st.nextPaymentDueDate
+                            ? `Kỳ ${st.currentCycleNumber}/${st.termMonths} (${fmtDmy(st.nextPaymentDueDate)})`
+                            : 'Đã hoàn tất'}
                         </div>
                       </div>
                       <div>
                         <span className="mut">Thời gian còn lại:</span>
-                        <div style={{ fontWeight: 600, marginTop: 2 }}>
+                        <div style={{ fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {st.remainingCycles > 0
-                            ? `Còn ${st.remainingCycles} kỳ (~${st.remainingCycles} tháng · hết ${fmtDmy(st.finalDueDate)})`
-                            : `Đã tất toán (${fmtDmy(st.finalDueDate)})`}
+                            ? `${st.remainingCycles} kỳ (hết ${fmtDmy(st.finalDueDate)})`
+                            : '0 kỳ'}
                         </div>
                       </div>
                     </div>
@@ -1114,11 +1414,11 @@ export default function CreditCardDetailModal({
                           marginBottom: 4,
                         }}
                       >
-                        <span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
                           Đã trả: <b>{st.paidCycles}/{st.termMonths} kỳ</b> ({money(st.paidAmount)})
                         </span>
-                        <span>
-                          Còn lại: <b className="exp">{money(st.remainingBalance)}</b>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          Còn: <b className="exp">{money(st.remainingBalance)}</b>
                         </span>
                       </div>
                       <div className="bar">
@@ -1131,35 +1431,34 @@ export default function CreditCardDetailModal({
                       </div>
                     </div>
 
-                    {/* Các nút thao tác: Cập nhật kỳ đã trả, Xem lịch các kỳ, Sửa */}
+                    {/* Các nút thao tác gọn trên 1 hàng */}
                     <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: 8,
-                        marginTop: 12,
+                        gap: 6,
+                        marginTop: 10,
                       }}
                     >
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           type="button"
                           className="btn"
-                          style={{ padding: '5px 10px', fontSize: 12 }}
+                          style={{ padding: '5px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
                           disabled={st.paidCycles <= 0}
                           onClick={() => handleStepPaidCycles(tx, st.paidCycles, -1)}
                         >
-                          － 1 kỳ
+                          －1 kỳ
                         </button>
                         <button
                           type="button"
                           className="btn pri"
-                          style={{ padding: '5px 10px', fontSize: 12 }}
+                          style={{ padding: '5px 10px', fontSize: 12, whiteSpace: 'nowrap' }}
                           disabled={st.paidCycles >= st.termMonths}
                           onClick={() => handleStepPaidCycles(tx, st.paidCycles, 1)}
                         >
-                          ＋ Đã trả thêm 1 kỳ
+                          ＋1 kỳ đã trả
                         </button>
                       </div>
 
@@ -1167,20 +1466,20 @@ export default function CreditCardDetailModal({
                         <button
                           type="button"
                           className="btn"
-                          style={{ padding: '5px 10px', fontSize: 12 }}
+                          style={{ padding: '5px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
                           onClick={() =>
                             setExpandedScheduleTxId(isExpanded ? null : (tx.id ?? null))
                           }
                         >
-                          {isExpanded ? 'Ẩn lịch kỳ' : '📅 Lịch các kỳ'}
+                          {isExpanded ? 'Ẩn lịch' : '📅 Lịch kỳ'}
                         </button>
                         <button
                           type="button"
                           className="btn"
-                          style={{ padding: '5px 10px', fontSize: 12 }}
+                          style={{ padding: '5px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
                           onClick={() => setConvertingTx(tx)}
                         >
-                          ⚙️ Sửa trả góp
+                          ⚙️ Sửa
                         </button>
                       </div>
                     </div>
@@ -1210,19 +1509,19 @@ export default function CreditCardDetailModal({
                                   : 'transparent',
                             }}
                           >
-                            <span>
+                            <span style={{ whiteSpace: 'nowrap' }}>
                               <b>
                                 Kỳ {item.cycleIndex}/{st.termMonths}
                               </b>{' '}
-                              · Sao kê {fmtDmy(item.statementDate)} · Hạn TT {fmtDmy(item.dueDate)}
+                              · TT {fmtDmy(item.dueDate)}
                             </span>
-                            <span>
+                            <span style={{ whiteSpace: 'nowrap' }}>
                               <b>{money(item.amount)}</b>{' '}
                               {item.status === 'paid'
-                                ? '✅ Đã trả'
+                                ? '✅'
                                 : item.status === 'current'
-                                  ? '⏳ Kỳ hiện tại'
-                                  : '📅 Sắp tới'}
+                                  ? '⏳'
+                                  : '📅'}
                             </span>
                           </div>
                         ))}
@@ -1235,7 +1534,47 @@ export default function CreditCardDetailModal({
           </>
         )}
 
-        {/* Modal chuyển đổi / chỉnh sửa trả góp 3/6/12/24 tháng */}
+        {/* Modal chọn giao dịch trong tháng để chuyển trả góp */}
+        {showPickTxModal && (
+          <SelectTxForInstallmentModal
+            txs={txs}
+            cats={cats}
+            fund={fund}
+            defaultMonthKey={
+              filterMode !== 'current_cycle' &&
+              filterMode !== 'prev_cycle' &&
+              filterMode !== 'all'
+                ? filterMode
+                : ymd(today).slice(0, 7)
+            }
+            onClose={() => setShowPickTxModal(false)}
+            onSelect={t => {
+              setShowPickTxModal(false)
+              setConvertingTx(t)
+            }}
+          />
+        )}
+
+        {/* Modal Chi tiết giao dịch hiển thị TRỰC TIẾP trên trang chi tiết thẻ (z-index 85) */}
+        {viewingTx && (
+          <TxDetailModal
+            tx={viewingTx}
+            onClose={() => setViewingTx(null)}
+            onEdit={t => {
+              setViewingTx(null)
+              setEditingTx(t)
+            }}
+            onDuplicate={draft => {
+              setViewingTx(null)
+              setDupDraft(draft)
+            }}
+          />
+        )}
+
+        {editingTx && <TxForm tx={editingTx} onClose={() => setEditingTx(null)} />}
+        {dupDraft && <TxForm draft={dupDraft} onClose={() => setDupDraft(null)} />}
+
+        {/* Modal chuyển đổi / chỉnh sửa trả góp 3/6/12/24 tháng (z-index 92) */}
         {convertingTx && (
           <InstallmentConvertModal
             tx={convertingTx}

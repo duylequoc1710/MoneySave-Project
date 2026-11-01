@@ -160,7 +160,7 @@ export default function TxForm({
   }
 
   return (
-    <div className="sheetbg" onClick={onClose}>
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 88 }}>
       <div ref={sheetRef} className={`sheet ${showKeypad ? 'kp-open' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="ml-tx-header">
           <button type="button" className="ml-tx-cancel-btn" onClick={onClose}>

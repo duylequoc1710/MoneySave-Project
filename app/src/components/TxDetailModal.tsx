@@ -94,7 +94,7 @@ export default function TxDetailModal({
   }
 
   return (
-    <div className="sheetbg" onClick={onClose}>
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 85 }}>
       <div
         className="sheet tx-detail-sheet"
         onClick={e => e.stopPropagation()}

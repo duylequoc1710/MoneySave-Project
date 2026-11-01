@@ -395,28 +395,36 @@ export default function Overview() {
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <b style={{ fontSize: 16 }}>{f.name}</b>
-                      <span className="pill-tag">Miễn lãi {info.interestFreeDaysToday} ngày</span>
+                      <b style={{ fontSize: 16, whiteSpace: 'nowrap' }}>{f.name}</b>
+                      <span className="pill-tag" style={{ whiteSpace: 'nowrap' }}>
+                        Miễn lãi {info.interestFreeDaysToday} ngày
+                      </span>
                       {info.activeInstallmentsCount > 0 && (
                         <span
                           className="pill-tag"
-                          style={{ color: 'var(--acc)', borderColor: 'var(--acc)' }}
+                          style={{
+                            color: 'var(--acc)',
+                            borderColor: 'var(--acc)',
+                            whiteSpace: 'nowrap',
+                          }}
                         >
-                          📅 {info.activeInstallmentsCount} trả góp ({money(info.monthlyInstallmentTotal)}/kỳ)
+                          📅 {info.activeInstallmentsCount} trả góp
                         </span>
                       )}
                     </div>
-                    <small className="mut" style={{ display: 'block', marginTop: 3 }}>
-                      Chốt sao kê: <b>ngày {info.statementDay}</b> (còn {info.daysUntilStatement}{' '}
-                      ngày) · Hạn TT kỳ mới: <b>{fmtDmy(info.nextCycleDueDate)}</b>
+                    <small className="mut" style={{ display: 'block', marginTop: 3, whiteSpace: 'nowrap' }}>
+                      Sao kê: <b>ngày {info.statementDay}</b> · Hạn TT kỳ mới:{' '}
+                      <b>{fmtDmy(info.nextCycleDueDate)}</b>
                     </small>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <small className="mut">Dư nợ hiện tại</small>
+                  <small className="mut" style={{ display: 'block', whiteSpace: 'nowrap' }}>
+                    Dư nợ hiện tại
+                  </small>
                   <div
                     className={info.debt > 0 ? 'exp' : 'inc'}
-                    style={{ fontSize: 18, fontWeight: 700 }}
+                    style={{ fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap' }}
                   >
                     {hideBalance ? '•••••• ₫' : info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}
                   </div>
@@ -431,12 +439,13 @@ export default function Overview() {
                       justifyContent: 'space-between',
                       fontSize: 12,
                       marginBottom: 4,
+                      gap: 8,
                     }}
                   >
-                    <span className="mut">
+                    <span className="mut" style={{ whiteSpace: 'nowrap' }}>
                       Khả dụng: {hideBalance ? '•••••• ₫' : money(info.availableCredit)}
                     </span>
-                    <span className="mut">
+                    <span className="mut" style={{ whiteSpace: 'nowrap' }}>
                       Hạn mức: {hideBalance ? '•••••• ₫' : money(info.creditLimit)} (
                       {info.utilizationPct}%)
                     </span>
@@ -452,14 +461,14 @@ export default function Overview() {
                 </div>
               )}
 
-              {/* Hộp diễn giải kỳ sao kê & cảnh báo hạn thanh toán rõ ràng */}
+              {/* Hộp diễn giải kỳ sao kê & cảnh báo hạn thanh toán gọn 1 dòng */}
               <div
                 style={{
                   marginTop: 10,
-                  padding: '8px 10px',
+                  padding: '7px 10px',
                   borderRadius: 10,
-                  fontSize: 12.5,
-                  lineHeight: 1.45,
+                  fontSize: 12,
+                  lineHeight: 1.4,
                   background:
                     info.statusTag === 'due-soon'
                       ? 'rgba(239,68,68,0.12)'
@@ -483,32 +492,32 @@ export default function Overview() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  flexWrap: 'wrap',
                   gap: 8,
                   fontSize: 12.5,
                 }}
               >
-                <span className="mut">
-                  Chi trong kỳ ({fmtDmy(info.lastStatementDate)} → {fmtDmy(info.nextStatementDate)}
-                  ): <b>{hideBalance ? '•••••• ₫' : money(info.currentCycleSpend)}</b>
+                <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                  Kỳ này ({fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
+                  {fmtDmy(info.nextStatementDate).slice(0, 5)}):{' '}
+                  <b>{hideBalance ? '•••••• ₫' : money(info.currentCycleSpend)}</b>
                 </span>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button
                     type="button"
                     className="btn"
-                    style={{ padding: '6px 10px', fontSize: 12 }}
+                    style={{ padding: '6px 10px', fontSize: 12, whiteSpace: 'nowrap' }}
                     onClick={e => {
                       e.stopPropagation()
                       setViewingCreditFundId(f.id!)
                     }}
                   >
-                    Chi tiết & Trả góp
+                    Chi tiết
                   </button>
                   {info.debt > 0 && (
                     <button
                       type="button"
                       className="btn pri"
-                      style={{ padding: '6px 12px', fontSize: 12 }}
+                      style={{ padding: '6px 12px', fontSize: 12, whiteSpace: 'nowrap' }}
                       onClick={e => {
                         e.stopPropagation()
                         setPayDraft({
@@ -523,11 +532,7 @@ export default function Overview() {
                         })
                       }}
                     >
-                      Tất toán (
-                      {money(
-                        info.previousStatementDebt > 0 ? info.previousStatementDebt : info.debt,
-                      )}
-                      )
+                      Tất toán
                     </button>
                   )}
                 </div>
@@ -1105,9 +1110,6 @@ export default function Overview() {
               toFundId: f.id,
               note,
             })
-          }}
-          onSelectTx={t => {
-            setViewingTx(t)
           }}
         />
       )}
