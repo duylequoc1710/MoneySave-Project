@@ -36,7 +36,7 @@
 * **Mô tả hiện tượng:**
   Người dùng xóa sạch các dữ liệu test mẫu đưa ví về 0 ₫ trên máy tính. Tuy nhiên khi tải lại trang, mở tab mới hoặc mở app trên điện thoại, số dư 111,361,000 ₫ và các ví mẫu cũ (`Quỹ Chính`, `Techcombank`, `VIB`, `VPBank`, `HSBC`) bất ngờ xuất hiện trở lại.
 * **Nguyên nhân gốc rễ (RCA):**
-  1. Khi người dùng đăng ký tài khoản Firebase Auth (`quocduyle2000@gmail.com`), tại thời điểm đó cơ sở dữ liệu IndexedDB trên máy đang có dữ liệu test.
+  1. Khi người dùng đăng ký tài khoản Firebase Auth (`user@example.com`), tại thời điểm đó cơ sở dữ liệu IndexedDB trên máy đang có dữ liệu test.
   2. Engine `cloudSync.ts` ngay lập tức mã hóa E2EE và đẩy gói dữ liệu này lên két sắt Firebase Cloud dưới khóa `usr_${user.uid}`.
   3. Khi thực hiện xóa dữ liệu test, hàm `clearAllToCleanState()` chỉ thực hiện `db.txs.clear()` trên IndexedDB của trình duyệt máy đó.
   4. Khi ứng dụng khởi động lại hoặc nhận sự kiện `focus`/`visibilitychange`, hàm `syncNowSmart()` đối chiếu với Firebase Cloud. Do bản trên Cloud có mốc thời gian hợp lệ (`updatedAt > 0`) trong khi máy cục bộ vừa bị xóa sạch không có mốc mới đẩy lên, hệ thống tự động suy đoán đây là bản sao lưu từ thiết bị khác và kéo về, giải mã rồi nạp đè lại vào IndexedDB.
@@ -319,13 +319,13 @@
 * **Mã sự cố:** `INC-17`
 * **Mức độ:** Trung bình – Cao (Gây hiểu lầm về nghĩa vụ thanh toán thẻ tín dụng khi bước sang kỳ sao kê mới).
 * **Mô tả hiện tượng:**
-  Vào ngày `01/11/2026`, thẻ `VP Bank Stepup` (chốt sao kê ngày `20`, hạn thanh toán ngày `5`) đã được người dùng thanh toán xong kỳ sao kê tháng 10 (`20/10`). Dư nợ hiện tại `-500,200 ₫` hoàn toàn là chi tiêu mới phát sinh trong kỳ sao kê `20/10/2026 → 20/11/2026` (hạn thanh toán thực tế là ngày `05/12/2026`). Tuy nhiên thẻ vẫn hiện cảnh báo đỏ: `⚠️ Còn 4 ngày đến hạn thanh toán (05/11). Hãy tất toán đúng hạn để tránh phí phạt & lãi!`.
+  Vào ngày `01/11/2026`, một thẻ tín dụng mẫu (chốt sao kê ngày `20`, hạn thanh toán ngày `5`) đã được người dùng thanh toán xong kỳ sao kê tháng 10 (`20/10`). Dư nợ hiện tại `-500,000 ₫` hoàn toàn là chi tiêu mới phát sinh trong kỳ sao kê `20/10/2026 → 20/11/2026` (hạn thanh toán thực tế là ngày `05/12/2026`). Tuy nhiên thẻ vẫn hiện cảnh báo đỏ: `⚠️ Còn 4 ngày đến hạn thanh toán (05/11). Hãy tất toán đúng hạn để tránh phí phạt & lãi!`.
 * **Nguyên nhân gốc rễ (RCA):**
   Hàm `analyzeCreditFund` trong [`lib.ts`](../app/src/lib.ts) trước đây kiểm tra điều kiện `if (debt > 0 && daysUntilDue <= 5)` dựa trên tổng dư nợ `debt` của thẻ mà chưa bóc tách xem khoản dư nợ đó phát sinh từ **trước/trong ngày chốt sao kê gần nhất (`<= 20/10/2026`)** hay phát sinh trong **kỳ sao kê đang mở (`20/10/2026 → 20/11/2026`)**.
 * **Giải pháp khắc phục:**
   1. Bổ sung phép tính `previousStatementDebt` (dư nợ tại thời điểm chốt sao kê kỳ trước `lastStatementDate` trừ đi các khoản thanh toán/chuyển tiền vào thẻ từ sau `lastStatementDate`) và `nextCycleDueDate` (hạn thanh toán của kỳ sao kê đang mở, ví dụ `05/12/2026`).
   2. Chỉ kích hoạt cảnh báo đỏ `due-soon` cho hạn `05/11` khi `previousStatementDebt > 0`.
-  3. Khi `previousStatementDebt === 0` và `debt > 0`, hiển thị thông báo xanh/trung tính giải thích rõ: Kỳ thanh toán `05/11/2026` (sao kê chốt `20/10`) đã hoàn tất (`0 ₫` cần trả), còn khoản chi `500,200 ₫` phát sinh trong kỳ mới (`20/10 → 20/11`) sẽ chốt ngày `20/11` và có hạn thanh toán là **`05/12/2026`**.
+  3. Khi `previousStatementDebt === 0` và `debt > 0`, hiển thị thông báo xanh/trung tính giải thích rõ: Kỳ thanh toán `05/11/2026` (sao kê chốt `20/10`) đã hoàn tất (`0 ₫` cần trả), còn khoản chi `500,000 ₫` phát sinh trong kỳ mới (`20/10 → 20/11`) sẽ chốt ngày `20/11` và có hạn thanh toán là **`05/12/2026`**.
 * **Quy tắc cho kỹ sư:**
   > Khi thiết kế cảnh báo hạn thanh toán thẻ tín dụng, luôn phải tách bạch **Dư nợ kỳ sao kê đã chốt (`previousStatementDebt`)** và **Chi tiêu phát sinh trong kỳ sao kê mới (`currentCycleSpend`)** để hiển thị đúng ngày đến hạn tương ứng của từng khoản.
 

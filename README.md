@@ -5,7 +5,7 @@
   <p><i>Local-first · Offline-first PWA · Bảo mật Mã hóa Đầu cuối (E2EE AES-256) · Đồng bộ Realtime Đa thiết bị</i></p>
 
   <p>
-    <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/demo-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo" /></a>
+    <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/live_demo_(test_only)-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo (Test Only)" /></a>
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.7.2-3b82f6" alt="Version v2.7.2" /></a>
     <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-47%2F47%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
@@ -16,13 +16,22 @@
 
 ---
 
+> [!IMPORTANT]
+> ### 🛠️ Triết Lý Chia Sẻ Repo & Khuyến Cáo Dành Cho Người Sử Dụng
+>
+> * **Cung cấp "Khung sườn cơ bản" – Tự do xào nấu theo ý bạn:** Kho mã nguồn (Public Repository) này được chia sẻ với mục tiêu cung cấp cho cộng đồng **ý tưởng thiết kế và bộ khung sườn cốt lõi (Core Framework / Starter Template)** của một ứng dụng quản lý tài chính cá nhân. Bạn hoàn toàn làm chủ mã nguồn sau khi tải về — hãy thoải mái **tự xử lý, tùy biến, thêm bớt tính năng, đổi giao diện hoặc "xào nấu"** lại mọi công thức, cấu trúc dữ liệu theo đúng gu và nhu cầu thực tế của riêng bạn.
+> * **Link Vercel của tác giả chỉ dùng để Test / Trải nghiệm thử:** Đường dẫn [https://moneysavedl.vercel.app](https://moneysavedl.vercel.app) là môi trường cá nhân của tác giả, mở công khai để bạn **trải nghiệm nhanh giao diện và test thử các luồng tính năng** trước khi quyết định tải code.
+> * **Khuyến cáo tự cài đặt lên Website / Host riêng khi sử dụng thật:** Đây **không phải** là dịch vụ SaaS thương mại dùng chung. Để đảm bảo sự riêng tư, độc lập dữ liệu và chủ động lâu dài, **khuyến cáo bạn hãy Fork / Clone repo này về máy và tự triển khai (Self-host) lên tài khoản Vercel, Netlify, Cloudflare Pages, Firebase Hosting hoặc Server riêng của bạn** (kết nối với Firebase cá nhân của bạn qua file `app/.env.local`). Xem hướng dẫn chi tiết từng bước tại **[Hướng dẫn Tự triển khai (Self-Hosting Guide)](doc/06-DEPLOYMENT-GUIDE.md)**.
+
+---
+
 ## 📖 Giới Thiệu Dự Án
 
-**MoneySave** là ứng dụng Web প্রোগressive (PWA) quản lý tài chính cá nhân thế hệ mới được thiết kế theo triết lý **Local-first (Ưu tiên cục bộ)** kết hợp **Behavioral FinTech (Phân tích hành vi tài chính)**.
+**MoneySave** là bộ khung ứng dụng Web Progressive (PWA) quản lý tài chính cá nhân hiện đại được thiết kế theo triết lý **Local-first (Ưu tiên cục bộ)** kết hợp **Behavioral FinTech (Phân tích hành vi tài chính)**.
 
 Không chỉ dừng lại ở việc ghi chép thu chi thông thường, **MoneySave** đóng vai trò như một cố vấn tài chính cá nhân: tự động dự báo dòng tiền cuối tháng, phát hiện các khoản chi rò rỉ vi mô, tối ưu hóa chu kỳ sao kê & trả góp thẻ tín dụng, đồng thời giúp bạn phân bổ dòng tiền vào các kế hoạch tiết kiệm theo lộ trình giai đoạn rõ ràng.
 
-👉 **Trải nghiệm trực tiếp (Live App):** [https://moneysavedl.vercel.app](https://moneysavedl.vercel.app)
+👉 **Bản Demo trải nghiệm thử tính năng:** [https://moneysavedl.vercel.app](https://moneysavedl.vercel.app) *(Khuyến nghị tự Clone & Deploy lên host riêng nếu sử dụng lâu dài)*
 
 ---
 
@@ -70,30 +79,37 @@ Không chỉ dừng lại ở việc ghi chép thu chi thông thường, **Money
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Phát Triển Cục Bộ
+## 🚀 Hướng Dẫn Tự Cài Đặt, Tùy Biến ("Xào Nấu") & Đưa Lên Host Riêng
 
-### Yêu cầu hệ thống:
-* **Node.js** `20+` trở lên.
+Dự án được đóng gói gọn nhẹ để bất kỳ ai cũng có thể tự dựng một bản **MoneySave** độc lập trên tên miền / host của riêng mình chỉ trong vài phút:
 
-### Các bước chạy dự án:
+### 1. Chạy & Tùy biến trên máy cá nhân (Local Development)
+* Yêu cầu: **Node.js** `20+` trở lên.
 ```bash
-# 1. Clone kho lưu trữ từ GitHub
+# 1. Fork hoặc Clone kho lưu trữ về máy của bạn
 git clone https://github.com/duylequoc1710/MoneySave-Project.git
 cd MoneySave-Project/app
 
 # 2. Cài đặt các gói phụ thuộc
 npm install
 
-# 3. Khởi chạy máy chủ phát triển (Development Server)
+# 3. Tạo file cấu hình môi trường riêng (từ file mẫu .env.example)
+cp .env.example .env.local
+# -> Điền thông số Firebase riêng của bạn vào .env.local (nếu muốn dùng Cloud Sync riêng)
+
+# 4. Khởi chạy máy chủ phát triển để tự do chỉnh sửa / "xào nấu" tính năng
 npm run dev
 
-# 4. Chạy bộ kiểm thử tự động (47 kịch bản Unit Test)
+# 5. Chạy bộ kiểm thử tự động (47 kịch bản Unit Test) & Đóng gói bản Production
 npm test
-
-# 5. Kiểm tra Linter & Đóng gói bản Production PWA
 npm run lint
 npm run build
 ```
+
+### 2. Tự Triển Khai Lên Website / Host Riêng (Vercel, Netlify, Cloudflare, Firebase...)
+Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên repo GitHub cá nhân của bạn và kết nối miễn phí với:
+* **Vercel / Netlify / Cloudflare Pages:** Chọn thư mục gốc là `app`, lệnh build `npm run build`, thư mục đầu ra `dist` và khai báo các biến môi trường `VITE_FIREBASE_*` của bạn.
+* **Firebase Hosting / GitHub Pages:** Xem hướng dẫn từng bước tại [`doc/06-DEPLOYMENT-GUIDE.md`](doc/06-DEPLOYMENT-GUIDE.md).
 
 ---
 

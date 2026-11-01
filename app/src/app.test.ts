@@ -281,14 +281,14 @@ describe('Phân tích Quỹ tín dụng – Xài trước trả sau (analyzeCred
   })
 
   it('Tách bạch dư nợ kỳ đã chốt (05/11) và chi tiêu kỳ mới (20/10 -> 20/11, hạn TT 05/12) để không báo động giả', () => {
-    const vpBankStepup: Fund = {
+    const demoCreditCard: Fund = {
       id: 11,
-      name: 'VP Bank Stepup',
+      name: 'Thẻ Tín Dụng Demo',
       icon: '💳',
       color: '#8b5cf6',
       initialBalance: 0,
       kind: 'credit',
-      creditLimit: 57_000_000,
+      creditLimit: 50_000_000,
       statementDay: 20,
       dueDay: 5,
       excludeFromTotal: true,
@@ -297,7 +297,7 @@ describe('Phân tích Quỹ tín dụng – Xài trước trả sau (analyzeCred
       {
         id: 1,
         type: 'expense',
-        amount: 500_200,
+        amount: 500_000,
         date: '2026-10-28',
         fundId: 11,
         categoryId: 1,
@@ -305,10 +305,10 @@ describe('Phân tích Quỹ tín dụng – Xài trước trả sau (analyzeCred
         createdAt: 1,
       },
     ]
-    // Hôm nay là 01/11/2026 (còn 4 ngày tới 05/11, nhưng kỳ 20/10 không nợ đồng nào, 500,200 ₫ thuộc kỳ 20/10 -> 20/11 hạn trả 05/12)
-    const info = analyzeCreditFund(vpBankStepup, txs, new Date(2026, 10, 1))
-    assert.equal(info.debt, 500_200)
-    assert.equal(info.currentCycleSpend, 500_200)
+    // Hôm nay là 01/11/2026 (còn 4 ngày tới 05/11, nhưng kỳ 20/10 không nợ đồng nào, 500,000 ₫ thuộc kỳ 20/10 -> 20/11 hạn trả 05/12)
+    const info = analyzeCreditFund(demoCreditCard, txs, new Date(2026, 10, 1))
+    assert.equal(info.debt, 500_000)
+    assert.equal(info.currentCycleSpend, 500_000)
     assert.equal(info.previousStatementDebt, 0)
     assert.equal(info.nextDueDate, '2026-11-05')
     assert.equal(info.nextCycleDueDate, '2026-12-05')
@@ -329,7 +329,7 @@ describe('Phân tích Quỹ tín dụng – Xài trước trả sau (analyzeCred
         createdAt: 2,
       },
     ]
-    const infoUnpaid = analyzeCreditFund(vpBankStepup, txsWithOldDebt, new Date(2026, 10, 1))
+    const infoUnpaid = analyzeCreditFund(demoCreditCard, txsWithOldDebt, new Date(2026, 10, 1))
     assert.equal(infoUnpaid.previousStatementDebt, 1_200_000)
     assert.equal(infoUnpaid.statusTag, 'due-soon')
     assert.ok(infoUnpaid.advice.includes('05/11/2026'))

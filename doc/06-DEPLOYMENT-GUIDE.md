@@ -1,6 +1,10 @@
-# 06 – Hướng Dẫn Triển Khai Web App & Cloud (Deployment Guide)
+# 06 – Hướng Dẫn Tự Triển Khai Web App & Cloud Riêng (Self-Hosting Guide)
 
-Tài liệu này dành cho cộng đồng mã nguồn mở và người dùng muốn tự lưu trữ (Self-host) ứng dụng **MoneySave** trên máy chủ đám mây của riêng mình hoàn toàn miễn phí.
+Tài liệu này dành cho cộng đồng mã nguồn mở và người dùng muốn **Clone / Fork bộ khung sườn MoneySave**, tự do tùy biến ("xào nấu" tính năng theo ý riêng) và **tự lưu trữ (Self-host)** trên máy chủ / website đám mây của riêng mình hoàn toàn miễn phí.
+
+> **⚠️ Khuyến cáo quan trọng:**
+> * Đường dẫn demo của tác giả (`https://moneysavedl.vercel.app`) chỉ phục vụ mục đích **trải nghiệm và kiểm thử tính năng**.
+> * Khi sử dụng để quản lý tài chính cá nhân lâu dài, bạn **nên tự Clone repo này và triển khai lên tài khoản Vercel / Netlify / Firebase Hosting / Website riêng của bạn** theo hướng dẫn dưới đây để làm chủ 100% mã nguồn và hạ tầng dữ liệu.
 
 ---
 

@@ -16,6 +16,18 @@ dist-ssr
 .env.*.local
 firebase-debug.log*
 
+# Personal financial backups & exports
+moneysave-backup*.json
+moneysave-safety*.json
+moneygo-backup*.json
+*.backup.json
+*.xls
+*.xlsx
+*.csv
+*.sqlite*
+*.db
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
