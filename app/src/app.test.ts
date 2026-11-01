@@ -937,6 +937,15 @@ describe('Quỹ Tiết Kiệm & Lộ trình kế hoạch từng tháng (analyzeS
     assert.equal(info.remainingMonths, 5)
     assert.equal(info.monthlyNeededNow, 2_400_000) // 12,000,000 / 5 tháng = 2,400,000 ₫/tháng
     assert.equal(info.status, 'on_track')
+    assert.equal(info.targetMonthLabel, '03/2027')
+    assert.equal(info.stageRoadmap.length, 3)
+    assert.deepEqual(
+      info.stageRoadmap.map(s => s.stagePct),
+      [0, 50, 100],
+    )
+    assert.equal(info.stageRoadmap[1].targetAmountAtStage, 9_000_000) // Mốc 50%
+    assert.equal(info.stageRoadmap[1].remainingToReachStage, 3_000_000)
+    assert.equal(info.stageRoadmap[2].monthLabel, '03/2027') // Tháng mục tiêu 100%
     assert.equal(info.monthlyRoadmap.length, 6)
     assert.equal(info.monthlyRoadmap[0].monthLabel, '10/2026')
     assert.equal(info.monthlyRoadmap[1].monthLabel, '11/2026')

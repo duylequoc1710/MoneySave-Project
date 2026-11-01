@@ -897,6 +897,18 @@ export interface SavingsMonthMilestone {
   isAchieved: boolean
 }
 
+export interface SavingsStageMilestone {
+  stagePct: 0 | 50 | 100
+  title: string
+  monthLabel: string // MM/yyyy
+  dateLabel: string // dd/MM/yyyy hoặc MM/yyyy
+  targetAmountAtStage: number
+  remainingToReachStage: number
+  monthsToReachStage: number
+  isAchieved: boolean
+  isCurrentStage: boolean
+}
+
 export interface SavingsGoalAnalysis {
   goal: SavingsGoal
   targetAmount: number
@@ -908,10 +920,14 @@ export interface SavingsGoalAnalysis {
   daysRemaining: number
   totalMonths: number
   remainingMonths: number
+  startMonthLabel: string // MM/yyyy
+  halfwayMonthLabel: string // MM/yyyy
+  targetMonthLabel: string // MM/yyyy
   monthlyNeededNow: number // Số tiền cần tiết kiệm mỗi tháng từ nay đến hạn để đạt mục tiêu
   plannedCumulativeNow: number // Mốc kế hoạch tính đến tháng hiện tại
   status: 'completed' | 'on_track' | 'behind' | 'overdue'
   statusLabel: string
+  stageRoadmap: SavingsStageMilestone[]
   monthlyRoadmap: SavingsMonthMilestone[]
 }
 
@@ -1045,6 +1061,53 @@ export function analyzeSavingsGoal(
     statusLabel = allocatedAmount >= plannedCumulativeNow ? 'Vượt tiến độ' : 'Đúng tiến độ'
   }
 
+  const startMonthLabel = format(startMonthDate, 'MM/yyyy')
+  const midMonthDate = addMonths(startMonthDate, Math.floor((totalMonths - 1) / 2))
+  const halfwayMonthLabel = format(midMonthDate, 'MM/yyyy')
+  const targetMonthLabel = format(targetMonthDate, 'MM/yyyy')
+  const halfAmount = Math.round(targetAmount * 0.5)
+  const remainingToHalf = Math.max(0, halfAmount - allocatedAmount)
+  const monthsToHalf =
+    monthlyNeededNow > 0 && remainingToHalf > 0
+      ? Math.max(1, Math.ceil(remainingToHalf / monthlyNeededNow))
+      : 0
+
+  const stageRoadmap: SavingsStageMilestone[] = [
+    {
+      stagePct: 0,
+      title: 'Khởi động (0%)',
+      monthLabel: startMonthLabel,
+      dateLabel: fmtDmy(goal.startDate || ymd(startD)),
+      targetAmountAtStage: 0,
+      remainingToReachStage: 0,
+      monthsToReachStage: 0,
+      isAchieved: true,
+      isCurrentStage: progressPct < 50 && !isCompleted,
+    },
+    {
+      stagePct: 50,
+      title: 'Nửa chặng đường (50%)',
+      monthLabel: halfwayMonthLabel,
+      dateLabel: `Tháng ${halfwayMonthLabel}`,
+      targetAmountAtStage: halfAmount,
+      remainingToReachStage: remainingToHalf,
+      monthsToReachStage: monthsToHalf,
+      isAchieved: targetAmount > 0 && allocatedAmount >= halfAmount,
+      isCurrentStage: progressPct >= 50 && !isCompleted,
+    },
+    {
+      stagePct: 100,
+      title: 'Hoàn thành mục tiêu (100%)',
+      monthLabel: targetMonthLabel,
+      dateLabel: fmtDmy(goal.targetDate || ymd(targetD)),
+      targetAmountAtStage: targetAmount,
+      remainingToReachStage: remainingAmount,
+      monthsToReachStage: isCompleted ? 0 : remainingMonths,
+      isAchieved: isCompleted,
+      isCurrentStage: isCompleted,
+    },
+  ]
+
   return {
     goal,
     targetAmount,
@@ -1056,10 +1119,14 @@ export function analyzeSavingsGoal(
     daysRemaining,
     totalMonths,
     remainingMonths: rawRemMonths <= 0 && !isCompleted ? 0 : remainingMonths,
+    startMonthLabel,
+    halfwayMonthLabel,
+    targetMonthLabel,
     monthlyNeededNow,
     plannedCumulativeNow,
     status,
     statusLabel,
+    stageRoadmap,
     monthlyRoadmap,
   }
 }

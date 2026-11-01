@@ -299,7 +299,10 @@ export default function Accounts() {
                 {totalSavingsTarget > 0 ? ` / ${money(totalSavingsTarget)}` : ''}
               </b>
             </div>
-            <small className="mut" style={{ display: 'block', marginTop: 3 }}>
+            <small
+              className="mut"
+              style={{ display: 'block', marginTop: 3, whiteSpace: 'normal', lineHeight: 1.35 }}
+            >
               Số dư quỹ: <b>{money(savingsFundBal)}</b> · Chưa phân bổ:{' '}
               <b>{money(Math.max(0, savingsFundBal - totalSavingsAllocated))}</b>
             </small>
@@ -332,27 +335,14 @@ export default function Accounts() {
         {savingsGoals.length === 0 ? (
           <div
             style={{
-              padding: '10px 0 14px',
+              padding: '10px 0 12px',
               borderTop: '1px solid var(--bd)',
-              fontSize: 13,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 8,
-              flexWrap: 'wrap',
+              fontSize: 12.5,
             }}
           >
             <span className="mut">
-              Phân bổ tiền cho Du lịch, Mua sắm, Khóa học... & theo dõi từng tháng.
+              Bấm <b>"+ Kế hoạch"</b> để tạo mục tiêu (Du lịch, Mua sắm, Khóa học...) và theo dõi tiến độ tích lũy.
             </span>
-            <button
-              type="button"
-              className="btn"
-              style={{ padding: '5px 10px', fontSize: 12, whiteSpace: 'nowrap' }}
-              onClick={() => setSavingsModalState({ open: true, openCreate: true })}
-            >
-              🎯 Tạo mục tiêu
-            </button>
           </div>
         ) : (
           savingsGoals.map(g => {

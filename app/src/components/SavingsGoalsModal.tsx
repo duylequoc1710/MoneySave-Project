@@ -201,6 +201,21 @@ export default function SavingsGoalsModal({
     })
   }
 
+  // Nếu người dùng bấm "+ Kế hoạch" trực tiếp từ trang Ví của tôi:
+  // Chỉ mở thẳng form Tạo kế hoạch, bấm Lưu hoặc Huỷ sẽ quay về Ví của tôi ngay lập tức.
+  if (initialOpenCreate && editingGoal) {
+    const directForm = (
+      <SavingsGoalFormModal
+        initial={editingGoal}
+        unallocatedBalance={unallocatedBalance}
+        activeSavingsFund={activeSavingsFund}
+        onClose={onClose}
+        onSaved={() => onClose()}
+      />
+    )
+    return typeof document !== 'undefined' ? createPortal(directForm, document.body) : directForm
+  }
+
   const content = (
     <div
       className="sheetbg"
@@ -435,23 +450,15 @@ export default function SavingsGoalsModal({
             </div>
           )}
 
-          {/* Nút tác vụ dòng tiền */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          {/* Nút tác vụ dòng tiền (chỉ giữ 1 nút Nạp từ ví khác, bỏ nút Thêm kế hoạch bị trùng) */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
             <button
               type="button"
               className="btn pri"
-              style={{ flex: 1, minWidth: 140, padding: '9px 12px', fontSize: 13 }}
+              style={{ width: '100%', padding: '9px 14px', fontSize: 13 }}
               onClick={() => setDepositFromWalletOpen(true)}
             >
-              📥 Nạp từ ví khác
-            </button>
-            <button
-              type="button"
-              className="btn"
-              style={{ flex: 1, minWidth: 140, padding: '9px 12px', fontSize: 13 }}
-              onClick={openNewGoalModal}
-            >
-              🎯 + Thêm kế hoạch
+              📥 Nạp tiền từ ví khác vào Quỹ Tiết Kiệm
             </button>
           </div>
         </div>
@@ -476,11 +483,11 @@ export default function SavingsGoalsModal({
         </div>
 
         {goals.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '26px 16px' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🎯</div>
+          <div className="card" style={{ textAlign: 'center', padding: '22px 16px' }}>
+            <div style={{ fontSize: 34, marginBottom: 6 }}>🎯</div>
             <b style={{ fontSize: 15 }}>Chưa có kế hoạch tiết kiệm nào</b>
-            <p className="mut" style={{ fontSize: 13, margin: '6px 0 14px', lineHeight: 1.45 }}>
-              Tạo các mục tiêu như <b>Du lịch, Mua sắm, Khóa học, Quỹ dự phòng...</b> để phân bổ tiền từ Quỹ Tiết Kiệm và theo dõi lộ trình tích lũy từng tháng.
+            <p className="mut" style={{ fontSize: 12.5, margin: '6px 0 12px', lineHeight: 1.45 }}>
+              Bấm nút <b>"+ Kế hoạch"</b> ở góc trên hoặc chạm nhanh vào một mẫu mục tiêu bên dưới:
             </p>
             <div
               style={{
@@ -488,7 +495,6 @@ export default function SavingsGoalsModal({
                 gap: 6,
                 justifyContent: 'center',
                 flexWrap: 'wrap',
-                marginBottom: 14,
               }}
             >
               {GOAL_PRESETS.slice(0, 4).map(p => (
@@ -517,14 +523,6 @@ export default function SavingsGoalsModal({
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className="btn pri"
-              style={{ padding: '10px 18px', fontSize: 14 }}
-              onClick={openNewGoalModal}
-            >
-              + Tạo kế hoạch đầu tiên
-            </button>
           </div>
         ) : (
           goals.map(g => {
@@ -724,7 +722,7 @@ export default function SavingsGoalsModal({
                     style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
                     onClick={() => setExpandedGoalId(isExpanded ? null : g.id!)}
                   >
-                    📅 {isExpanded ? 'Ẩn lộ trình' : `Lộ trình (${info.totalMonths}T)`}
+                    🎯 {isExpanded ? 'Ẩn lộ trình' : 'Lộ trình 0–50–100%'}
                   </button>
                   <button
                     type="button"
@@ -746,7 +744,7 @@ export default function SavingsGoalsModal({
                   </button>
                 </div>
 
-                {/* Bảng Lộ trình chi tiết theo từng tháng */}
+                {/* Lộ trình 3 giai đoạn tinh gọn: 0% -> 50% -> 100% (vẫn giữ Tháng mục tiêu) */}
                 {isExpanded && (
                   <div
                     style={{
@@ -760,39 +758,82 @@ export default function SavingsGoalsModal({
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: 8,
+                        marginBottom: 10,
                         flexWrap: 'wrap',
                         gap: 4,
                       }}
                     >
                       <b style={{ fontSize: 13 }}>
-                        📅 Lộ trình tích lũy từng tháng ({fmtDmy(g.startDate)} → {fmtDmy(g.targetDate)})
+                        🎯 Lộ trình giai đoạn (0% → 50% → 100%)
                       </b>
-                      <small className="mut" style={{ fontSize: 11.5 }}>
-                        Tổng {info.totalMonths} tháng
-                      </small>
+                      <span
+                        className="pill-tag"
+                        style={{
+                          fontSize: 11,
+                          background: 'color-mix(in srgb, var(--acc) 16%, transparent)',
+                          color: 'var(--acc)',
+                        }}
+                      >
+                        Tháng mục tiêu: {info.targetMonthLabel}
+                      </span>
                     </div>
 
+                    {/* Thanh tiến độ 3 cột mốc trực quan 0% - 50% - 100% */}
                     <div
                       style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 6,
-                        maxHeight: 280,
-                        overflowY: 'auto',
-                        paddingRight: 2,
+                        position: 'relative',
+                        padding: '6px 4px 10px',
+                        marginBottom: 8,
                       }}
                     >
-                      {info.monthlyRoadmap.map(m => (
+                      <div className="bar" style={{ height: 8, margin: '8px 0' }}>
                         <div
-                          key={m.monthKey}
                           style={{
-                            padding: '8px 10px',
+                            width: `${
+                              info.allocatedAmount > 0 ? Math.max(4, info.progressPct) : 0
+                            }%`,
+                            background: info.isCompleted ? '#10b981' : g.color,
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                        }}
+                      >
+                        <span className="inc">● 0% ({info.startMonthLabel})</span>
+                        <span
+                          style={{
+                            color: info.progressPct >= 50 ? 'var(--inc)' : 'var(--mut)',
+                          }}
+                        >
+                          ● 50% ({info.halfwayMonthLabel})
+                        </span>
+                        <span
+                          style={{
+                            color: info.isCompleted ? 'var(--inc)' : 'var(--fg)',
+                          }}
+                        >
+                          🏁 100% ({info.targetMonthLabel})
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3 Thẻ giai đoạn 0% - 50% - 100% gọn gàng */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {info.stageRoadmap.map(st => (
+                        <div
+                          key={st.stagePct}
+                          style={{
+                            padding: '9px 11px',
                             borderRadius: 10,
-                            background: m.isCurrent
-                              ? 'rgba(59, 130, 246, 0.12)'
+                            background: st.isCurrentStage
+                              ? 'rgba(59, 130, 246, 0.11)'
                               : 'var(--bg)',
-                            border: m.isCurrent
+                            border: st.isCurrentStage
                               ? '1px solid rgba(59, 130, 246, 0.45)'
                               : '1px solid var(--bd)',
                             fontSize: 12.5,
@@ -808,37 +849,25 @@ export default function SavingsGoalsModal({
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                              <b>
-                                Tháng {m.monthLabel} (Kỳ {m.monthIndex}/{info.totalMonths})
-                              </b>
-                              {m.isCurrent && (
-                                <span
-                                  className="pill-tag"
-                                  style={{
-                                    fontSize: 10.5,
-                                    color: '#3b82f6',
-                                    background: 'rgba(59,130,246,0.16)',
-                                  }}
-                                >
-                                  Tháng này
-                                </span>
-                              )}
-                              {m.isAchieved && (
-                                <span
-                                  className="pill-tag"
-                                  style={{
-                                    fontSize: 10.5,
-                                    color: '#10b981',
-                                    background: 'rgba(16,185,129,0.16)',
-                                  }}
-                                >
-                                  ✓ Đạt mốc
-                                </span>
-                              )}
+                              <b>{st.title}</b>
+                              <span
+                                className="pill-tag"
+                                style={{
+                                  fontSize: 10.5,
+                                  color: st.isAchieved ? '#10b981' : '#3b82f6',
+                                  background: st.isAchieved
+                                    ? 'rgba(16,185,129,0.16)'
+                                    : 'rgba(59,130,246,0.16)',
+                                }}
+                              >
+                                {st.stagePct === 100
+                                  ? `Tháng đích: ${st.monthLabel}`
+                                  : `Tháng ${st.monthLabel}`}
+                              </span>
                             </div>
-                            <span className="mut" style={{ fontSize: 12 }}>
-                              Mốc tích lũy: <b style={{ color: 'var(--fg)' }}>{money(m.plannedCumulative)}</b>
-                            </span>
+                            <b style={{ color: st.isAchieved ? 'var(--inc)' : 'var(--fg)' }}>
+                              {st.stagePct === 0 ? 'Bắt đầu' : money(st.targetAmountAtStage)}
+                            </b>
                           </div>
 
                           <div
@@ -852,29 +881,38 @@ export default function SavingsGoalsModal({
                               gap: 6,
                             }}
                           >
-                            <span className="mut">
-                              {m.isAchieved ? (
-                                <span className="inc">Đã tích lũy đủ cho mốc tháng {m.monthLabel}</span>
-                              ) : m.suggestedContribution > 0 ? (
-                                <>
-                                  Cần để dành tháng này:{' '}
-                                  <b style={{ color: 'var(--fg)' }}>+{money(m.suggestedContribution)}</b>
-                                </>
-                              ) : (
-                                <>
-                                  Còn thiếu tới mốc này:{' '}
-                                  <b className="exp">{money(m.remainingNeededFromCurrentToThisMilestone)}</b>
-                                </>
-                              )}
-                            </span>
-                            <span className="mut">
-                              Sau tháng này còn thiếu:{' '}
-                              <b style={{ color: m.remainingToGoalAfterMonth === 0 ? 'var(--inc)' : 'var(--fg)' }}>
-                                {m.remainingToGoalAfterMonth === 0
-                                  ? '0 ₫ (Đạt đích 🎉)'
-                                  : money(m.remainingToGoalAfterMonth)}
-                              </b>
-                            </span>
+                            {st.stagePct === 0 ? (
+                              <>
+                                <span className="mut">Ngày bắt đầu: {st.dateLabel}</span>
+                                <span className="mut">
+                                  Định mức đều:{' '}
+                                  <b style={{ color: 'var(--fg)' }}>
+                                    {info.isCompleted
+                                      ? 'Đã hoàn tất'
+                                      : `${money(info.monthlyNeededNow)}/tháng`}
+                                  </b>
+                                </span>
+                              </>
+                            ) : st.isAchieved ? (
+                              <>
+                                <span className="inc">
+                                  ✓ Đã hoàn thành cột mốc {st.stagePct}%
+                                </span>
+                                <span className="mut">{st.dateLabel}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="mut">
+                                  Còn thiếu tới mốc {st.stagePct}%:{' '}
+                                  <b style={{ color: 'var(--fg)' }}>
+                                    {money(st.remainingToReachStage)}
+                                  </b>
+                                </span>
+                                <span className="mut">
+                                  Dự kiến còn <b>{st.monthsToReachStage} tháng</b> ({st.dateLabel})
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}
