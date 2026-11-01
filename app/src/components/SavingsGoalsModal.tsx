@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addMonths } from 'date-fns'
 import {
@@ -17,6 +18,7 @@ import {
   ymd,
 } from '../lib'
 import DatePickerModal from './DatePickerModal'
+import { Colors } from './accounts/Colors'
 import { COLORS } from './accounts/palette'
 import { showAlert, showConfirm } from './AppDialog'
 
@@ -65,7 +67,11 @@ export default function SavingsGoalsModal({
 
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
-  const goals = useLiveQuery(() => db.savingsGoals.toArray(), [], NO_GOALS)
+  const goals = useLiveQuery(
+    () => db.savingsGoals.toArray().catch(() => NO_GOALS),
+    [],
+    NO_GOALS,
+  )
 
   const cashFunds = useMemo(
     () => funds.filter(f => f.kind !== 'credit' && !f.archived),
@@ -154,7 +160,8 @@ export default function SavingsGoalsModal({
     setSelectedSavingsFundId(id)
     await showAlert({
       title: 'Đã tạo Ví Tiết Kiệm',
-      message: 'Đã tạo "Ví Tiết Kiệm" (Không tính vào tổng). Bạn có thể nạp tiền từ các ví khác vào đây để phân bổ cho các kế hoạch.',
+      message:
+        'Đã tạo "Ví Tiết Kiệm" (Không tính vào tổng). Bạn có thể nạp tiền từ các ví khác vào đây để phân bổ cho các kế hoạch.',
       icon: '🐷',
       tone: 'success',
     })
@@ -194,19 +201,23 @@ export default function SavingsGoalsModal({
     })
   }
 
-  return (
+  const content = (
     <div
-      className="modal"
+      className="sheetbg"
       style={{ zIndex: 78 }}
       onClick={onClose}
     >
       <div
         className="sheet"
-        style={{ maxHeight: '92vh', overflowY: 'auto' }}
+        style={{
+          maxWidth: 560,
+          margin: '0 auto',
+          maxHeight: '92dvh',
+          overflowY: 'auto',
+          padding: '16px 16px calc(28px + env(safe-area-inset-bottom))',
+        }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="sheet-handle" />
-
         {/* Thanh tiêu đề gọn gàng */}
         <div
           style={{
@@ -265,7 +276,7 @@ export default function SavingsGoalsModal({
               marginBottom: 10,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 12.5 }} className="mut">
                 Ví nguồn tiết kiệm:
               </span>
@@ -275,12 +286,12 @@ export default function SavingsGoalsModal({
                   onChange={e => setSelectedSavingsFundId(Number(e.target.value))}
                   style={{
                     width: 'auto',
-                    padding: '4px 8px',
+                    padding: '5px 10px',
                     fontSize: 12.5,
                     fontWeight: 700,
-                    borderRadius: 8,
-                    background: 'var(--card2)',
-                    color: 'var(--txt)',
+                    borderRadius: 10,
+                    background: 'var(--bg)',
+                    color: 'var(--fg)',
                     border: '1px solid var(--bd)',
                   }}
                 >
@@ -407,10 +418,10 @@ export default function SavingsGoalsModal({
               >
                 <span className="mut">
                   Tổng tiến độ ({goals.length} kế hoạch):{' '}
-                  <b style={{ color: 'var(--txt)' }}>{overallProgressPct}%</b>
+                  <b style={{ color: 'var(--fg)' }}>{overallProgressPct}%</b>
                 </span>
                 <span className="mut">
-                  Mục tiêu: <b style={{ color: 'var(--txt)' }}>{money(totalTarget)}</b>
+                  Mục tiêu: <b style={{ color: 'var(--fg)' }}>{money(totalTarget)}</b>
                 </span>
               </div>
               <div className="bar" style={{ height: 8, marginTop: 0 }}>
@@ -452,6 +463,8 @@ export default function SavingsGoalsModal({
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: 8,
+            flexWrap: 'wrap',
+            gap: 4,
           }}
         >
           <h2 style={{ margin: 0 }}>KẾ HOẠCH MỤC TIÊU ({goals.length})</h2>
@@ -482,7 +495,8 @@ export default function SavingsGoalsModal({
                 <button
                   key={p.name}
                   type="button"
-                  className="chip"
+                  className="btn"
+                  style={{ padding: '6px 11px', fontSize: 12.5, borderRadius: 99 }}
                   onClick={() => {
                     const today = new Date()
                     setEditingGoal({
@@ -534,7 +548,7 @@ export default function SavingsGoalsModal({
                   border: isExpanded ? `1px solid ${g.color}88` : undefined,
                 }}
               >
-                {/* Hàng 1: Icon + Tên + Trạng thái + Nút Sửa / Xoá */}
+                {/* Hàng 1: Icon + Tên + Trạng thái */}
                 <div
                   style={{
                     display: 'flex',
@@ -616,7 +630,7 @@ export default function SavingsGoalsModal({
                         marginTop: 10,
                         padding: '8px 10px',
                         borderRadius: 10,
-                        background: 'var(--card2)',
+                        background: 'var(--bg)',
                         border: '1px solid var(--bd)',
                         fontSize: 12,
                       }}
@@ -641,7 +655,7 @@ export default function SavingsGoalsModal({
                           style={{
                             display: 'block',
                             marginTop: 2,
-                            color: info.isCompleted ? 'var(--inc)' : 'var(--txt)',
+                            color: info.isCompleted ? 'var(--inc)' : 'var(--fg)',
                           }}
                         >
                           {info.isCompleted
@@ -664,11 +678,11 @@ export default function SavingsGoalsModal({
                         }}
                       >
                         <span>
-                          Còn thiếu: <b style={{ color: 'var(--txt)' }}>{money(info.remainingAmount)}</b>
+                          Còn thiếu: <b style={{ color: 'var(--fg)' }}>{money(info.remainingAmount)}</b>
                         </span>
                         <span>
                           Mốc tháng này:{' '}
-                          <b style={{ color: 'var(--txt)' }}>{money(info.plannedCumulativeNow)}</b>
+                          <b style={{ color: 'var(--fg)' }}>{money(info.plannedCumulativeNow)}</b>
                         </span>
                       </div>
                     )}
@@ -777,7 +791,7 @@ export default function SavingsGoalsModal({
                             borderRadius: 10,
                             background: m.isCurrent
                               ? 'rgba(59, 130, 246, 0.12)'
-                              : 'var(--card2)',
+                              : 'var(--bg)',
                             border: m.isCurrent
                               ? '1px solid rgba(59, 130, 246, 0.45)'
                               : '1px solid var(--bd)',
@@ -793,7 +807,7 @@ export default function SavingsGoalsModal({
                               flexWrap: 'wrap',
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                               <b>
                                 Tháng {m.monthLabel} (Kỳ {m.monthIndex}/{info.totalMonths})
                               </b>
@@ -823,7 +837,7 @@ export default function SavingsGoalsModal({
                               )}
                             </div>
                             <span className="mut" style={{ fontSize: 12 }}>
-                              Mốc tích lũy: <b style={{ color: 'var(--txt)' }}>{money(m.plannedCumulative)}</b>
+                              Mốc tích lũy: <b style={{ color: 'var(--fg)' }}>{money(m.plannedCumulative)}</b>
                             </span>
                           </div>
 
@@ -844,7 +858,7 @@ export default function SavingsGoalsModal({
                               ) : m.suggestedContribution > 0 ? (
                                 <>
                                   Cần để dành tháng này:{' '}
-                                  <b style={{ color: 'var(--txt)' }}>+{money(m.suggestedContribution)}</b>
+                                  <b style={{ color: 'var(--fg)' }}>+{money(m.suggestedContribution)}</b>
                                 </>
                               ) : (
                                 <>
@@ -855,7 +869,7 @@ export default function SavingsGoalsModal({
                             </span>
                             <span className="mut">
                               Sau tháng này còn thiếu:{' '}
-                              <b style={{ color: m.remainingToGoalAfterMonth === 0 ? 'var(--inc)' : 'var(--txt)' }}>
+                              <b style={{ color: m.remainingToGoalAfterMonth === 0 ? 'var(--inc)' : 'var(--fg)' }}>
                                 {m.remainingToGoalAfterMonth === 0
                                   ? '0 ₫ (Đạt đích 🎉)'
                                   : money(m.remainingToGoalAfterMonth)}
@@ -889,9 +903,10 @@ export default function SavingsGoalsModal({
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
                                     fontSize: 12,
-                                    padding: '5px 8px',
+                                    padding: '6px 10px',
                                     borderRadius: 8,
-                                    background: 'var(--card2)',
+                                    background: 'var(--bg)',
+                                    border: '1px solid var(--bd)',
                                   }}
                                 >
                                   <span className="mut">
@@ -960,6 +975,8 @@ export default function SavingsGoalsModal({
       </div>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(content, document.body) : content
 }
 
 function SavingsGoalFormModal({
@@ -1079,31 +1096,50 @@ function SavingsGoalFormModal({
 
   return (
     <div
-      className="modal"
+      className="sheetbg"
       style={{ zIndex: 90 }}
       onClick={onClose}
     >
       <form
         className="sheet"
-        style={{ maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ maxHeight: '90dvh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}
         onSubmit={handleSave}
       >
-        <div className="sheet-handle" />
-        <h3 style={{ marginTop: 0 }}>
-          {isEdit ? 'Chỉnh sửa kế hoạch tiết kiệm' : '🎯 Tạo kế hoạch tiết kiệm mới'}
-        </h3>
+        <div className="ledger-topbar" style={{ marginBottom: 12 }}>
+          <button type="button" className="close-pill-btn" onClick={onClose}>
+            Huỷ
+          </button>
+          <b style={{ fontSize: 16 }}>
+            {isEdit ? 'Sửa kế hoạch' : '🎯 Tạo kế hoạch mới'}
+          </b>
+          <button type="submit" className="close-pill-btn" style={{ color: 'var(--acc)' }}>
+            Lưu
+          </button>
+        </div>
 
         {/* Gợi ý mẫu nhanh */}
         {!isEdit && (
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ marginTop: 0 }}>Chọn nhanh mẫu kế hoạch</label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 12, color: 'var(--mut)', display: 'block', marginBottom: 6 }}>
+              Chọn nhanh mẫu kế hoạch
+            </span>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {GOAL_PRESETS.map(p => (
                 <button
                   key={p.name}
                   type="button"
-                  className={'chip ' + (name === p.name ? 'on' : '')}
+                  className="btn"
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: 12.5,
+                    borderRadius: 99,
+                    borderColor: name === p.name ? 'var(--acc)' : undefined,
+                    background:
+                      name === p.name
+                        ? 'color-mix(in srgb, var(--acc) 16%, var(--card))'
+                        : undefined,
+                  }}
                   onClick={() => {
                     setName(p.name)
                     setIcon(p.icon)
@@ -1118,30 +1154,34 @@ function SavingsGoalFormModal({
           </div>
         )}
 
-        <label>Tên mục tiêu / kế hoạch</label>
-        <input
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="VD: Du lịch Nhật Bản, Mua Macbook, Khóa học IELTS..."
-          required
-        />
+        <label className="fld">
+          <span>Tên mục tiêu / kế hoạch</span>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="VD: Du lịch Nhật Bản, Mua Macbook, Khóa học IELTS..."
+            required
+          />
+        </label>
 
-        <label>Số tiền mục tiêu (₫)</label>
-        <input
-          inputMode="numeric"
-          value={targetRaw}
-          onChange={e => setTargetRaw(formatNumberInput(e.target.value))}
-          placeholder="VD: 15,000,000"
-          style={{ fontSize: 17, fontWeight: 700 }}
-          required
-        />
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+        <label className="fld" style={{ marginBottom: 6 }}>
+          <span>Số tiền mục tiêu (₫)</span>
+          <input
+            inputMode="numeric"
+            value={targetRaw}
+            onChange={e => setTargetRaw(formatNumberInput(e.target.value))}
+            placeholder="VD: 15,000,000"
+            style={{ fontSize: 17, fontWeight: 700 }}
+            required
+          />
+        </label>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           {[5_000_000, 10_000_000, 20_000_000, 30_000_000, 50_000_000, 100_000_000].map(v => (
             <button
               key={v}
               type="button"
-              className="chip"
-              style={{ fontSize: 11.5, padding: '4px 8px' }}
+              className="btn"
+              style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
               onClick={() => setTargetRaw(formatNumberInput(String(v)))}
             >
               {v >= 1_000_000 ? `${v / 1_000_000}tr` : money(v)}
@@ -1149,75 +1189,77 @@ function SavingsGoalFormModal({
           ))}
         </div>
 
-        <label>
-          Số tiền đã phân bổ vào kế hoạch (₫){' '}
-          {unallocatedBalance > 0 && (
-            <small className="inc" style={{ fontWeight: 400 }}>
-              (Khả dụng chưa phân bổ: {money(unallocatedBalance)})
-            </small>
-          )}
+        <label className="fld">
+          <span>
+            Số tiền đã phân bổ vào kế hoạch (₫){' '}
+            {unallocatedBalance > 0 && (
+              <small className="inc" style={{ fontWeight: 400 }}>
+                (Chưa phân bổ: {money(unallocatedBalance)})
+              </small>
+            )}
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              inputMode="numeric"
+              value={allocatedRaw}
+              onChange={e => setAllocatedRaw(formatNumberInput(e.target.value))}
+              placeholder="0"
+            />
+            {unallocatedBalance > 0 && (
+              <button
+                type="button"
+                className="btn"
+                style={{ whiteSpace: 'nowrap', fontSize: 12 }}
+                onClick={() => {
+                  const maxUse =
+                    targetAmount > 0
+                      ? Math.min(unallocatedBalance, targetAmount)
+                      : unallocatedBalance
+                  setAllocatedRaw(formatNumberInput(String(maxUse)))
+                }}
+              >
+                Lấy số dư rỗi
+              </button>
+            )}
+          </div>
         </label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            inputMode="numeric"
-            value={allocatedRaw}
-            onChange={e => setAllocatedRaw(formatNumberInput(e.target.value))}
-            placeholder="0"
-          />
-          {unallocatedBalance > 0 && (
-            <button
-              type="button"
-              className="btn"
-              style={{ whiteSpace: 'nowrap', fontSize: 12 }}
-              onClick={() => {
-                const maxUse =
-                  targetAmount > 0
-                    ? Math.min(unallocatedBalance, targetAmount)
-                    : unallocatedBalance
-                setAllocatedRaw(formatNumberInput(String(maxUse)))
-              }}
-            >
-              Lấy từ số dư rỗi
-            </button>
-          )}
-        </div>
 
         {/* Thời gian bắt đầu & hoàn thành */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
-          <div>
-            <label style={{ marginTop: 0 }}>Ngày bắt đầu</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="fld" style={{ marginBottom: 6 }}>
+            <span>Ngày bắt đầu</span>
             <button
               type="button"
               className="btn"
-              style={{ width: '100%', justifyContent: 'space-between', padding: '10px 12px' }}
+              style={{ width: '100%', textAlign: 'left', padding: '10px 12px' }}
               onClick={() => setPickDateField('start')}
             >
-              <span>📅 {fmtDmy(startDate)}</span>
+              📅 {fmtDmy(startDate)}
             </button>
           </div>
-          <div>
-            <label style={{ marginTop: 0 }}>Hạn đạt mục tiêu</label>
+          <div className="fld" style={{ marginBottom: 6 }}>
+            <span>Hạn đạt mục tiêu</span>
             <button
               type="button"
               className="btn"
-              style={{ width: '100%', justifyContent: 'space-between', padding: '10px 12px' }}
+              style={{ width: '100%', textAlign: 'left', padding: '10px 12px' }}
               onClick={() => setPickDateField('target')}
             >
-              <span>🏁 {fmtDmy(targetDate)}</span>
+              🏁 {fmtDmy(targetDate)}
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           <small className="mut" style={{ alignSelf: 'center', fontSize: 11.5 }}>
-            Chọn nhanh thời hạn:
+            Kỳ hạn nhanh:
           </small>
           {[3, 6, 12, 18, 24].map(m => (
             <button
               key={m}
               type="button"
-              className="chip"
-              style={{ fontSize: 11.5, padding: '4px 9px' }}
+              className="btn"
+              style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
               onClick={() => applyQuickMonths(m)}
             >
               {m} tháng
@@ -1229,7 +1271,7 @@ function SavingsGoalFormModal({
         {targetAmount > 0 && (
           <div
             style={{
-              marginTop: 12,
+              marginBottom: 12,
               padding: '10px 12px',
               borderRadius: 12,
               background: 'rgba(16, 185, 129, 0.09)',
@@ -1253,46 +1295,43 @@ function SavingsGoalFormModal({
           </div>
         )}
 
-        <label>Biểu tượng</label>
-        <div className="chips">
-          {GOAL_ICONS.map(ic => (
-            <button
-              type="button"
-              key={ic}
-              className={'chip ' + (icon === ic ? 'on' : '')}
-              onClick={() => setIcon(ic)}
-            >
-              {ic}
-            </button>
-          ))}
+        <div className="fld">
+          <span>Biểu tượng</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {GOAL_ICONS.map(ic => (
+              <button
+                type="button"
+                key={ic}
+                className="btn"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: 18,
+                  borderColor: icon === ic ? 'var(--acc)' : undefined,
+                  background:
+                    icon === ic
+                      ? 'color-mix(in srgb, var(--acc) 18%, var(--card))'
+                      : undefined,
+                }}
+                onClick={() => setIcon(ic)}
+              >
+                {ic}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <label>Màu sắc</label>
-        <div className="chips">
-          {COLORS.map(c => (
-            <button
-              type="button"
-              key={c}
-              onClick={() => setColor(c)}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 99,
-                background: c,
-                border: color === c ? '3px solid #fff' : 'none',
-              }}
-            />
-          ))}
-        </div>
+        <Colors v={color} on={setColor} />
 
-        <label>Ghi chú (tuỳ chọn)</label>
-        <input
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          placeholder="VD: Trích 10% lương hàng tháng..."
-        />
+        <label className="fld" style={{ marginTop: 10 }}>
+          <span>Ghi chú (tuỳ chọn)</span>
+          <input
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="VD: Trích 10% lương hàng tháng..."
+          />
+        </label>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button type="button" className="btn" style={{ flex: 1 }} onClick={onClose}>
             Huỷ
           </button>
@@ -1383,7 +1422,9 @@ function AllocateToGoalModal({
         amount: -amount,
         note: note.trim() || 'Rút bớt về Quỹ Tiết Kiệm',
       }
-      await db.savingsGoals.update(goal.id, {
+      await db.savingsGoals.put({
+        ...goal,
+        id: goal.id,
         allocatedAmount: nextAllocated,
         history: [...(goal.history ?? []), logItem],
       })
@@ -1419,7 +1460,9 @@ function AllocateToGoalModal({
         fromFundId: fromWallet?.id ?? null,
         note: note.trim() || `Trích từ ${fromWallet?.name ?? 'ví khác'}`,
       }
-      await db.savingsGoals.update(goal.id, {
+      await db.savingsGoals.put({
+        ...goal,
+        id: goal.id,
         allocatedAmount: (goal.allocatedAmount || 0) + amount,
         savingsFundId: activeSavingsFund.id,
         history: [...(goal.history ?? []), logItem],
@@ -1435,7 +1478,9 @@ function AllocateToGoalModal({
       amount,
       note: note.trim() || 'Phân bổ từ Quỹ Tiết Kiệm',
     }
-    await db.savingsGoals.update(goal.id, {
+    await db.savingsGoals.put({
+      ...goal,
+      id: goal.id,
       allocatedAmount: (goal.allocatedAmount || 0) + amount,
       history: [...(goal.history ?? []), logItem],
     })
@@ -1443,37 +1488,42 @@ function AllocateToGoalModal({
   }
 
   return (
-    <div className="modal" style={{ zIndex: 90 }} onClick={onClose}>
+    <div className="sheetbg" style={{ zIndex: 90 }} onClick={onClose}>
       <form
         className="sheet"
         onClick={e => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div className="sheet-handle" />
-        <h3 style={{ marginTop: 0 }}>
-          {mode === 'add'
-            ? `➕ Phân bổ vào "${goal.name}"`
-            : `➖ Rút tiền từ "${goal.name}"`}
-        </h3>
+        <div className="ledger-topbar" style={{ marginBottom: 12 }}>
+          <button type="button" className="close-pill-btn" onClick={onClose}>
+            Huỷ
+          </button>
+          <b style={{ fontSize: 16 }}>
+            {mode === 'add' ? `➕ Phân bổ: ${goal.name}` : `➖ Rút bớt: ${goal.name}`}
+          </b>
+          <button type="submit" className="close-pill-btn" style={{ color: 'var(--acc)' }}>
+            Xong
+          </button>
+        </div>
 
         <div
           style={{
             padding: '10px 12px',
             borderRadius: 10,
-            background: 'var(--card2)',
+            background: 'var(--bg)',
             border: '1px solid var(--bd)',
             fontSize: 12.5,
-            marginBottom: 10,
+            marginBottom: 12,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4 }}>
             <span className="mut">Hiện có trong kế hoạch:</span>
             <b>
               {money(goal.allocatedAmount)} / {money(goal.targetAmount)} ({info.progressPct}%)
             </b>
           </div>
           {!info.isCompleted && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
               <span className="mut">Định mức cần tích lũy tháng này:</span>
               <b className="inc">{money(info.monthlyNeededNow)}</b>
             </div>
@@ -1482,14 +1532,13 @@ function AllocateToGoalModal({
 
         {mode === 'add' && (
           <>
-            <label>Nguồn tiền phân bổ</label>
-            <div className="tabs" style={{ marginBottom: 8 }}>
+            <div className="seg">
               <button
                 type="button"
                 className={sourceType === 'unallocated' ? 'on' : ''}
                 onClick={() => setSourceType('unallocated')}
               >
-                🐷 Số dư Quỹ Tiết Kiệm ({money(unallocatedBalance)})
+                🐷 Số dư rỗi ({money(unallocatedBalance)})
               </button>
               {otherWallets.length > 0 && (
                 <button
@@ -1503,8 +1552,8 @@ function AllocateToGoalModal({
             </div>
 
             {sourceType === 'other_wallet' && (
-              <>
-                <label>Chọn ví nguồn để chuyển sang {activeSavingsFund?.name ?? 'Quỹ Tiết Kiệm'}</label>
+              <label className="fld">
+                <span>Chọn ví nguồn để chuyển sang {activeSavingsFund?.name ?? 'Quỹ Tiết Kiệm'}</span>
                 <select
                   value={fromWalletId}
                   onChange={e => setFromWalletId(Number(e.target.value))}
@@ -1515,31 +1564,33 @@ function AllocateToGoalModal({
                     </option>
                   ))}
                 </select>
-              </>
+              </label>
             )}
           </>
         )}
 
-        <label>Số tiền {mode === 'add' ? 'phân bổ' : 'rút bớt'} (₫)</label>
-        <input
-          inputMode="numeric"
-          value={amountRaw}
-          onChange={e => setAmountRaw(formatNumberInput(e.target.value))}
-          placeholder="Nhập số tiền..."
-          style={{ fontSize: 18, fontWeight: 700 }}
-          autoFocus
-          required
-        />
+        <label className="fld" style={{ marginBottom: 6 }}>
+          <span>Số tiền {mode === 'add' ? 'phân bổ' : 'rút bớt'} (₫)</span>
+          <input
+            inputMode="numeric"
+            value={amountRaw}
+            onChange={e => setAmountRaw(formatNumberInput(e.target.value))}
+            placeholder="Nhập số tiền..."
+            style={{ fontSize: 18, fontWeight: 700 }}
+            autoFocus
+            required
+          />
+        </label>
 
         {/* Chip chọn nhanh */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           {mode === 'add' ? (
             <>
               {info.monthlyNeededNow > 0 && (
                 <button
                   type="button"
-                  className="chip"
-                  style={{ fontSize: 11.5 }}
+                  className="btn"
+                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(info.monthlyNeededNow)))}
                 >
                   Định mức tháng ({money(info.monthlyNeededNow)})
@@ -1548,8 +1599,8 @@ function AllocateToGoalModal({
               {info.remainingAmount > 0 && (
                 <button
                   type="button"
-                  className="chip"
-                  style={{ fontSize: 11.5 }}
+                  className="btn"
+                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(info.remainingAmount)))}
                 >
                   Đủ 100% ({money(info.remainingAmount)})
@@ -1558,8 +1609,8 @@ function AllocateToGoalModal({
               {sourceType === 'unallocated' && unallocatedBalance > 0 && (
                 <button
                   type="button"
-                  className="chip"
-                  style={{ fontSize: 11.5 }}
+                  className="btn"
+                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(unallocatedBalance)))}
                 >
                   Tất cả số dư rỗi ({money(unallocatedBalance)})
@@ -1569,8 +1620,8 @@ function AllocateToGoalModal({
           ) : (
             <button
               type="button"
-              className="chip"
-              style={{ fontSize: 11.5 }}
+              className="btn"
+              style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
               onClick={() => setAmountRaw(formatNumberInput(String(goal.allocatedAmount)))}
             >
               Rút toàn bộ ({money(goal.allocatedAmount)})
@@ -1578,14 +1629,16 @@ function AllocateToGoalModal({
           )}
         </div>
 
-        <label>Ghi chú (tuỳ chọn)</label>
-        <input
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          placeholder="VD: Trích tiết kiệm tháng 11..."
-        />
+        <label className="fld">
+          <span>Ghi chú (tuỳ chọn)</span>
+          <input
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="VD: Trích tiết kiệm tháng 11..."
+          />
+        </label>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button type="button" className="btn" style={{ flex: 1 }} onClick={onClose}>
             Huỷ
           </button>
@@ -1672,7 +1725,9 @@ function DepositToSavingsModal({
         fromFundId: fromWallet?.id ?? null,
         note: note.trim() || `Nạp từ ${fromWallet?.name ?? 'ví khác'}`,
       }
-      await db.savingsGoals.update(chosenGoal.id, {
+      await db.savingsGoals.put({
+        ...chosenGoal,
+        id: chosenGoal.id,
         allocatedAmount: (chosenGoal.allocatedAmount || 0) + amount,
         savingsFundId: activeSavingsFund.id,
         history: [...(chosenGoal.history ?? []), logItem],
@@ -1683,15 +1738,27 @@ function DepositToSavingsModal({
   }
 
   return (
-    <div className="modal" style={{ zIndex: 90 }} onClick={onClose}>
+    <div className="sheetbg" style={{ zIndex: 90 }} onClick={onClose}>
       <form
         className="sheet"
         onClick={e => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div className="sheet-handle" />
-        <h3 style={{ marginTop: 0 }}>📥 Nạp tiền vào Quỹ Tiết Kiệm</h3>
-        <p className="mut" style={{ fontSize: 12.5, marginTop: -4, marginBottom: 10 }}>
+        <div className="ledger-topbar" style={{ marginBottom: 12 }}>
+          <button type="button" className="close-pill-btn" onClick={onClose}>
+            Huỷ
+          </button>
+          <b style={{ fontSize: 16 }}>📥 Nạp vào Quỹ Tiết Kiệm</b>
+          {otherWallets.length > 0 ? (
+            <button type="submit" className="close-pill-btn" style={{ color: 'var(--acc)' }}>
+              Nạp
+            </button>
+          ) : (
+            <span style={{ width: 48 }} />
+          )}
+        </div>
+
+        <p className="mut" style={{ fontSize: 12.5, marginBottom: 12 }}>
           Trích tiền từ các quỹ ví khác chuyển vào <b>{activeSavingsFund?.name ?? 'Ví Tiết Kiệm'}</b> và phân bổ cho kế hoạch.
         </p>
 
@@ -1701,35 +1768,39 @@ function DepositToSavingsModal({
           </div>
         ) : (
           <>
-            <label>Trích tiền từ ví nào?</label>
-            <select
-              value={fromWalletId}
-              onChange={e => setFromWalletId(Number(e.target.value))}
-            >
-              {otherWallets.map(w => (
-                <option key={w.id} value={w.id}>
-                  {w.icon} {w.name} (Số dư: {money(balanceOfFund(w))})
-                </option>
-              ))}
-            </select>
+            <label className="fld">
+              <span>Trích tiền từ ví nào?</span>
+              <select
+                value={fromWalletId}
+                onChange={e => setFromWalletId(Number(e.target.value))}
+              >
+                {otherWallets.map(w => (
+                  <option key={w.id} value={w.id}>
+                    {w.icon} {w.name} (Số dư: {money(balanceOfFund(w))})
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            <label>Số tiền chuyển vào Quỹ Tiết Kiệm (₫)</label>
-            <input
-              inputMode="numeric"
-              value={amountRaw}
-              onChange={e => setAmountRaw(formatNumberInput(e.target.value))}
-              placeholder="VD: 2,000,000"
-              style={{ fontSize: 18, fontWeight: 700 }}
-              autoFocus
-              required
-            />
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+            <label className="fld" style={{ marginBottom: 6 }}>
+              <span>Số tiền chuyển vào Quỹ Tiết Kiệm (₫)</span>
+              <input
+                inputMode="numeric"
+                value={amountRaw}
+                onChange={e => setAmountRaw(formatNumberInput(e.target.value))}
+                placeholder="VD: 2,000,000"
+                style={{ fontSize: 18, fontWeight: 700 }}
+                autoFocus
+                required
+              />
+            </label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               {[500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 10_000_000].map(v => (
                 <button
                   key={v}
                   type="button"
-                  className="chip"
-                  style={{ fontSize: 11.5, padding: '4px 8px' }}
+                  className="btn"
+                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(v)))}
                 >
                   {v >= 1_000_000 ? `${v / 1_000_000}tr` : '500k'}
@@ -1737,29 +1808,33 @@ function DepositToSavingsModal({
               ))}
             </div>
 
-            <label>Phân bổ ngay vào kế hoạch nào?</label>
-            <select
-              value={targetGoalId}
-              onChange={e => setTargetGoalId(Number(e.target.value))}
-            >
-              <option value={0}>🐷 Để trong Số dư chưa phân bổ của Quỹ Tiết Kiệm</option>
-              {goals.map(g => (
-                <option key={g.id} value={g.id}>
-                  {g.icon} {g.name} (Đã có {money(g.allocatedAmount)} / {money(g.targetAmount)})
-                </option>
-              ))}
-            </select>
+            <label className="fld">
+              <span>Phân bổ ngay vào kế hoạch nào?</span>
+              <select
+                value={targetGoalId}
+                onChange={e => setTargetGoalId(Number(e.target.value))}
+              >
+                <option value={0}>🐷 Để trong Số dư chưa phân bổ của Quỹ Tiết Kiệm</option>
+                {goals.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.icon} {g.name} (Đã có {money(g.allocatedAmount)} / {money(g.targetAmount)})
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            <label>Ghi chú (tuỳ chọn)</label>
-            <input
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="VD: Trích lương tháng 11 tiết kiệm..."
-            />
+            <label className="fld">
+              <span>Ghi chú (tuỳ chọn)</span>
+              <input
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                placeholder="VD: Trích lương tháng 11 tiết kiệm..."
+              />
+            </label>
           </>
         )}
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button type="button" className="btn" style={{ flex: 1 }} onClick={onClose}>
             Đóng
           </button>

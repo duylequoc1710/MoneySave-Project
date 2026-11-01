@@ -91,7 +91,11 @@ export default function Overview() {
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
   const budgets = useLiveQuery(() => db.budgets.toArray(), [], NO_BUDGETS)
-  const savingsGoals = useLiveQuery(() => db.savingsGoals.toArray(), [], NO_GOALS)
+  const savingsGoals = useLiveQuery(
+    () => db.savingsGoals.toArray().catch(() => NO_GOALS),
+    [],
+    NO_GOALS,
+  )
 
   const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
   const fMap = useMemo(() => new Map(funds.map(f => [f.id!, f])), [funds])

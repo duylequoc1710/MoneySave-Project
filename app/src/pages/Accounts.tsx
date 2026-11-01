@@ -32,7 +32,11 @@ export default function Accounts() {
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
-  const savingsGoals = useLiveQuery(() => db.savingsGoals.toArray(), [], NO_GOALS)
+  const savingsGoals = useLiveQuery(
+    () => db.savingsGoals.toArray().catch(() => NO_GOALS),
+    [],
+    NO_GOALS,
+  )
 
   const [fundEdit, setFundEdit] = useState<Fund | null>(null)
   const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
