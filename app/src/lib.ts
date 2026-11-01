@@ -392,7 +392,7 @@ export function formatKeypadDisplay(raw: string): string {
       return formattedInt
     })
     .replace(/\+/g, ' + ')
-    .replace(/-/g, ' - ')
+    .replace(/(?!^)-/g, ' - ')
     .replace(/×/g, ' × ')
     .replace(/\*/g, ' × ')
     .replace(/÷/g, ' ÷ ')
@@ -427,6 +427,7 @@ export const shiftMonth = (d: Date, n: number) => addMonths(d, n)
 
 /** Tác động của giao dịch lên số dư một quỹ */
 export function effectOn(tx: Tx, fundId: number): number {
+  if (tx.savingsAction === 'allocate' || tx.savingsAction === 'withdraw') return 0
   if (tx.type === 'income') return tx.fundId === fundId ? tx.amount : 0
   if (tx.type === 'expense') return tx.fundId === fundId ? -tx.amount : 0
   return (tx.fundId === fundId ? -tx.amount : 0) + (tx.toFundId === fundId ? tx.amount : 0)

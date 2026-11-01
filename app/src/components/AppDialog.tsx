@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { evaluateKeypadExpression } from '../lib'
+import { NumericInputBox } from './Keypad'
 
 export type DialogTone = 'info' | 'success' | 'warning' | 'danger'
 
@@ -133,8 +135,6 @@ export function AppDialogHost() {
 }
 
 function ActiveDialog({ item }: { item: InternalDialogItem }) {
-  const inputRef = useRef<HTMLInputElement | null>(null)
-
   const initialVal =
     item.kind === 'prompt'
       ? item.options.numeric
@@ -143,16 +143,6 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
       : ''
 
   const [value, setValue] = useState(initialVal)
-
-  useEffect(() => {
-    if (item.kind === 'prompt') {
-      const t = setTimeout(() => {
-        inputRef.current?.focus()
-        inputRef.current?.select()
-      }, 40)
-      return () => clearTimeout(t)
-    }
-  }, [item.kind])
 
   const popAndResolve = (action: () => void) => {
     if (queue[0]?.id === item.id) {
@@ -178,7 +168,9 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
     } else if (item.kind === 'confirm') {
       popAndResolve(() => item.resolve(true))
     } else {
-      const out = item.options.numeric ? value.replace(/[^\d]/g, '') : value
+      const out = item.options.numeric
+        ? String(Math.round(evaluateKeypadExpression(value)))
+        : value
       popAndResolve(() => item.resolve(out))
     }
   }
@@ -352,57 +344,61 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
             }}
             style={{ marginBottom: 4 }}
           >
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: 12,
-              }}
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                inputMode={item.options.numeric ? 'numeric' : 'text'}
-                value={value}
-                placeholder={item.options.placeholder ?? ''}
-                onChange={e => {
-                  const v = e.target.value
-                  if (item.options.numeric) {
-                    setValue(formatNumericDisplay(v))
-                  } else {
-                    setValue(v)
-                  }
-                }}
+            {item.options.numeric ? (
+              <div style={{ marginBottom: 12 }}>
+                <NumericInputBox
+                  value={value}
+                  onChange={setValue}
+                  placeholder={item.options.placeholder ?? '0'}
+                  suffix={item.options.unit ?? '₫'}
+                  suggestions={item.options.quickAmounts ?? [500000, 1000000, 2000000, 5000000]}
+                  variant="box"
+                />
+              </div>
+            ) : (
+              <div
                 style={{
-                  width: '100%',
-                  padding: item.options.unit
-                    ? '12px 42px 12px 14px'
-                    : '12px 14px',
-                  fontSize: item.options.numeric ? 18 : 15,
-                  fontWeight: item.options.numeric ? 700 : 500,
-                  borderRadius: 14,
-                  border: '1.5px solid var(--acc)',
-                  background: 'var(--bg)',
-                  color: 'var(--fg)',
-                  outline: 'none',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginBottom: 12,
                 }}
-              />
-              {item.options.unit && (
-                <span
+              >
+                <input
+                  type="text"
+                  value={value}
+                  placeholder={item.options.placeholder ?? ''}
+                  onChange={e => setValue(e.target.value)}
                   style={{
-                    position: 'absolute',
-                    right: 14,
-                    fontWeight: 700,
+                    width: '100%',
+                    padding: item.options.unit
+                      ? '12px 42px 12px 14px'
+                      : '12px 14px',
                     fontSize: 15,
-                    color: 'var(--mut)',
-                    pointerEvents: 'none',
+                    fontWeight: 500,
+                    borderRadius: 14,
+                    border: '1.5px solid var(--acc)',
+                    background: 'var(--bg)',
+                    color: 'var(--fg)',
+                    outline: 'none',
                   }}
-                >
-                  {item.options.unit}
-                </span>
-              )}
-            </div>
+                />
+                {item.options.unit && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: 14,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: 'var(--mut)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {item.options.unit}
+                  </span>
+                )}
+              </div>
+            )}
 
             {item.options.quickAmounts &&
               item.options.quickAmounts.length > 0 && (

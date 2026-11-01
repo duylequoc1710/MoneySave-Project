@@ -10,6 +10,26 @@ import { installSheetScrollLock } from './scrollLock'
 
 installSheetScrollLock()
 
+// Chặn quét khối và kéo thả vô tình gây đơ giao diện trên web app / PWA
+if (typeof window !== 'undefined') {
+  window.addEventListener('dragstart', e => {
+    const target = e.target as HTMLElement | null
+    if (target?.tagName !== 'INPUT' && target?.tagName !== 'TEXTAREA') {
+      e.preventDefault()
+    }
+  })
+  window.addEventListener('selectstart', e => {
+    const target = e.target as HTMLElement | null
+    if (target?.tagName !== 'INPUT' && target?.tagName !== 'TEXTAREA' && !target?.isContentEditable) {
+      // Chỉ cho phép chọn chữ trong input, textarea hoặc contenteditable
+      const sel = window.getSelection()
+      if (sel && sel.rangeCount > 0) {
+        sel.removeAllRanges()
+      }
+    }
+  })
+}
+
 // PWA: luôn cập nhật bản mới sau deploy.
 // - Kiểm tra bản mới khi mở app, khi quay lại app và mỗi 30 phút.
 // - Khi có bản mới: nạp lại trang ngay, trừ lúc đang mở form nhập liệu (đợi đóng form) để không mất dữ liệu đang gõ.

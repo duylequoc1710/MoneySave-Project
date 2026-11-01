@@ -113,10 +113,20 @@ export default function Ledger() {
         t.date <= to &&
         (((t.type === 'income' || t.type === 'expense') && flowFundIds.has(t.fundId)) ||
           activeFundIds.has(t.fundId) ||
-          (t.toFundId != null && activeFundIds.has(t.toFundId))) &&
-        (!q || (t.note + ' ' + (cMap.get(t.categoryId ?? -1)?.name ?? '')).toLowerCase().includes(q.toLowerCase())),
+          (t.toFundId != null && activeFundIds.has(t.toFundId)) ||
+          (t.savingsAction != null && (fundFilter === 0 || activeFundIds.has(t.fundId)))) &&
+        (!q ||
+          (
+            t.note +
+            ' ' +
+            (cMap.get(t.categoryId ?? -1)?.name ?? '') +
+            ' ' +
+            (t.savingsGoalName ?? '')
+          )
+            .toLowerCase()
+            .includes(q.toLowerCase())),
     )
-  }, [allTxs, from, to, activeFundIds, flowFundIds, q, cMap])
+  }, [allTxs, from, to, activeFundIds, flowFundIds, fundFilter, q, cMap])
 
   const days = useMemo(() => {
     const m = new Map<string, Tx[]>()
@@ -217,8 +227,7 @@ export default function Ledger() {
       {showSearch && (
         <input
           className="search"
-          autoFocus
-          placeholder="Tìm theo ghi chú hoặc tên nhóm…"
+          placeholder="Tìm theo ghi chú, mục tiêu hoặc tên nhóm…"
           value={q}
           onChange={e => setQ(e.target.value)}
         />
@@ -382,6 +391,55 @@ export default function Ledger() {
                 const c = cMap.get(t.categoryId ?? -1)
                 const f = fMap.get(t.fundId)
                 const isT = t.type === 'transfer'
+                const isSavingsAlloc = t.savingsAction === 'allocate'
+                const isSavingsWithdraw = t.savingsAction === 'withdraw'
+
+                if (isSavingsAlloc || isSavingsWithdraw) {
+                  const goalLabel = t.savingsGoalName || 'Kế hoạch tiết kiệm'
+                  const goalIcon = t.savingsGoalIcon || '🎯'
+                  return (
+                    <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
+                      <div
+                        className="ico round"
+                        style={{
+                          background: isSavingsAlloc ? '#10b98128' : '#f59e0b28',
+                          position: 'relative',
+                        }}
+                      >
+                        {goalIcon}
+                        {f && <span className="wallet-mini-badge">{f.icon}</span>}
+                      </div>
+                      <div className="grow">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <b>{isSavingsAlloc ? `Phân bổ: ${goalLabel}` : `Rút mục tiêu: ${goalLabel}`}</b>
+                          <span
+                            className="pill-tag"
+                            style={{
+                              background: isSavingsAlloc ? 'rgba(16, 185, 129, 0.16)' : 'rgba(245, 158, 11, 0.16)',
+                              color: isSavingsAlloc ? '#10b981' : '#f59e0b',
+                            }}
+                          >
+                            {isSavingsAlloc ? 'Ví TK → Mục tiêu' : 'Mục tiêu → Ví TK'}
+                          </span>
+                        </div>
+                        <small>
+                          {isSavingsAlloc
+                            ? `${f?.name ?? 'Ví Tiết Kiệm'} → 🎯 ${goalLabel}${t.note ? ' · ' + t.note : ''}`
+                            : `🎯 ${goalLabel} → ${f?.name ?? 'Ví Tiết Kiệm'}${t.note ? ' · ' + t.note : ''}`}
+                        </small>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <b className={isSavingsAlloc ? 'inc' : ''} style={!isSavingsAlloc ? { color: '#f59e0b' } : undefined}>
+                          {isSavingsAlloc ? '+' : '-'}{money(t.amount)}
+                        </b>
+                        <small style={{ display: 'block', fontSize: 10, color: 'var(--mut)' }}>
+                          {isSavingsAlloc ? 'vào mục tiêu' : 'hoàn về ví TK'}
+                        </small>
+                      </div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
                     <div

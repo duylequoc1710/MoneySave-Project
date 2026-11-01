@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { db, type Category, type Fund } from '../../db'
+import { InAppSelect, fundsToSelectOptions } from '../InAppSelectModal'
 import { Colors } from './Colors'
 
 export function CatForm({
@@ -81,7 +82,7 @@ export function CatForm({
         )}
         <label className="fld">
           <span>Tên nhóm</span>
-          <input value={v.name} onChange={e => setV({ ...v, name: e.target.value })} autoFocus />
+          <input value={v.name} onChange={e => setV({ ...v, name: e.target.value })} />
         </label>
         <label className="fld">
           <span>Biểu tượng (emoji)</span>
@@ -89,23 +90,31 @@ export function CatForm({
         </label>
 
         {/* Cấu hình Nhóm cha & Nhóm con */}
-        <label className="fld">
+        <div className="fld">
           <span>Thuộc nhóm cha (Tùy chọn)</span>
-          <select
-            value={v.parentId ?? ''}
-            onChange={e => {
-              const nextParent = e.target.value ? Number(e.target.value) : null
-              setV({ ...v, parentId: nextParent })
-            }}
-          >
-            <option value="">(Không có - Đây là nhóm cha độc lập)</option>
-            {potentialParents.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.icon} {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <InAppSelect<number>
+            title="Chọn nhóm cha đại diện"
+            value={v.parentId ?? 0}
+            options={[
+              {
+                value: 0,
+                label: '(Không có - Đây là nhóm cha độc lập)',
+                icon: '📂',
+                subLabel: 'Nhóm cấp 1 hiển thị độc lập',
+              },
+              ...potentialParents
+                .filter(p => p.id != null)
+                .map(p => ({
+                  value: p.id!,
+                  label: p.name,
+                  icon: p.icon,
+                  color: p.color,
+                  subLabel: 'Nhóm cha đại diện',
+                })),
+            ]}
+            onChange={nextVal => setV({ ...v, parentId: nextVal === 0 ? null : Number(nextVal) })}
+          />
+        </div>
 
         {/* Nếu đây là nhóm cha: hiển thị checklist để chọn nhanh các nhóm con */}
         {!v.parentId && candidatesForChildren.length > 0 && (
@@ -170,17 +179,22 @@ export function CatForm({
           </div>
         )}
 
-        <label className="fld">
+        <div className="fld">
           <span>Gán mặc định vào Quỹ / Thẻ</span>
-          <select value={v.fundId ?? ''} onChange={e => setV({ ...v, fundId: e.target.value ? Number(e.target.value) : null })}>
-            <option value="">Không gán</option>
-            {funds.map(f => (
-              <option key={f.id} value={f.id}>
-                {f.icon} {f.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <InAppSelect<number>
+            title="Gán mặc định vào Quỹ / Thẻ"
+            value={v.fundId ?? 0}
+            options={fundsToSelectOptions(funds, undefined, {
+              emptyOption: {
+                value: 0,
+                label: 'Không gán mặc định',
+                icon: '➖',
+                subLabel: 'Giữ nguyên quỹ đang chọn khi thêm giao dịch',
+              },
+            })}
+            onChange={nextVal => setV({ ...v, fundId: nextVal === 0 ? null : Number(nextVal) })}
+          />
+        </div>
         <Colors v={v.color} on={col => setV({ ...v, color: col })} />
         <div style={{ display: 'flex', gap: 8 }}>
           {c.id && (

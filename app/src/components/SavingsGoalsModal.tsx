@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { addMonths } from 'date-fns'
 import {
   db,
+  syncSavingsGoalHistoryToTxs,
   type Fund,
   type SavingsAllocationLog,
   type SavingsGoal,
@@ -12,12 +13,15 @@ import {
 import {
   analyzeSavingsGoal,
   effectOn,
+  evaluateKeypadExpression,
   findSavingsFund,
   fmtDmy,
   money,
   ymd,
 } from '../lib'
 import DatePickerModal from './DatePickerModal'
+import { InAppSelect, fundsToSelectOptions } from './InAppSelectModal'
+import { NumericInputBox } from './Keypad'
 import { Colors } from './accounts/Colors'
 import { COLORS } from './accounts/palette'
 import { showAlert, showConfirm } from './AppDialog'
@@ -44,8 +48,8 @@ function formatNumberInput(raw: string): string {
 }
 
 function parseNumberInput(raw: string): number {
-  const digits = raw.replace(/[^\d]/g, '')
-  return digits ? Number(digits) : 0
+  if (!raw) return 0
+  return Math.max(0, Math.round(evaluateKeypadExpression(raw)))
 }
 
 export default function SavingsGoalsModal({
@@ -60,6 +64,7 @@ export default function SavingsGoalsModal({
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    void syncSavingsGoalHistoryToTxs()
     return () => {
       document.body.style.overflow = prev
     }
@@ -296,26 +301,13 @@ export default function SavingsGoalsModal({
                 Ví nguồn tiết kiệm:
               </span>
               {cashFunds.length > 0 ? (
-                <select
-                  value={activeSavingsFund?.id ?? ''}
-                  onChange={e => setSelectedSavingsFundId(Number(e.target.value))}
-                  style={{
-                    width: 'auto',
-                    padding: '5px 10px',
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    borderRadius: 10,
-                    background: 'var(--bg)',
-                    color: 'var(--fg)',
-                    border: '1px solid var(--bd)',
-                  }}
-                >
-                  {cashFunds.map(f => (
-                    <option key={f.id} value={f.id}>
-                      {f.icon} {f.name} ({money(balanceOfFund(f))})
-                    </option>
-                  ))}
-                </select>
+                <InAppSelect<number>
+                  variant="pill"
+                  title="Chọn Ví nguồn tiết kiệm"
+                  value={activeSavingsFund?.id ?? cashFunds[0]?.id ?? 0}
+                  options={fundsToSelectOptions(cashFunds, txs)}
+                  onChange={v => setSelectedSavingsFundId(Number(v))}
+                />
               ) : (
                 <button
                   type="button"
@@ -1098,6 +1090,8 @@ function SavingsGoalFormModal({
       return
     }
 
+    const sFundId = activeSavingsFund?.id ?? initial.savingsFundId ?? null
+    const sFundName = activeSavingsFund?.name ?? 'Ví Tiết Kiệm'
     const payload: SavingsGoal = {
       ...initial,
       name: name.trim(),
@@ -1105,7 +1099,7 @@ function SavingsGoalFormModal({
       color,
       targetAmount,
       allocatedAmount,
-      savingsFundId: activeSavingsFund?.id ?? initial.savingsFundId ?? null,
+      savingsFundId: sFundId,
       startDate,
       targetDate,
       note: note.trim(),
@@ -1113,21 +1107,74 @@ function SavingsGoalFormModal({
     }
 
     if (initial.id) {
-      await db.savingsGoals.put({ ...payload, id: initial.id })
+      const delta = allocatedAmount - (initial.allocatedAmount || 0)
+      const nextHistory = [...(initial.history ?? [])]
+      if (delta !== 0) {
+        const logId = (delta > 0 ? 'a-edit-' : 'w-edit-') + Date.now()
+        const todayStr = ymd(new Date())
+        nextHistory.push({
+          id: logId,
+          date: todayStr,
+          amount: delta,
+          note: delta > 0 ? 'Điều chỉnh tăng phân bổ mục tiêu' : 'Điều chỉnh giảm phân bổ mục tiêu',
+        })
+        if (sFundId) {
+          await db.txs.add({
+            type: 'transfer',
+            amount: Math.abs(delta),
+            date: todayStr,
+            fundId: sFundId,
+            toFundId: sFundId,
+            categoryId: null,
+            note:
+              delta > 0
+                ? `Phân bổ từ ${sFundName} → Mục tiêu "${name.trim()}"`
+                : `Rút từ Mục tiêu "${name.trim()}" → ${sFundName}`,
+            createdAt: Date.now(),
+            excludeFromReport: true,
+            savingsGoalId: initial.id,
+            savingsGoalName: name.trim(),
+            savingsGoalIcon: icon,
+            savingsAction: delta > 0 ? 'allocate' : 'withdraw',
+            savingsLogId: logId,
+          })
+        }
+      }
+      await db.savingsGoals.put({ ...payload, id: initial.id, history: nextHistory })
       onSaved(initial.id)
     } else {
+      const initLogId = 'init-' + Date.now()
+      const todayStr = ymd(new Date())
       const history: SavingsAllocationLog[] =
         allocatedAmount > 0
           ? [
               {
-                id: 'init-' + Date.now(),
-                date: ymd(new Date()),
+                id: initLogId,
+                date: todayStr,
                 amount: allocatedAmount,
                 note: 'Phân bổ ban đầu',
               },
             ]
           : []
       const newId = await db.savingsGoals.add({ ...payload, history })
+      if (allocatedAmount > 0 && sFundId) {
+        await db.txs.add({
+          type: 'transfer',
+          amount: allocatedAmount,
+          date: todayStr,
+          fundId: sFundId,
+          toFundId: sFundId,
+          categoryId: null,
+          note: `Phân bổ ban đầu từ ${sFundName} → Mục tiêu "${name.trim()}"`,
+          createdAt: Date.now(),
+          excludeFromReport: true,
+          savingsGoalId: newId,
+          savingsGoalName: name.trim(),
+          savingsGoalIcon: icon,
+          savingsAction: 'allocate',
+          savingsLogId: initLogId,
+        })
+      }
       onSaved(newId)
     }
   }
@@ -1202,17 +1249,17 @@ function SavingsGoalFormModal({
           />
         </label>
 
-        <label className="fld" style={{ marginBottom: 6 }}>
+        <div className="fld" style={{ marginBottom: 6 }}>
           <span>Số tiền mục tiêu (₫)</span>
-          <input
-            inputMode="numeric"
+          <NumericInputBox
             value={targetRaw}
-            onChange={e => setTargetRaw(formatNumberInput(e.target.value))}
+            onChange={setTargetRaw}
             placeholder="VD: 15,000,000"
-            style={{ fontSize: 17, fontWeight: 700 }}
-            required
+            suffix="₫"
+            suggestions={[5000000, 10000000, 20000000, 30000000, 50000000]}
+            variant="box"
           />
-        </label>
+        </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           {[5_000_000, 10_000_000, 20_000_000, 30_000_000, 50_000_000, 100_000_000].map(v => (
             <button
@@ -1227,7 +1274,7 @@ function SavingsGoalFormModal({
           ))}
         </div>
 
-        <label className="fld">
+        <div className="fld">
           <span>
             Số tiền đã phân bổ vào kế hoạch (₫){' '}
             {unallocatedBalance > 0 && (
@@ -1236,13 +1283,17 @@ function SavingsGoalFormModal({
               </small>
             )}
           </span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              inputMode="numeric"
-              value={allocatedRaw}
-              onChange={e => setAllocatedRaw(formatNumberInput(e.target.value))}
-              placeholder="0"
-            />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <NumericInputBox
+                variant="field"
+                value={allocatedRaw}
+                onChange={setAllocatedRaw}
+                placeholder="0"
+                suffix="₫"
+                allowZeroDisplay
+              />
+            </div>
             {unallocatedBalance > 0 && (
               <button
                 type="button"
@@ -1260,7 +1311,7 @@ function SavingsGoalFormModal({
               </button>
             )}
           </div>
-        </label>
+        </div>
 
         {/* Thời gian bắt đầu & hoàn thành */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1418,6 +1469,7 @@ function AllocateToGoalModal({
       ? 'other_wallet'
       : 'unallocated',
   )
+  const [withdrawTargetType, setWithdrawTargetType] = useState<'to_savings' | 'to_other_wallet'>('to_savings')
   const [fromWalletId, setFromWalletId] = useState<number>(
     otherWallets[0]?.id ?? activeSavingsFund?.id ?? 0,
   )
@@ -1444,6 +1496,11 @@ function AllocateToGoalModal({
       return
     }
 
+    const sFundId = activeSavingsFund?.id ?? goal.savingsFundId ?? cashFunds[0]?.id
+    const sFundName = activeSavingsFund?.name ?? 'Ví Tiết Kiệm'
+    const todayStr = ymd(new Date())
+    const nowTs = Date.now()
+
     if (mode === 'withdraw') {
       if (amount > goal.allocatedAmount) {
         await showAlert({
@@ -1454,12 +1511,59 @@ function AllocateToGoalModal({
         return
       }
       const nextAllocated = Math.max(0, goal.allocatedAmount - amount)
+      const toWallet = withdrawTargetType === 'to_other_wallet' ? cashFunds.find(f => f.id === fromWalletId) : undefined
+      const logId = 'w-' + nowTs
+      const logNote =
+        note.trim() ||
+        (toWallet
+          ? `Rút từ mục tiêu về ${toWallet.name}`
+          : `Rút về số dư rỗi ${sFundName}`)
+
       const logItem: SavingsAllocationLog = {
-        id: 'w-' + Date.now(),
-        date: ymd(new Date()),
+        id: logId,
+        date: todayStr,
         amount: -amount,
-        note: note.trim() || 'Rút bớt về Quỹ Tiết Kiệm',
+        fromFundId: toWallet?.id ?? null,
+        note: logNote,
       }
+
+      if (sFundId) {
+        // 1. Ghi nhận giao dịch rút từ Mục tiêu -> Ví Tiết Kiệm
+        await db.txs.add({
+          type: 'transfer',
+          amount,
+          date: todayStr,
+          fundId: sFundId,
+          toFundId: sFundId,
+          categoryId: null,
+          note: note.trim()
+            ? `Rút từ Mục tiêu "${goal.name}" → ${sFundName} (${note.trim()})`
+            : `Rút từ Mục tiêu "${goal.name}" → ${sFundName}`,
+          createdAt: nowTs,
+          excludeFromReport: true,
+          savingsGoalId: goal.id,
+          savingsGoalName: goal.name,
+          savingsGoalIcon: goal.icon,
+          savingsAction: 'withdraw',
+          savingsLogId: logId,
+        })
+
+        // 2. Nếu rút thẳng ra ví chi tiêu khác, ghi nhận thêm lệnh chuyển quỹ từ Ví Tiết Kiệm -> Ví đích
+        if (withdrawTargetType === 'to_other_wallet' && toWallet?.id && toWallet.id !== sFundId) {
+          await db.txs.add({
+            type: 'transfer',
+            amount,
+            date: todayStr,
+            fundId: sFundId,
+            toFundId: toWallet.id,
+            categoryId: null,
+            note: note.trim() || `Rút từ Quỹ Tiết Kiệm (Mục tiêu "${goal.name}") về ${toWallet.name}`,
+            createdAt: nowTs + 1,
+            excludeFromReport: true,
+          })
+        }
+      }
+
       await db.savingsGoals.put({
         ...goal,
         id: goal.id,
@@ -1481,22 +1585,44 @@ function AllocateToGoalModal({
         return
       }
       const fromWallet = cashFunds.find(f => f.id === fromWalletId)
+      const logId = 'a-' + nowTs
+      // 1. Giao dịch chuyển tiền từ Ví nguồn -> Ví Tiết Kiệm
       await db.txs.add({
         type: 'transfer',
         amount,
-        date: ymd(new Date()),
+        date: todayStr,
         fundId: fromWalletId,
         toFundId: activeSavingsFund.id,
         categoryId: null,
-        note: note.trim() || `Tiết kiệm cho kế hoạch "${goal.name}"`,
-        createdAt: Date.now(),
+        note: note.trim() || `Chuyển vào ${activeSavingsFund.name} cho mục tiêu "${goal.name}"`,
+        createdAt: nowTs,
+        excludeFromReport: true,
+      })
+      // 2. Giao dịch phân bổ từ Ví Tiết Kiệm -> Mục tiêu
+      await db.txs.add({
+        type: 'transfer',
+        amount,
+        date: todayStr,
+        fundId: activeSavingsFund.id,
+        toFundId: activeSavingsFund.id,
+        categoryId: null,
+        note: note.trim()
+          ? `Phân bổ từ ${activeSavingsFund.name} → Mục tiêu "${goal.name}" (${note.trim()})`
+          : `Phân bổ từ ${activeSavingsFund.name} → Mục tiêu "${goal.name}"`,
+        createdAt: nowTs + 1,
+        excludeFromReport: true,
+        savingsGoalId: goal.id,
+        savingsGoalName: goal.name,
+        savingsGoalIcon: goal.icon,
+        savingsAction: 'allocate',
+        savingsLogId: logId,
       })
       const logItem: SavingsAllocationLog = {
-        id: 'a-' + Date.now(),
-        date: ymd(new Date()),
+        id: logId,
+        date: todayStr,
         amount,
         fromFundId: fromWallet?.id ?? null,
-        note: note.trim() || `Trích từ ${fromWallet?.name ?? 'ví khác'}`,
+        note: note.trim() || `Trích từ ${fromWallet?.name ?? 'ví khác'} phân bổ vào "${goal.name}"`,
       }
       await db.savingsGoals.put({
         ...goal,
@@ -1510,11 +1636,32 @@ function AllocateToGoalModal({
     }
 
     // Phân bổ từ số dư chưa phân bổ của Quỹ Tiết Kiệm
+    const logId = 'a-' + nowTs
+    if (sFundId) {
+      await db.txs.add({
+        type: 'transfer',
+        amount,
+        date: todayStr,
+        fundId: sFundId,
+        toFundId: sFundId,
+        categoryId: null,
+        note: note.trim()
+          ? `Phân bổ từ ${sFundName} → Mục tiêu "${goal.name}" (${note.trim()})`
+          : `Phân bổ từ ${sFundName} → Mục tiêu "${goal.name}"`,
+        createdAt: nowTs,
+        excludeFromReport: true,
+        savingsGoalId: goal.id,
+        savingsGoalName: goal.name,
+        savingsGoalIcon: goal.icon,
+        savingsAction: 'allocate',
+        savingsLogId: logId,
+      })
+    }
     const logItem: SavingsAllocationLog = {
-      id: 'a-' + Date.now(),
-      date: ymd(new Date()),
+      id: logId,
+      date: todayStr,
       amount,
-      note: note.trim() || 'Phân bổ từ Quỹ Tiết Kiệm',
+      note: note.trim() || `Phân bổ từ ${sFundName}`,
     }
     await db.savingsGoals.put({
       ...goal,
@@ -1568,7 +1715,7 @@ function AllocateToGoalModal({
           )}
         </div>
 
-        {mode === 'add' && (
+        {mode === 'add' ? (
           <>
             <div className="seg">
               <button
@@ -1590,35 +1737,79 @@ function AllocateToGoalModal({
             </div>
 
             {sourceType === 'other_wallet' && (
-              <label className="fld">
+              <div className="fld">
                 <span>Chọn ví nguồn để chuyển sang {activeSavingsFund?.name ?? 'Quỹ Tiết Kiệm'}</span>
-                <select
+                <InAppSelect<number>
+                  title="Chọn ví nguồn trích tiền"
                   value={fromWalletId}
-                  onChange={e => setFromWalletId(Number(e.target.value))}
+                  options={otherWallets.map(w => ({
+                    value: w.id!,
+                    label: w.name,
+                    subLabel: `Số dư: ${money(balanceOfFund(w))}`,
+                    rightText: money(balanceOfFund(w)),
+                    rightClassName: balanceOfFund(w) < 0 ? 'exp' : 'inc',
+                    icon: w.icon,
+                    color: w.color,
+                  }))}
+                  onChange={v => setFromWalletId(Number(v))}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="seg">
+              <button
+                type="button"
+                className={withdrawTargetType === 'to_savings' ? 'on' : ''}
+                onClick={() => setWithdrawTargetType('to_savings')}
+              >
+                🐷 Về số dư rỗi ({activeSavingsFund?.name ?? 'Quỹ Tiết Kiệm'})
+              </button>
+              {otherWallets.length > 0 && (
+                <button
+                  type="button"
+                  className={withdrawTargetType === 'to_other_wallet' ? 'on' : ''}
+                  onClick={() => setWithdrawTargetType('to_other_wallet')}
                 >
-                  {otherWallets.map(w => (
-                    <option key={w.id} value={w.id}>
-                      {w.icon} {w.name} (Dư: {money(balanceOfFund(w))})
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  📤 Rút ra ví khác
+                </button>
+              )}
+            </div>
+
+            {withdrawTargetType === 'to_other_wallet' && (
+              <div className="fld">
+                <span>Chọn ví nhận tiền rút từ mục tiêu</span>
+                <InAppSelect<number>
+                  title="Chọn ví nhận tiền"
+                  value={fromWalletId}
+                  options={otherWallets.map(w => ({
+                    value: w.id!,
+                    label: w.name,
+                    subLabel: `Số dư hiện tại: ${money(balanceOfFund(w))}`,
+                    rightText: money(balanceOfFund(w)),
+                    rightClassName: balanceOfFund(w) < 0 ? 'exp' : 'inc',
+                    icon: w.icon,
+                    color: w.color,
+                  }))}
+                  onChange={v => setFromWalletId(Number(v))}
+                />
+              </div>
             )}
           </>
         )}
 
-        <label className="fld" style={{ marginBottom: 6 }}>
+        <div className="fld" style={{ marginBottom: 6 }}>
           <span>Số tiền {mode === 'add' ? 'phân bổ' : 'rút bớt'} (₫)</span>
-          <input
-            inputMode="numeric"
+          <NumericInputBox
             value={amountRaw}
-            onChange={e => setAmountRaw(formatNumberInput(e.target.value))}
+            onChange={setAmountRaw}
             placeholder="Nhập số tiền..."
-            style={{ fontSize: 18, fontWeight: 700 }}
-            autoFocus
-            required
+            suffix="₫"
+            suggestions={[200000, 500000, 1000000, 2000000, 5000000]}
+            variant="box"
           />
-        </label>
+        </div>
 
         {/* Chip chọn nhanh */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -1739,11 +1930,13 @@ function DepositToSavingsModal({
 
     const fromWallet = cashFunds.find(f => f.id === fromWalletId)
     const chosenGoal = goals.find(g => g.id === targetGoalId)
+    const todayStr = ymd(new Date())
+    const nowTs = Date.now()
 
     await db.txs.add({
       type: 'transfer',
       amount,
-      date: ymd(new Date()),
+      date: todayStr,
       fundId: fromWalletId,
       toFundId: activeSavingsFund.id,
       categoryId: null,
@@ -1752,13 +1945,34 @@ function DepositToSavingsModal({
         (chosenGoal
           ? `Nạp tiết kiệm cho kế hoạch "${chosenGoal.name}"`
           : `Nạp tiền vào ${activeSavingsFund.name}`),
-      createdAt: Date.now(),
+      createdAt: nowTs,
+      excludeFromReport: true,
     })
 
     if (chosenGoal?.id) {
+      const logId = 'dep-' + nowTs
+      await db.txs.add({
+        type: 'transfer',
+        amount,
+        date: todayStr,
+        fundId: activeSavingsFund.id,
+        toFundId: activeSavingsFund.id,
+        categoryId: null,
+        note: note.trim()
+          ? `Phân bổ từ ${activeSavingsFund.name} → Mục tiêu "${chosenGoal.name}" (${note.trim()})`
+          : `Phân bổ từ ${activeSavingsFund.name} → Mục tiêu "${chosenGoal.name}"`,
+        createdAt: nowTs + 1,
+        excludeFromReport: true,
+        savingsGoalId: chosenGoal.id,
+        savingsGoalName: chosenGoal.name,
+        savingsGoalIcon: chosenGoal.icon,
+        savingsAction: 'allocate',
+        savingsLogId: logId,
+      })
+
       const logItem: SavingsAllocationLog = {
-        id: 'dep-' + Date.now(),
-        date: ymd(new Date()),
+        id: logId,
+        date: todayStr,
         amount,
         fromFundId: fromWallet?.id ?? null,
         note: note.trim() || `Nạp từ ${fromWallet?.name ?? 'ví khác'}`,
@@ -1806,32 +2020,35 @@ function DepositToSavingsModal({
           </div>
         ) : (
           <>
-            <label className="fld">
+            <div className="fld">
               <span>Trích tiền từ ví nào?</span>
-              <select
+              <InAppSelect<number>
+                title="Chọn ví nguồn trích tiền"
                 value={fromWalletId}
-                onChange={e => setFromWalletId(Number(e.target.value))}
-              >
-                {otherWallets.map(w => (
-                  <option key={w.id} value={w.id}>
-                    {w.icon} {w.name} (Số dư: {money(balanceOfFund(w))})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="fld" style={{ marginBottom: 6 }}>
-              <span>Số tiền chuyển vào Quỹ Tiết Kiệm (₫)</span>
-              <input
-                inputMode="numeric"
-                value={amountRaw}
-                onChange={e => setAmountRaw(formatNumberInput(e.target.value))}
-                placeholder="VD: 2,000,000"
-                style={{ fontSize: 18, fontWeight: 700 }}
-                autoFocus
-                required
+                options={otherWallets.map(w => ({
+                  value: w.id!,
+                  label: w.name,
+                  subLabel: `Số dư: ${money(balanceOfFund(w))}`,
+                  rightText: money(balanceOfFund(w)),
+                  rightClassName: balanceOfFund(w) < 0 ? 'exp' : 'inc',
+                  icon: w.icon,
+                  color: w.color,
+                }))}
+                onChange={v => setFromWalletId(Number(v))}
               />
-            </label>
+            </div>
+
+            <div className="fld" style={{ marginBottom: 6 }}>
+              <span>Số tiền chuyển vào Quỹ Tiết Kiệm (₫)</span>
+              <NumericInputBox
+                value={amountRaw}
+                onChange={setAmountRaw}
+                placeholder="VD: 2,000,000"
+                suffix="₫"
+                suggestions={[500000, 1000000, 2000000, 3000000, 5000000]}
+                variant="box"
+              />
+            </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               {[500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 10_000_000].map(v => (
                 <button
@@ -1846,20 +2063,32 @@ function DepositToSavingsModal({
               ))}
             </div>
 
-            <label className="fld">
+            <div className="fld">
               <span>Phân bổ ngay vào kế hoạch nào?</span>
-              <select
+              <InAppSelect<number>
+                title="Chọn kế hoạch phân bổ"
                 value={targetGoalId}
-                onChange={e => setTargetGoalId(Number(e.target.value))}
-              >
-                <option value={0}>🐷 Để trong Số dư chưa phân bổ của Quỹ Tiết Kiệm</option>
-                {goals.map(g => (
-                  <option key={g.id} value={g.id}>
-                    {g.icon} {g.name} (Đã có {money(g.allocatedAmount)} / {money(g.targetAmount)})
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={[
+                  {
+                    value: 0,
+                    label: 'Để trong Số dư chưa phân bổ của Quỹ Tiết Kiệm',
+                    subLabel: 'Chưa gán cho mục tiêu cụ thể nào',
+                    icon: '🐷',
+                    color: '#10b981',
+                  },
+                  ...goals
+                    .filter(g => g.id != null)
+                    .map(g => ({
+                      value: g.id!,
+                      label: g.name,
+                      subLabel: `Đã có ${money(g.allocatedAmount)} / ${money(g.targetAmount)}`,
+                      icon: g.icon,
+                      color: g.color,
+                    })),
+                ]}
+                onChange={v => setTargetGoalId(Number(v))}
+              />
+            </div>
 
             <label className="fld">
               <span>Ghi chú (tuỳ chọn)</span>

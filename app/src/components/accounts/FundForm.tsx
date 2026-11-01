@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { db, type Fund } from '../../db'
+import { evaluateKeypadExpression } from '../../lib'
+import { NumericInputBox } from '../Keypad'
 import { Colors } from './Colors'
 
 export function FundForm({
@@ -29,7 +31,7 @@ export function FundForm({
 
   async function save() {
     if (!name.trim()) return
-    const initBal = Number(initialBalance.replace(/[^\d-]/g, '')) || 0
+    const initBal = Math.round(evaluateKeypadExpression(initialBalance)) || 0
     const data: Fund = {
       ...(f.id ? { id: f.id } : {}),
       name: name.trim(),
@@ -40,9 +42,9 @@ export function FundForm({
       notifyOnTx,
       excludeFromTotal,
       archived,
-      creditLimit: kind === 'credit' ? Number(creditLimit.replace(/[^\d]/g, '')) || 0 : undefined,
-      statementDay: kind === 'credit' ? Math.min(31, Math.max(1, Number(statementDay) || 20)) : undefined,
-      dueDay: kind === 'credit' ? Math.min(31, Math.max(1, Number(dueDay) || 5)) : undefined,
+      creditLimit: kind === 'credit' ? Math.round(evaluateKeypadExpression(creditLimit)) || 0 : undefined,
+      statementDay: kind === 'credit' ? Math.min(31, Math.max(1, Math.round(evaluateKeypadExpression(statementDay)) || 20)) : undefined,
+      dueDay: kind === 'credit' ? Math.min(31, Math.max(1, Math.round(evaluateKeypadExpression(dueDay)) || 5)) : undefined,
     }
     if (f.id) await db.funds.put(data)
     else await db.funds.add(data)
@@ -88,7 +90,6 @@ export function FundForm({
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            autoFocus={!f.id}
             placeholder={kind === 'credit' ? 'VD: VIB Cash Back, VPBank StepUp...' : 'VD: Quỹ Chính, Investing, Saving LT...'}
           />
         </label>
@@ -97,12 +98,20 @@ export function FundForm({
             <span>Biểu tượng</span>
             <input value={icon} onChange={e => setIcon(e.target.value)} />
           </label>
-          <label className="fld">
+          <div className="fld">
             <span>{kind === 'credit' ? 'Số dư đầu (nhập âm nếu đang nợ)' : 'Số dư ban đầu (₫)'}</span>
-            <input inputMode="numeric" value={initialBalance} onChange={e => setInitialBalance(e.target.value)} />
-          </label>
+            <NumericInputBox
+              variant="field"
+              value={initialBalance}
+              onChange={setInitialBalance}
+              placeholder="0"
+              suffix="₫"
+              allowNegative
+              allowZeroDisplay
+            />
+          </div>
         </div>
-        {kind === 'credit' && Number(initialBalance) > 0 && (
+        {kind === 'credit' && evaluateKeypadExpression(initialBalance) > 0 && (
           <p className="exp" style={{ margin: '-4px 0 10px', fontSize: 12.5, lineHeight: 1.4 }}>
             ⚠️ Số dư đầu đang là số dương. Thẻ tín dụng nên để <b>0</b> (chưa nợ) hoặc <b>số âm</b> (đang nợ sẵn); số dương sẽ làm Dư nợ luôn hiển thị 0 ₫.
           </p>
@@ -110,31 +119,44 @@ export function FundForm({
 
         {kind === 'credit' && (
           <>
-            <label className="fld">
+            <div className="fld">
               <span>Hạn mức tín dụng được cấp (₫)</span>
-              <input inputMode="numeric" value={creditLimit} onChange={e => setCreditLimit(e.target.value)} />
-            </label>
+              <NumericInputBox
+                variant="field"
+                value={creditLimit}
+                onChange={setCreditLimit}
+                placeholder="50,000,000"
+                suffix="₫"
+                suggestions={[20000000, 30000000, 50000000, 100000000]}
+              />
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'end' }}>
-              <label className="fld" style={{ marginBottom: 0 }}>
+              <div className="fld" style={{ marginBottom: 0 }}>
                 <span style={{ whiteSpace: 'nowrap' }}>Ngày chốt sao kê (1-31)</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                <NumericInputBox
+                  variant="field"
                   value={statementDay}
-                  onChange={e => setStatementDay(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
+                  onChange={setStatementDay}
+                  placeholder="20"
+                  suffix="ngày"
+                  suggestions={[5, 10, 15, 20, 25]}
+                  minVal={1}
+                  maxVal={31}
                 />
-              </label>
-              <label className="fld" style={{ marginBottom: 0 }}>
+              </div>
+              <div className="fld" style={{ marginBottom: 0 }}>
                 <span style={{ whiteSpace: 'nowrap' }}>Hạn thanh toán (1-31)</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                <NumericInputBox
+                  variant="field"
                   value={dueDay}
-                  onChange={e => setDueDay(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
+                  onChange={setDueDay}
+                  placeholder="5"
+                  suffix="ngày"
+                  suggestions={[5, 10, 15, 20, 25]}
+                  minVal={1}
+                  maxVal={31}
                 />
-              </label>
+              </div>
             </div>
           </>
         )}

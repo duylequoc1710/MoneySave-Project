@@ -18,6 +18,8 @@ import {
   ymd,
 } from '../lib'
 import DateInput from './DateInput'
+import { InAppSelect } from './InAppSelectModal'
+import { NumericInputBox } from './Keypad'
 import TxDetailModal from './TxDetailModal'
 import TxForm, { type TxFormDraft } from './TxForm'
 import { showAlert, showConfirm } from './AppDialog'
@@ -316,14 +318,18 @@ export function InstallmentConvertModal({
         {/* 4. Phí chuyển đổi trả góp (%) */}
         <div className="fld">
           <span>Phí chuyển đổi (% · để 0 nếu miễn phí)</span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="text"
-              inputMode="decimal"
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <NumericInputBox
+              variant="field"
               value={feePctStr}
-              onChange={e => setFeePctStr(e.target.value.replace(/[^0-9.,]/g, ''))}
+              onChange={setFeePctStr}
               placeholder="0"
-              style={{ maxWidth: 90 }}
+              suffix="%"
+              suggestions={[0, 1, 1.5, 2, 3, 5]}
+              allowZeroDisplay
+              minVal={0}
+              maxVal={100}
+              style={{ maxWidth: 120 }}
             />
             <div style={{ display: 'flex', gap: 6 }}>
               {[0, 1.5, 2, 3].map(p => (
@@ -564,27 +570,21 @@ function SelectTxForInstallmentModal({
           <span className="mut" style={{ fontSize: 13 }}>
             Chọn khoản chi trong tháng:
           </span>
-          <select
+          <InAppSelect<string>
+            variant="pill"
+            title="Chọn tháng giao dịch"
             value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 99,
-              border: '1px solid var(--bd)',
-              background: 'var(--card)',
-              color: 'var(--fg)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            {availableMonths.map(ym => (
-              <option key={ym} value={ym}>
-                {fmtMonth(ym)}
-              </option>
-            ))}
-            <option value="all">Tất cả ({expenseTxs.length})</option>
-          </select>
+            options={[
+              ...availableMonths.map(ym => ({
+                value: ym,
+                label: fmtMonth(ym),
+                icon: '📅',
+              })),
+              { value: 'all', label: `Tất cả (${expenseTxs.length})`, icon: '🌐' },
+            ]}
+            onChange={v => setSelectedMonth(v)}
+            style={{ borderRadius: 99, padding: '6px 12px' }}
+          />
         </div>
 
         <div className="card" style={{ padding: '0 14px' }}>
@@ -1070,15 +1070,37 @@ export default function CreditCardDetailModal({
                 {fmtDmy(info.nextStatementDate).slice(0, 5)})
               </button>
 
-              <select
-                value={filterMode === 'current_cycle' ? '' : filterMode}
-                onChange={e => {
-                  const val = e.target.value
-                  setFilterMode(val || 'current_cycle')
-                }}
-                aria-label="Xem lại kỳ hoặc tháng khác"
+              <InAppSelect<string>
+                variant="pill"
+                title="Xem lại kỳ hoặc tháng khác"
+                value={filterMode}
+                placeholder="📅 Xem lại các tháng..."
+                options={[
+                  {
+                    value: 'current_cycle',
+                    label: '📅 Xem lại các tháng...',
+                    subLabel: `Kỳ hiện tại (${fmtDmy(info.lastStatementDate).slice(0, 5)} → ${fmtDmy(info.nextStatementDate).slice(0, 5)})`,
+                    icon: '📅',
+                  },
+                  {
+                    value: 'prev_cycle',
+                    label: `Kỳ trước (${fmtDmy(info.prevStatementDate).slice(0, 5)} → ${fmtDmy(info.lastStatementDate).slice(0, 5)})`,
+                    icon: '⏮️',
+                  },
+                  ...availableMonths.map(ym => ({
+                    value: ym,
+                    label: fmtMonthOption(ym),
+                    icon: '🗓️',
+                  })),
+                  {
+                    value: 'all',
+                    label: `Tất cả giao dịch (${cardTxs.length})`,
+                    icon: '🌐',
+                  },
+                ]}
+                onChange={val => setFilterMode(val || 'current_cycle')}
                 style={{
-                  padding: '6px 8px',
+                  padding: '6px 10px',
                   borderRadius: 99,
                   border:
                     filterMode !== 'current_cycle'
@@ -1088,24 +1110,11 @@ export default function CreditCardDetailModal({
                   color: filterMode !== 'current_cycle' ? 'var(--acc)' : 'var(--mut)',
                   fontSize: 12,
                   fontWeight: 600,
-                  cursor: 'pointer',
                   flex: 1,
                   minWidth: 0,
-                  maxWidth: 165,
+                  maxWidth: 175,
                 }}
-              >
-                <option value="">📅 Xem lại các tháng...</option>
-                <option value="prev_cycle">
-                  Kỳ trước ({fmtDmy(info.prevStatementDate).slice(0, 5)} →{' '}
-                  {fmtDmy(info.lastStatementDate).slice(0, 5)})
-                </option>
-                {availableMonths.map(ym => (
-                  <option key={ym} value={ym}>
-                    {fmtMonthOption(ym)}
-                  </option>
-                ))}
-                <option value="all">Tất cả giao dịch ({cardTxs.length})</option>
-              </select>
+              />
             </div>
 
             {/* Tóm tắt nhanh của kỳ đang chọn */}

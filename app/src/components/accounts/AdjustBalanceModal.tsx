@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { effectOn, ymd } from '../../lib'
+import { effectOn, evaluateKeypadExpression, ymd } from '../../lib'
 import { db, type Fund, type Tx } from '../../db'
+import { InAppSelect, fundsToSelectOptions } from '../InAppSelectModal'
+import { NumericInputBox } from '../Keypad'
 
 export function AdjustBalanceModal({
   initialFund,
@@ -22,8 +24,7 @@ export function AdjustBalanceModal({
   const [excludeFromReport, setExcludeFromReport] = useState<boolean>(true)
 
   async function save() {
-    const cleaned = targetBalanceStr.replace(/[^\d-]/g, '')
-    const targetBal = cleaned === '' || cleaned === '-' ? 0 : Number(cleaned)
+    const targetBal = Math.round(evaluateKeypadExpression(targetBalanceStr))
     const diff = targetBal - currentBal
 
     if (diff !== 0) {
@@ -55,65 +56,40 @@ export function AdjustBalanceModal({
           </button>
         </div>
 
-        <div className="card" style={{ padding: '8px 16px' }}>
-          <div className="row">
-            <div className="ico round" style={{ background: selectedFund.color + '28' }}>
-              {selectedFund.icon}
+        <div className="card" style={{ padding: '14px 16px' }}>
+          <div style={{ marginBottom: 14 }}>
+            <div className="mut" style={{ fontSize: 13, marginBottom: 6 }}>
+              Chọn ví cần điều chỉnh
             </div>
-            <div className="grow">
-              <select
-                value={fundId}
-                onChange={e => {
-                  const nextId = Number(e.target.value)
-                  setFundId(nextId)
-                  const nf = funds.find(x => x.id === nextId)
-                  if (nf) {
-                    const nb = nf.initialBalance + txs.reduce((a, t) => a + effectOn(t, nf.id!), 0)
-                    setTargetBalanceStr(String(nb))
-                  }
-                }}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  width: '100%',
-                  cursor: 'pointer',
-                }}
-              >
-                {funds.map(f => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <span className="mut">›</span>
+            <InAppSelect
+              title="Chọn ví điều chỉnh số dư"
+              value={fundId}
+              options={fundsToSelectOptions(funds, txs)}
+              onChange={nextId => {
+                const nid = Number(nextId)
+                setFundId(nid)
+                const nf = funds.find(x => x.id === nid)
+                if (nf) {
+                  const nb = nf.initialBalance + txs.reduce((a, t) => a + effectOn(t, nf.id!), 0)
+                  setTargetBalanceStr(String(nb))
+                }
+              }}
+            />
           </div>
 
-          <div style={{ padding: '12px 0 6px' }}>
-            <div className="mut" style={{ fontSize: 13, marginBottom: 4 }}>
-              Nhập số dư hiện tại của ví
+          <div>
+            <div className="mut" style={{ fontSize: 13, marginBottom: 6 }}>
+              Nhập số dư thực tế hiện tại của ví
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <input
-                inputMode="numeric"
-                autoFocus
-                value={targetBalanceStr}
-                onChange={e => setTargetBalanceStr(e.target.value)}
-                style={{
-                  fontSize: 26,
-                  fontWeight: 700,
-                  background: 'transparent',
-                  border: 0,
-                  width: '100%',
-                  outline: 'none',
-                }}
-              />
-              <span className="mut" style={{ fontSize: 18 }}>
-                ₫ ›
-              </span>
-            </div>
+            <NumericInputBox
+              value={targetBalanceStr}
+              onChange={setTargetBalanceStr}
+              placeholder="0"
+              suffix="₫"
+              allowNegative
+              allowZeroDisplay
+              variant="box"
+            />
           </div>
         </div>
 

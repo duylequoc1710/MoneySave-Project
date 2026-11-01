@@ -3,6 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { startOfMonth } from 'date-fns'
 import DateInput from '../components/DateInput'
 import CategoryPickerModal from '../components/CategoryPickerModal'
+import { InAppSelect, fundsToSelectOptions } from '../components/InAppSelectModal'
+import { NumericInputBox } from '../components/Keypad'
 import { showConfirm } from '../components/AppDialog'
 import {
   db,
@@ -17,6 +19,7 @@ import {
   type TxType,
 } from '../db'
 import {
+  evaluateKeypadExpression,
   filterReportableTxs,
   fmtDmy,
   getCategoryFullName,
@@ -551,7 +554,7 @@ function BudgetFormModal({
       setErr('Vui lòng chọn nhóm giao dịch')
       return
     }
-    const n = Number(limitStr.replace(/[^\d]/g, ''))
+    const n = Math.round(evaluateKeypadExpression(limitStr))
     if (!n || n <= 0) {
       setErr('Vui lòng nhập hạn mức ngân sách lớn hơn 0 ₫')
       return
@@ -664,41 +667,22 @@ function BudgetFormModal({
         {/* 2. Nhập số tiền hạn mức */}
         <div className="fld">
           <span>Hạn mức ngân sách tối đa (₫)</span>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <input
-              type="text"
-              inputMode="numeric"
-              autoFocus
-              value={limitStr}
-              placeholder="Ví dụ: 3,000,000"
-              onChange={e => {
-                setErr('')
-                setLimitStr(formatDigitsWithCommas(e.target.value))
-              }}
-              style={{
-                width: '100%',
-                fontSize: 20,
-                fontWeight: 700,
-                paddingRight: 36,
-              }}
-            />
-            <span
-              style={{
-                position: 'absolute',
-                right: 14,
-                fontWeight: 700,
-                color: 'var(--mut)',
-                pointerEvents: 'none',
-              }}
-            >
-              ₫
-            </span>
-          </div>
+          <NumericInputBox
+            value={limitStr}
+            onChange={val => {
+              setErr('')
+              setLimitStr(val)
+            }}
+            placeholder="Ví dụ: 3,000,000"
+            suffix="₫"
+            suggestions={BUDGET_QUICK_AMOUNTS}
+            variant="box"
+          />
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
             {BUDGET_QUICK_AMOUNTS.map(amt => {
               const formatted = formatDigitsWithCommas(String(amt))
-              const isSelected = limitStr === formatted
+              const isSelected = Math.round(evaluateKeypadExpression(limitStr)) === amt
               return (
                 <button
                   key={amt}
@@ -706,7 +690,7 @@ function BudgetFormModal({
                   className="pill-tag"
                   onClick={() => {
                     setErr('')
-                    setLimitStr(formatted)
+                    setLimitStr(String(amt))
                   }}
                   style={{
                     cursor: 'pointer',
@@ -818,7 +802,7 @@ function RecurringForm({
   const fid = fundId === '' ? (selCat?.fundId ?? funds[0]?.id) : fundId
 
   async function save() {
-    const amt = Number(amount.replace(/[^\d.]/g, ''))
+    const amt = Math.round(evaluateKeypadExpression(amount))
     if (!name.trim()) return setErr('Nhập tên hóa đơn / giao dịch định kỳ')
     if (!amt || amt <= 0) return setErr('Nhập số tiền cố định hợp lệ')
     if (fid == null) return setErr('Chưa chọn quỹ')
@@ -833,7 +817,7 @@ function RecurringForm({
       categoryId: type === 'transfer' ? null : (selCat?.id ?? null),
       note: note.trim(),
       frequency,
-      dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, Number(dayOfMonth) || todayDate.getDate())) : undefined,
+      dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, Math.round(evaluateKeypadExpression(dayOfMonth)) || todayDate.getDate())) : undefined,
       startDate,
       lastGeneratedDate: rec?.lastGeneratedDate ?? null,
       active: rec?.active ?? true,
@@ -879,16 +863,21 @@ function RecurringForm({
         <label className="fld">
           <span>Tên hóa đơn / Khoản định kỳ</span>
           <input
-            autoFocus
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="VD: Tiền nhà, Điện, Internet FPT, Netflix..."
           />
         </label>
-        <label className="fld">
+        <div className="fld">
           <span>Số tiền cố định (₫)</span>
-          <input inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
-        </label>
+          <NumericInputBox
+            variant="field"
+            value={amount}
+            onChange={setAmount}
+            placeholder="0"
+            suffix="₫"
+          />
+        </div>
         {type !== 'transfer' && (
           <div className="fld">
             <span>Nhóm giao dịch</span>
@@ -919,56 +908,59 @@ function RecurringForm({
             </div>
           </div>
         )}
-        <label className="fld">
+        <div className="fld">
           <span>{type === 'transfer' ? 'Từ quỹ' : 'Trích từ Quỹ / Thẻ'}</span>
-          <select value={fid ?? ''} onChange={e => setFundId(Number(e.target.value))}>
-            {funds.map(f => (
-              <option key={f.id} value={f.id}>
-                {f.icon} {f.name} {f.kind === 'credit' ? '(Tín dụng)' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
+          <InAppSelect
+            title={type === 'transfer' ? 'Chọn quỹ nguồn' : 'Chọn Quỹ / Thẻ thanh toán'}
+            value={fid ?? 0}
+            options={fundsToSelectOptions(funds)}
+            onChange={v => setFundId(Number(v))}
+          />
+        </div>
         {type === 'transfer' && (
-          <label className="fld">
+          <div className="fld">
             <span>Đến quỹ</span>
-            <select value={toFundId} onChange={e => setToFundId(Number(e.target.value))}>
-              <option value="">— chọn —</option>
-              {funds
-                .filter(f => f.id !== fid)
-                .map(f => (
-                  <option key={f.id} value={f.id}>
-                    {f.icon} {f.name}
-                  </option>
-                ))}
-            </select>
-          </label>
+            <InAppSelect
+              title="Chọn quỹ nhận"
+              value={toFundId === '' ? 0 : Number(toFundId)}
+              options={fundsToSelectOptions(
+                funds.filter(f => f.id !== fid),
+                undefined,
+                { emptyOption: { value: 0, label: '— Chọn quỹ nhận —', icon: '👛' } }
+              )}
+              onChange={v => setToFundId(v === 0 ? '' : Number(v))}
+            />
+          </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <label className="fld">
+          <div className="fld">
             <span>Tần suất lặp</span>
-            <select value={frequency} onChange={e => setFrequency(e.target.value as RecFrequency)}>
-              <option value="monthly">Hàng tháng</option>
-              <option value="weekly">Hàng tuần</option>
-              <option value="daily">Hàng ngày</option>
-              <option value="yearly">Hàng năm</option>
-            </select>
-          </label>
+            <InAppSelect<RecFrequency>
+              title="Chọn tần suất lặp"
+              value={frequency}
+              options={[
+                { value: 'monthly', label: 'Hàng tháng', icon: '🗓️', subLabel: 'Lặp cố định theo ngày trong tháng' },
+                { value: 'weekly', label: 'Hàng tuần', icon: '📅', subLabel: 'Lặp mỗi 7 ngày' },
+                { value: 'daily', label: 'Hàng ngày', icon: '⏰', subLabel: 'Lặp mỗi ngày' },
+                { value: 'yearly', label: 'Hàng năm', icon: '🎉', subLabel: 'Lặp mỗi năm 1 lần' },
+              ]}
+              onChange={v => setFrequency(v)}
+            />
+          </div>
           {frequency === 'monthly' ? (
-            <label className="fld">
+            <div className="fld">
               <span>Ngày tự động chi (1-31)</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
+              <NumericInputBox
+                variant="field"
                 value={dayOfMonth}
-                onChange={e => setDayOfMonth(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
-                onBlur={() => {
-                  const n = Number(dayOfMonth)
-                  setDayOfMonth(String(!n ? todayDate.getDate() : Math.min(31, n)))
-                }}
+                onChange={setDayOfMonth}
+                placeholder="1-31"
+                suffix="ngày"
+                suggestions={[1, 5, 10, 15, 25, 30]}
+                minVal={1}
+                maxVal={31}
               />
-            </label>
+            </div>
           ) : (
             <div />
           )}

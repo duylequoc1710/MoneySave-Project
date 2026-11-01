@@ -164,7 +164,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             <input
               type="email"
               required
-              autoFocus
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="name@example.com"

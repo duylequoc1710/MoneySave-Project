@@ -296,6 +296,25 @@ export default function PeriodReport({
   const netIncome = totalIncome - totalExpense
   const maxBar = Math.max(totalIncome, totalExpense, 1)
 
+  // Giao dịch Tiết kiệm trong kỳ (Phân bổ & Rút quỹ tiết kiệm)
+  const savingsPeriodTxs = useMemo(() => {
+    return allTxs.filter(
+      t =>
+        t.date >= from &&
+        t.date <= to &&
+        (t.savingsAction === 'allocate' || t.savingsAction === 'withdraw'),
+    )
+  }, [allTxs, from, to])
+
+  const totalSavingsAllocated = useMemo(
+    () => savingsPeriodTxs.filter(t => t.savingsAction === 'allocate').reduce((s, t) => s + t.amount, 0),
+    [savingsPeriodTxs],
+  )
+  const totalSavingsWithdrawn = useMemo(
+    () => savingsPeriodTxs.filter(t => t.savingsAction === 'withdraw').reduce((s, t) => s + t.amount, 0),
+    [savingsPeriodTxs],
+  )
+
   const groupByCategory = useCallback(
     (type: 'expense' | 'income'): CatSummary[] => {
       const filtered = monthTxs.filter(t => t.type === type)
@@ -1085,6 +1104,88 @@ export default function PeriodReport({
               </div>
             </div>
           </div>
+
+          {/* Card 3: Báo cáo Phân bổ & Rút Quỹ Tiết Kiệm (nếu có giao dịch trong kỳ) */}
+          {savingsPeriodTxs.length > 0 && (
+            <div className="card" style={{ marginTop: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <b style={{ fontSize: 17 }}>🐷 Phân bổ & Rút Quỹ Tiết Kiệm</b>
+                <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.16)', color: 'var(--acc)' }}>
+                  {savingsPeriodTxs.length} giao dịch
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                <div className="group-stat-box" style={{ cursor: 'default' }}>
+                  <div>
+                    <div className="mut" style={{ fontSize: 13 }}>
+                      Đã phân bổ
+                    </div>
+                    <b style={{ color: 'var(--acc)', fontSize: 16 }}>+{money(totalSavingsAllocated)}</b>
+                  </div>
+                </div>
+
+                <div className="group-stat-box" style={{ cursor: 'default' }}>
+                  <div>
+                    <div className="mut" style={{ fontSize: 13 }}>
+                      Đã rút bớt
+                    </div>
+                    <b style={{ color: '#f59e0b', fontSize: 16 }}>-{money(totalSavingsWithdrawn)}</b>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danh sách các lần phân bổ / rút trong giai đoạn này */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {savingsPeriodTxs.map(t => {
+                  const isAlloc = t.savingsAction === 'allocate'
+                  const f = fMap.get(t.fundId)
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => setViewingTx(t)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        borderRadius: 12,
+                        background: 'color-mix(in srgb, var(--card) 92%, #000)',
+                        border: '1px solid var(--bd)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <div
+                          className="ico round"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            fontSize: 18,
+                            background: isAlloc ? '#10b98125' : '#f59e0b25',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {t.savingsGoalIcon || '🎯'}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {isAlloc ? `Phân bổ: ${t.savingsGoalName ?? 'Kế hoạch'}` : `Rút từ: ${t.savingsGoalName ?? 'Kế hoạch'}`}
+                          </div>
+                          <small className="mut" style={{ fontSize: 11, display: 'block' }}>
+                            {fmtDmy(t.date)} · {f?.name ?? 'Ví Tiết Kiệm'}{t.note ? ' · ' + t.note : ''}
+                          </small>
+                        </div>
+                      </div>
+                      <b style={{ fontSize: 14, color: isAlloc ? 'var(--acc)' : '#f59e0b', flexShrink: 0, marginLeft: 8 }}>
+                        {isAlloc ? '+' : '-'}{money(t.amount)}
+                      </b>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
         {showTimeModal && (
           <TimeRangeModal

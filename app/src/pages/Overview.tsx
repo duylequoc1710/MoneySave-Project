@@ -38,7 +38,10 @@ import PeriodReport from '../components/PeriodReport'
 import SmartInsightsModal from '../components/SmartInsightsModal'
 import CreditCardDetailModal from '../components/CreditCardDetailModal'
 import SavingsGoalsModal from '../components/SavingsGoalsModal'
+import GlobalSearchModal from '../components/GlobalSearchModal'
 import { showAlert, showPrompt } from '../components/AppDialog'
+import { syncNowSmart } from '../cloudSync'
+import { processRecurringTransactions } from '../db'
 import { computeSmartInsights, type HeroInsightCard } from '../smartInsights'
 
 const NO_TXS: Tx[] = []
@@ -59,6 +62,8 @@ export default function Overview() {
   const [viewingTx, setViewingTx] = useState<Tx | null>(null)
   const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
   const [showSavingsModal, setShowSavingsModal] = useState(false)
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false)
+  const [isReloading, setIsReloading] = useState(false)
   const [editTx, setEditTx] = useState<Tx | null>(null)
   const [payDraft, setPayDraft] = useState<TxFormDraft | null>(null)
   const [today] = useState(() => new Date())
@@ -95,6 +100,11 @@ export default function Overview() {
     () => db.savingsGoals.toArray().catch(() => NO_GOALS),
     [],
     NO_GOALS,
+  )
+  const recurrings = useLiveQuery(
+    () => db.recurrings.toArray().catch(() => []),
+    [],
+    [],
   )
 
   const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
@@ -297,6 +307,27 @@ export default function Overview() {
     [funds, viewingCreditFundId],
   )
 
+  async function handleQuickReload() {
+    if (isReloading) return
+    setIsReloading(true)
+    try {
+      await processRecurringTransactions().catch(() => {})
+      await syncNowSmart().catch(() => {})
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        for (const reg of regs) {
+          await reg.update().catch(() => {})
+        }
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setTimeout(() => {
+        window.location.reload()
+      }, 350)
+    }
+  }
+
   return (
     <>
       {/* 1. Header Tổng số dư kiểu MoneySave */}
@@ -318,11 +349,25 @@ export default function Overview() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="icon-btn" onClick={() => nav('/ledger')} title="Tìm kiếm giao dịch">
+          <button
+            className="icon-btn"
+            onClick={() => setShowGlobalSearch(true)}
+            title="Tìm kiếm chức năng, giao dịch, ghi chú"
+            aria-label="Tìm kiếm"
+          >
             🔍
           </button>
-          <button className="icon-btn" onClick={() => nav('/budgets')} title="Định kỳ & Ngân sách">
-            🔔
+          <button
+            className={`icon-btn ${isReloading ? 'spin-btn' : ''}`}
+            onClick={handleQuickReload}
+            title="Tải lại & cập nhật dữ liệu mới nhất"
+            aria-label="Tải lại ứng dụng"
+            style={{
+              transition: 'transform 0.5s ease',
+              transform: isReloading ? 'rotate(360deg)' : 'none',
+            }}
+          >
+            🔄
           </button>
         </div>
       </div>
@@ -1192,6 +1237,18 @@ export default function Overview() {
       )}
       {showSavingsModal && (
         <SavingsGoalsModal onClose={() => setShowSavingsModal(false)} />
+      )}
+      {showGlobalSearch && (
+        <GlobalSearchModal
+          funds={funds}
+          cats={cats}
+          txs={txs}
+          goals={savingsGoals}
+          recurrings={recurrings}
+          onClose={() => setShowGlobalSearch(false)}
+          onSelectTx={t => setViewingTx(t)}
+          onOpenSavingsGoals={() => setShowSavingsModal(true)}
+        />
       )}
     </>
   )

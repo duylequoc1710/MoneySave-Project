@@ -152,7 +152,6 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
             <input
               type="email"
               required
-              autoFocus
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="name@example.com"

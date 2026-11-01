@@ -32,6 +32,7 @@ export interface Category {
 }
 
 export type InstallmentTermMonths = 3 | 6 | 12 | 24
+export type SavingsActionType = 'allocate' | 'withdraw'
 
 export interface InstallmentInfo {
   termMonths: InstallmentTermMonths // 3 | 6 | 12 | 24 tháng
@@ -56,6 +57,11 @@ export interface Tx {
   recurringId?: number | null
   excludeFromReport?: boolean // Không tính vào báo cáo
   installment?: InstallmentInfo | null // Thông tin chuyển đổi trả góp thẻ tín dụng
+  savingsGoalId?: number | null // ID mục tiêu tiết kiệm liên kết
+  savingsGoalName?: string | null // Tên mục tiêu tiết kiệm
+  savingsGoalIcon?: string | null // Biểu tượng mục tiêu tiết kiệm
+  savingsAction?: SavingsActionType | null // 'allocate' (Ví Tiết Kiệm -> Mục tiêu) | 'withdraw' (Mục tiêu -> Ví Tiết Kiệm)
+  savingsLogId?: string | null // ID log phân bổ trong goal.history để đồng bộ hai chiều
 }
 
 export interface Budget {
@@ -382,4 +388,95 @@ export async function importAll(
       await store.savingsGoals.bulkAdd(d.savingsGoals)
     }
   })
+}
+
+/**
+ * Đồng bộ lịch sử phân bổ / rút tiền của các Mục tiêu Tiết kiệm (SavingsGoal.history)
+ * vào Sổ giao dịch (db.txs) để đảm bảo mọi biến động phân bổ / rút mục tiêu
+ * đều hiển thị đầy đủ trong Sổ giao dịch và Báo cáo giai đoạn.
+ */
+export async function syncSavingsGoalHistoryToTxs(store: MoneyDB = db): Promise<number> {
+  if (!store.savingsGoals) return 0
+  const [goals, funds, txs] = await Promise.all([
+    store.savingsGoals.toArray(),
+    store.funds.toArray(),
+    store.txs.toArray(),
+  ])
+  if (goals.length === 0 || funds.length === 0) return 0
+
+  const defaultSavingsFund =
+    funds.find(f => f.kind !== 'credit' && !f.archived && /tiết kiệm|tiet kiem|saving|tích lũy|tich luy/i.test(f.name)) ??
+    funds.find(f => f.kind !== 'credit' && !f.archived && f.excludeFromTotal) ??
+    funds.find(f => f.kind !== 'credit' && !f.archived) ??
+    funds[0]
+
+  const existingLogIds = new Set(txs.map(t => t.savingsLogId).filter(Boolean) as string[])
+  let createdCount = 0
+
+  for (const goal of goals) {
+    if (!goal.id) continue
+    const sFund = funds.find(f => f.id === goal.savingsFundId) ?? defaultSavingsFund
+    if (!sFund?.id) continue
+
+    let history = Array.isArray(goal.history) ? [...goal.history] : []
+    // Nếu mục tiêu có allocatedAmount > 0 nhưng chưa có log history nào, tạo log khởi tạo
+    if (history.length === 0 && goal.allocatedAmount > 0) {
+      const initLog: SavingsAllocationLog = {
+        id: `init-goal-${goal.id}`,
+        date: goal.startDate || format(new Date(goal.createdAt || Date.now()), 'yyyy-MM-dd'),
+        amount: goal.allocatedAmount,
+        note: `Phân bổ vào mục tiêu "${goal.name}"`,
+      }
+      history = [initLog]
+      await store.savingsGoals.update(goal.id, { history })
+    }
+
+    for (let idx = 0; idx < history.length; idx++) {
+      const log = history[idx]
+      if (!log || !log.amount || log.amount === 0) continue
+      const logId = log.id || `goal-${goal.id}-log-${idx}`
+      if (existingLogIds.has(logId)) continue
+
+      const action: SavingsActionType = log.amount >= 0 ? 'allocate' : 'withdraw'
+      const absAmt = Math.abs(log.amount)
+      // Kiểm tra xem đã có tx tương đương chưa
+      const alreadyExists = txs.some(
+        t =>
+          t.savingsGoalId === goal.id &&
+          t.savingsAction === action &&
+          t.amount === absAmt &&
+          t.date === log.date,
+      )
+      if (alreadyExists) {
+        existingLogIds.add(logId)
+        continue
+      }
+
+      const defaultNote =
+        action === 'allocate'
+          ? `Phân bổ từ ${sFund.name} → Mục tiêu "${goal.name}"`
+          : `Rút từ Mục tiêu "${goal.name}" → ${sFund.name}`
+
+      await store.txs.add({
+        type: 'transfer',
+        amount: absAmt,
+        date: log.date || goal.startDate || format(new Date(), 'yyyy-MM-dd'),
+        fundId: sFund.id,
+        toFundId: sFund.id,
+        categoryId: null,
+        note: log.note ? `${defaultNote} (${log.note})` : defaultNote,
+        createdAt: (goal.createdAt || Date.now()) + idx + 1,
+        excludeFromReport: true,
+        savingsGoalId: goal.id,
+        savingsGoalName: goal.name,
+        savingsGoalIcon: goal.icon,
+        savingsAction: action,
+        savingsLogId: logId,
+      })
+      existingLogIds.add(logId)
+      createdCount++
+    }
+  }
+
+  return createdCount
 }

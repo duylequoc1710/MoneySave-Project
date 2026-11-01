@@ -38,6 +38,9 @@ export default function TxDetailModal({
   const isTransfer = tx.type === 'transfer'
   const isIncome = tx.type === 'income'
   const isExpense = tx.type === 'expense'
+  const isSavingsAlloc = tx.savingsAction === 'allocate'
+  const isSavingsWithdraw = tx.savingsAction === 'withdraw'
+  const isSavingsTx = isSavingsAlloc || isSavingsWithdraw
 
   const cat = isTransfer ? undefined : cats.find(c => c.id === tx.categoryId)
   const fromFund = funds.find(f => f.id === tx.fundId)
@@ -50,13 +53,17 @@ export default function TxDetailModal({
   const dateStr = format(rawDate, "EEEE, dd 'tháng' M yyyy", { locale: vi })
   const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1)
 
-  const amountColor = isIncome
+  const amountColor = isSavingsAlloc
     ? 'var(--inc, #28c76f)'
-    : isExpense
-      ? 'var(--exp, #f25551)'
-      : 'var(--fg, #f1f5f9)'
+    : isSavingsWithdraw
+      ? 'var(--warn, #f59e0b)'
+      : isIncome
+        ? 'var(--inc, #28c76f)'
+        : isExpense
+          ? 'var(--exp, #f25551)'
+          : 'var(--fg, #f1f5f9)'
 
-  const amountPrefix = isIncome ? '+' : isExpense ? '-' : ''
+  const amountPrefix = isSavingsAlloc ? '+' : isSavingsWithdraw ? '-' : isIncome ? '+' : isExpense ? '-' : ''
 
   async function handleDelete() {
     if (!tx.id) return
@@ -174,11 +181,15 @@ export default function TxDetailModal({
                 width: 48,
                 height: 48,
                 borderRadius: '50%',
-                background: isTransfer
-                  ? 'rgba(59, 130, 246, 0.18)'
-                  : cat?.color
-                    ? cat.color + '26'
-                    : 'rgba(255,255,255,0.08)',
+                background: isSavingsAlloc
+                  ? 'rgba(16, 185, 129, 0.18)'
+                  : isSavingsWithdraw
+                    ? 'rgba(245, 158, 11, 0.18)'
+                    : isTransfer
+                      ? 'rgba(59, 130, 246, 0.18)'
+                      : cat?.color
+                        ? cat.color + '26'
+                        : 'rgba(255,255,255,0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -186,11 +197,23 @@ export default function TxDetailModal({
                 flexShrink: 0,
               }}
             >
-              {isTransfer ? '🔁' : (cat?.icon ?? '❓')}
+              {isSavingsTx
+                ? (tx.savingsGoalIcon || '🎯')
+                : isTransfer
+                  ? '🔁'
+                  : (cat?.icon ?? '❓')}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
-                {isTransfer ? 'Chuyển quỹ' : cat ? getCategoryFullName(cat, cats) : 'Không có nhóm'}
+                {isSavingsAlloc
+                  ? `Phân bổ mục tiêu: ${tx.savingsGoalName ?? 'Kế hoạch'}`
+                  : isSavingsWithdraw
+                    ? `Rút từ mục tiêu: ${tx.savingsGoalName ?? 'Kế hoạch'}`
+                    : isTransfer
+                      ? 'Chuyển quỹ'
+                      : cat
+                        ? getCategoryFullName(cat, cats)
+                        : 'Không có nhóm'}
               </div>
               {tx.note && (
                 <div className="mut" style={{ fontSize: 14, marginTop: 2 }}>
@@ -243,7 +266,15 @@ export default function TxDetailModal({
           >
             <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>👛</span>
             <span>
-              {isTransfer ? (
+              {isSavingsAlloc ? (
+                <>
+                  <b>{fromFund?.name ?? 'Ví Tiết Kiệm'}</b> ➔ <b>🎯 {tx.savingsGoalName ?? 'Mục tiêu'}</b>
+                </>
+              ) : isSavingsWithdraw ? (
+                <>
+                  <b>🎯 {tx.savingsGoalName ?? 'Mục tiêu'}</b> ➔ <b>{fromFund?.name ?? 'Ví Tiết Kiệm'}</b>
+                </>
+              ) : isTransfer ? (
                 <>
                   <b>{fromFund?.name ?? 'Ví nguồn'}</b> ➔ <b>{toFund?.name ?? 'Ví đích'}</b>
                 </>

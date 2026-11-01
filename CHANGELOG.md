@@ -4,6 +4,25 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.8.0] – 2026-11-01
+### ✨ Tính năng mới & Đồng bộ giao diện ứng dụng
+- **⌨️ Đồng bộ Bàn phím máy tính nội bộ & Thay thế 100% bàn phím / dropdown hệ thống:**
+  - Chuyển đổi toàn bộ ô nhập số trên khắp ứng dụng (`Budgets.tsx`, `SavingsGoalsModal.tsx`, `TransferWalletModal.tsx`, `AdjustBalanceModal.tsx`, `FundForm.tsx`, `TxForm.tsx`, `CreditCardDetailModal.tsx`, `AppDialog.tsx`) sang dạng hiển thị bấm mở bàn phím máy tính nội bộ (`NumericInputBox` / `Keypad`), loại bỏ hoàn toàn việc bật bàn phím hệ điều hành.
+  - Thay thế 100% các phần tử `<select>` gốc bằng bộ chọn in-app modal (`InAppSelectModal.tsx`) chuẩn thiết kế MoneySave (icon, danh mục, số dư, dấu tích xanh `✓`).
+  - **Bỏ tự động trỏ vào ô nhập (`autoFocus` / `.focus()`) khi mở bảng mới**: Loại bỏ hoàn toàn hiện tượng tự bật bàn phím khi người dùng mở form, chỉ khi click/touch vào ô mới hiển thị.
+- **🐷 Ghi nhận & Báo cáo chi tiết Phân bổ / Rút Quỹ Tiết Kiệm:**
+  - Mở rộng mô hình giao dịch `Tx` (`savingsAction: 'allocate' | 'withdraw'`, `savingsGoalId`, `savingsGoalName`, `savingsGoalIcon`, `savingsLogId`).
+  - Ghi nhận chi tiết mọi biến động phân bổ (`Ví Tiết Kiệm → Mục tiêu`) và rút tiền (`Mục tiêu → Ví Tiết Kiệm` hoặc rút trực tiếp về ví chi tiêu khác).
+  - Tự động hiển thị thẻ chuyên biệt **🐷 Báo cáo Phân bổ & Rút Quỹ Tiết Kiệm** trong **`PeriodReport.tsx`** và hiển thị chi tiết từng giao dịch phân bổ/rút trong **`Ledger.tsx`** và **`TxDetailModal.tsx`**.
+  - Tự động đồng bộ ngược hai chiều (`syncSavingsGoalHistoryToTxs`) đối với dữ liệu lịch sử kế hoạch tiết kiệm cũ.
+- **🛡️ Chống quét khối và kéo thả vô tình (Anti-Drag Selection Freeze):**
+  - Khóa vùng quét khối vô tình bằng CSS toàn cục (`user-select: none`, `-webkit-touch-callout: none`) và chặn `dragstart` / `selectstart` ngoài các ô nhập văn bản, triệt tiêu lỗi ứng dụng bị đơ không click được khi vô tình chạm đè kéo trên màn hình cảm ứng.
+- **🔄 Nút Reload nhanh & 🔍 Tìm kiếm toàn diện tại Tổng quan:**
+  - Thay thế nút chuông 🔔 gần tiêu đề Tổng số dư bằng nút **Reload nhanh (`🔄`)**: Tự động đồng bộ Cloud Realtime (`syncNowSmart`), kiểm tra Service Worker cập nhật và làm mới dữ liệu tức thì không cần vuốt kéo thả hay tắt app.
+  - Nâng cấp nút **Kính lúp (`🔍`)** mở bảng **Tìm kiếm toàn diện (`GlobalSearchModal.tsx`)**: Tìm kiếm nhanh chức năng ứng dụng với điều hướng 1-chạm, tìm kiếm giao dịch đa tiêu chí và tìm kiếm kế hoạch / hóa đơn định kỳ / ghi chú liên quan.
+
+---
+
 ## [v2.7.2] – 2026-11-01
 ### ✨ Tính năng mới & Nâng cấp lớn
 - **🐷 Quỹ Tiết Kiệm & Kế Hoạch Mục Tiêu (`SavingsGoalsModal.tsx`, `FR-39`):**

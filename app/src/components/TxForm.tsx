@@ -3,8 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
 import { evaluateKeypadExpression, formatKeypadDisplay, money, ymd } from '../lib'
 import DateInput from './DateInput'
-import Keypad from './Keypad'
+import Keypad, { NumericInputBox } from './Keypad'
 import CategoryPickerModal from './CategoryPickerModal'
+import { InAppSelect, fundsToSelectOptions } from './InAppSelectModal'
 import { showConfirm } from './AppDialog'
 
 export interface TxFormDraft {
@@ -261,30 +262,29 @@ export default function TxForm({
             </div>
           </div>
         )}
-        <label className="fld">
+        <div className="fld">
           <span>{type === 'transfer' ? 'Từ quỹ (nguồn)' : 'Quỹ / Thẻ thanh toán'}</span>
-          <select value={fid ?? ''} onChange={e => setFundId(Number(e.target.value))}>
-            {funds.map(f => (
-              <option key={f.id} value={f.id}>
-                {f.icon} {f.name} {f.kind === 'credit' ? '(Tín dụng)' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
+          <InAppSelect
+            title={type === 'transfer' ? 'Chọn quỹ nguồn' : 'Chọn Quỹ / Thẻ thanh toán'}
+            value={fid ?? 0}
+            options={fundsToSelectOptions(funds)}
+            onChange={v => setFundId(Number(v))}
+          />
+        </div>
         {type === 'transfer' && (
-          <label className="fld">
+          <div className="fld">
             <span>Đến quỹ / Thẻ nhận</span>
-            <select value={toFundId} onChange={e => setToFundId(Number(e.target.value))}>
-              <option value="">— chọn —</option>
-              {funds
-                .filter(f => f.id !== fid)
-                .map(f => (
-                  <option key={f.id} value={f.id}>
-                    {f.icon} {f.name} {f.kind === 'credit' ? '(Trả thẻ tín dụng)' : ''}
-                  </option>
-                ))}
-            </select>
-          </label>
+            <InAppSelect
+              title="Chọn quỹ / Thẻ nhận"
+              value={toFundId === '' ? 0 : Number(toFundId)}
+              options={fundsToSelectOptions(
+                funds.filter(f => f.id !== fid),
+                undefined,
+                { emptyOption: { value: 0, label: '— Chọn quỹ / thẻ nhận —', icon: '👛' } }
+              )}
+              onChange={v => setToFundId(v === 0 ? '' : Number(v))}
+            />
+          </div>
         )}
         <div className="fld">
           <span>{isRecurring ? 'Ngày bắt đầu áp dụng' : 'Ngày giao dịch'}</span>
@@ -333,15 +333,17 @@ export default function TxForm({
                 />
               </div>
               {hasFee && (
-                <label className="fld" style={{ marginTop: 8, marginBottom: 0 }}>
+                <div className="fld" style={{ marginTop: 8, marginBottom: 0 }}>
                   <span>Phí chuyển khoản (₫)</span>
-                  <input
-                    inputMode="numeric"
+                  <NumericInputBox
+                    variant="field"
                     value={feeAmount}
-                    onChange={e => setFeeAmount(e.target.value)}
+                    onChange={setFeeAmount}
                     placeholder="VD: 3,300"
+                    suffix="₫"
+                    suggestions={[1100, 2200, 3300, 5500, 11000]}
                   />
-                </label>
+                </div>
               )}
             </div>
           )}
@@ -362,34 +364,34 @@ export default function TxForm({
             </div>
             {isRecurring && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-                <label className="fld" style={{ marginBottom: 0 }}>
+                <div className="fld" style={{ marginBottom: 0 }}>
                   <span>Chu kỳ lặp</span>
-                  <select value={frequency} onChange={e => setFrequency(e.target.value as RecFrequency)}>
-                    <option value="monthly">Hàng tháng</option>
-                    <option value="weekly">Hàng tuần</option>
-                    <option value="daily">Hàng ngày</option>
-                    <option value="yearly">Hàng năm</option>
-                  </select>
-                </label>
+                  <InAppSelect<RecFrequency>
+                    title="Chọn chu kỳ lặp"
+                    value={frequency}
+                    options={[
+                      { value: 'monthly', label: 'Hàng tháng', icon: '🗓️', subLabel: 'Lặp cố định theo ngày trong tháng' },
+                      { value: 'weekly', label: 'Hàng tuần', icon: '📅', subLabel: 'Lặp mỗi 7 ngày' },
+                      { value: 'daily', label: 'Hàng ngày', icon: '⏰', subLabel: 'Lặp mỗi ngày' },
+                      { value: 'yearly', label: 'Hàng năm', icon: '🎉', subLabel: 'Lặp mỗi năm 1 lần' },
+                    ]}
+                    onChange={v => setFrequency(v)}
+                  />
+                </div>
                 {frequency === 'monthly' && (
-                  <label className="fld" style={{ marginBottom: 0 }}>
+                  <div className="fld" style={{ marginBottom: 0 }}>
                     <span>Ngày cố định (1-31)</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                    <NumericInputBox
+                      variant="field"
                       value={dayOfMonth}
-                      onChange={e => {
-                        // Chỉ giữ chữ số, bỏ số 0 đứng đầu (tránh "020"), tối đa 2 chữ số
-                        const digits = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2)
-                        setDayOfMonth(digits)
-                      }}
-                      onBlur={() => {
-                        const n = Number(dayOfMonth)
-                        setDayOfMonth(String(!n ? new Date().getDate() : Math.min(31, n)))
-                      }}
+                      onChange={setDayOfMonth}
+                      placeholder="1-31"
+                      suffix="ngày"
+                      suggestions={[1, 5, 10, 15, 25, 30]}
+                      minVal={1}
+                      maxVal={31}
                     />
-                  </label>
+                  </div>
                 )}
               </div>
             )}
