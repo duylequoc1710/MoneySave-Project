@@ -20,8 +20,10 @@ import {
   computeTotalBalance,
   effectOn,
   filterReportableTxs,
+  fmtDmy,
   fullViDate,
   getCategoryFullName,
+  getFlowFundIds,
   getIncludedFunds,
   money,
   moneyShort,
@@ -33,6 +35,7 @@ import TxForm, { type TxFormDraft } from '../components/TxForm'
 import TxDetailModal from '../components/TxDetailModal'
 import PeriodReport from '../components/PeriodReport'
 import SmartInsightsModal from '../components/SmartInsightsModal'
+import CreditCardDetailModal from '../components/CreditCardDetailModal'
 import { showAlert, showPrompt } from '../components/AppDialog'
 import { computeSmartInsights, type HeroInsightCard } from '../smartInsights'
 
@@ -51,6 +54,7 @@ export default function Overview() {
   const [barScope, setBarScope] = useState<'week' | 'month'>('month')
   const [topScope, setTopScope] = useState<'week' | 'month'>('month')
   const [viewingTx, setViewingTx] = useState<Tx | null>(null)
+  const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
   const [editTx, setEditTx] = useState<Tx | null>(null)
   const [payDraft, setPayDraft] = useState<TxFormDraft | null>(null)
   const [today] = useState(() => new Date())
@@ -265,17 +269,24 @@ export default function Overview() {
       }))
   }, [reportableTxs, topScope, thisMonthKey, weekStart, cMap])
 
-  // Giao dịch gần đây (chỉ lấy từ các ví Tính vào tổng)
+  // Giao dịch gần đây (gồm các ví Tính vào tổng và chi tiêu thẻ tín dụng)
   const recentTxs = useMemo(() => {
-    const incIds = new Set(includedFunds.map(f => f.id!))
+    const flowIds = getFlowFundIds(funds, 0)
     return [...txs]
-      .filter(t => incIds.has(t.fundId) || (t.toFundId != null && incIds.has(t.toFundId)))
+      .filter(t => flowIds.has(t.fundId) || (t.toFundId != null && flowIds.has(t.toFundId)))
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
       .slice(0, 5)
-  }, [txs, includedFunds])
+  }, [txs, funds])
 
   const cashFunds = includedFunds.filter(f => f.kind !== 'credit')
-  const creditFunds = includedFunds.filter(f => f.kind === 'credit')
+  const allCreditFunds = useMemo(
+    () => funds.filter(f => f.kind === 'credit' && !f.archived),
+    [funds],
+  )
+  const viewingCreditFund = useMemo(
+    () => (viewingCreditFundId != null ? funds.find(f => f.id === viewingCreditFundId) ?? null : null),
+    [funds, viewingCreditFundId],
+  )
 
   return (
     <>
@@ -307,7 +318,7 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* 2. Ví của tôi (chỉ liệt kê các ví Tính vào tổng trên trang Tổng quan) */}
+      {/* 2. Ví của tôi (chỉ liệt kê các ví tiền mặt/tiết kiệm Tính vào tổng trên trang Tổng quan) */}
       <div className="card">
         <div className="card-head">
           <b>Ví của tôi</b>
@@ -315,74 +326,216 @@ export default function Overview() {
             Xem tất cả
           </span>
         </div>
-        {includedFunds.map(f => {
+        {cashFunds.length === 0 && (
+          <div className="empty" style={{ padding: '12px 0' }}>
+            Chưa có ví nào trong nhóm Tính vào tổng
+          </div>
+        )}
+        {cashFunds.map(f => {
           const bal = balanceOf(f)
-          const isCredit = f.kind === 'credit'
-          const creditInfo = isCredit ? analyzeCreditFund(f, txs, today) : null
           return (
             <div className="row" key={f.id} onClick={() => nav('/accounts')} style={{ cursor: 'pointer' }}>
               <div className="ico" style={{ background: f.color + '28' }}>
                 {f.icon}
               </div>
               <div className="grow">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <b>{f.name}</b>
-                  {isCredit && creditInfo && (
-                    <span className="pill-tag">Miễn lãi {creditInfo.interestFreeDaysToday} ngày</span>
-                  )}
-                </div>
-                {isCredit && creditInfo && (
-                  <small className="mut">
-                    Chốt ngày {creditInfo.statementDay} (còn {creditInfo.daysUntilStatement}d) · Hạn TT ngày{' '}
-                    {creditInfo.dueDay} (còn {creditInfo.daysUntilDue}d)
-                  </small>
-                )}
+                <b>{f.name}</b>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <b className={bal < 0 ? 'exp' : ''}>{hideBalance ? '•••••• ₫' : money(bal)}</b>
-                {isCredit && creditInfo && creditInfo.debt > 0 && (
-                  <div>
-                    <button
-                      className="btn pri"
-                      style={{ padding: '2px 8px', fontSize: 11, marginTop: 4 }}
-                      onClick={e => {
-                        e.stopPropagation()
-                        setPayDraft({
-                          type: 'transfer',
-                          amount: creditInfo.debt,
-                          fundId: cashFunds[0]?.id,
-                          toFundId: f.id,
-                          note: `Tất toán thẻ ${f.name}`,
-                        })
-                      }}
-                    >
-                      Trả thẻ
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )
         })}
-        {creditFunds.length === 0 && (
-          <div
-            style={{
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: '1px dashed var(--bd)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: 12,
-            }}
-          >
-            <span className="mut">💳 Tối ưu tiền mặt xài trước trả sau với Quỹ tín dụng</span>
-            <span className="link-green" onClick={() => nav('/accounts')}>
-              + Tạo thẻ tín dụng
-            </span>
-          </div>
-        )}
       </div>
+
+      {/* 2b. Quỹ tín dụng (hiển thị trực tiếp ở Tổng quan, bấm vào mở trang chi tiết giao dịch & trả góp) */}
+      <div className="sec-head">
+        <span>💳 Quỹ tín dụng</span>
+        <span className="link-green" onClick={() => nav('/accounts')}>
+          Quản lý thẻ
+        </span>
+      </div>
+      {allCreditFunds.length === 0 ? (
+        <div
+          className="card"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: 13,
+          }}
+        >
+          <span className="mut">💳 Theo dõi hạn mức, kỳ sao kê & trả góp với Quỹ tín dụng</span>
+          <span className="link-green" onClick={() => nav('/accounts')}>
+            + Thêm thẻ
+          </span>
+        </div>
+      ) : (
+        allCreditFunds.map(f => {
+          const info = analyzeCreditFund(f, txs, today)
+          return (
+            <div
+              className="card"
+              key={f.id}
+              style={{ cursor: 'pointer' }}
+              onClick={() => setViewingCreditFundId(f.id!)}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
+                  <div className="ico" style={{ background: f.color + '28' }}>
+                    {f.icon}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <b style={{ fontSize: 16 }}>{f.name}</b>
+                      <span className="pill-tag">Miễn lãi {info.interestFreeDaysToday} ngày</span>
+                      {info.activeInstallmentsCount > 0 && (
+                        <span
+                          className="pill-tag"
+                          style={{ color: 'var(--acc)', borderColor: 'var(--acc)' }}
+                        >
+                          📅 {info.activeInstallmentsCount} trả góp ({money(info.monthlyInstallmentTotal)}/kỳ)
+                        </span>
+                      )}
+                    </div>
+                    <small className="mut" style={{ display: 'block', marginTop: 3 }}>
+                      Chốt sao kê: <b>ngày {info.statementDay}</b> (còn {info.daysUntilStatement}{' '}
+                      ngày) · Hạn TT kỳ mới: <b>{fmtDmy(info.nextCycleDueDate)}</b>
+                    </small>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <small className="mut">Dư nợ hiện tại</small>
+                  <div
+                    className={info.debt > 0 ? 'exp' : 'inc'}
+                    style={{ fontSize: 18, fontWeight: 700 }}
+                  >
+                    {hideBalance ? '•••••• ₫' : info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}
+                  </div>
+                </div>
+              </div>
+
+              {info.creditLimit > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: 12,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span className="mut">
+                      Khả dụng: {hideBalance ? '•••••• ₫' : money(info.availableCredit)}
+                    </span>
+                    <span className="mut">
+                      Hạn mức: {hideBalance ? '•••••• ₫' : money(info.creditLimit)} (
+                      {info.utilizationPct}%)
+                    </span>
+                  </div>
+                  <div className="bar">
+                    <div
+                      style={{
+                        width: `${info.utilizationPct}%`,
+                        background: info.utilizationPct > 80 ? 'var(--exp)' : f.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Hộp diễn giải kỳ sao kê & cảnh báo hạn thanh toán rõ ràng */}
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: '8px 10px',
+                  borderRadius: 10,
+                  fontSize: 12.5,
+                  lineHeight: 1.45,
+                  background:
+                    info.statusTag === 'due-soon'
+                      ? 'rgba(239,68,68,0.12)'
+                      : info.statusTag === 'optimal'
+                        ? 'rgba(16,185,129,0.12)'
+                        : 'color-mix(in srgb, var(--fg) 5%, transparent)',
+                  color:
+                    info.statusTag === 'due-soon'
+                      ? 'var(--exp)'
+                      : info.statusTag === 'optimal'
+                        ? 'var(--inc)'
+                        : 'var(--fg)',
+                }}
+              >
+                {info.advice}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  fontSize: 12.5,
+                }}
+              >
+                <span className="mut">
+                  Chi trong kỳ ({fmtDmy(info.lastStatementDate)} → {fmtDmy(info.nextStatementDate)}
+                  ): <b>{hideBalance ? '•••••• ₫' : money(info.currentCycleSpend)}</b>
+                </span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ padding: '6px 10px', fontSize: 12 }}
+                    onClick={e => {
+                      e.stopPropagation()
+                      setViewingCreditFundId(f.id!)
+                    }}
+                  >
+                    Chi tiết & Trả góp
+                  </button>
+                  {info.debt > 0 && (
+                    <button
+                      type="button"
+                      className="btn pri"
+                      style={{ padding: '6px 12px', fontSize: 12 }}
+                      onClick={e => {
+                        e.stopPropagation()
+                        setPayDraft({
+                          type: 'transfer',
+                          amount:
+                            info.previousStatementDebt > 0
+                              ? info.previousStatementDebt
+                              : info.debt,
+                          fundId: cashFunds[0]?.id,
+                          toFundId: f.id,
+                          note: `Tất toán dư nợ thẻ ${f.name}`,
+                        })
+                      }}
+                    >
+                      Tất toán (
+                      {money(
+                        info.previousStatementDebt > 0 ? info.previousStatementDebt : info.debt,
+                      )}
+                      )
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })
+      )}
 
       {/* 3. Smart Insights (Phân tích hành vi, Dự báo dòng tiền & Đề xuất 1-chạm) */}
       <div className="sec-head">
@@ -930,6 +1083,32 @@ export default function Overview() {
           onQuickBudget={handleQuickBudget}
           onQuickTransferSaving={handleQuickTransferSaving}
           onOpenExpenseReport={() => openReport('expense')}
+        />
+      )}
+      {viewingCreditFund && (
+        <CreditCardDetailModal
+          fund={viewingCreditFund}
+          txs={txs}
+          cats={cats}
+          today={today}
+          onClose={() => setViewingCreditFundId(null)}
+          onEditFund={() => {
+            setViewingCreditFundId(null)
+            nav('/accounts')
+          }}
+          onPayCard={(f, amount, note) => {
+            setViewingCreditFundId(null)
+            setPayDraft({
+              type: 'transfer',
+              amount,
+              fundId: cashFunds[0]?.id,
+              toFundId: f.id,
+              note,
+            })
+          }}
+          onSelectTx={t => {
+            setViewingTx(t)
+          }}
         />
       )}
     </>

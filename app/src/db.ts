@@ -31,6 +31,18 @@ export interface Category {
   parentId?: number | null
 }
 
+export type InstallmentTermMonths = 3 | 6 | 12 | 24
+
+export interface InstallmentInfo {
+  termMonths: InstallmentTermMonths // 3 | 6 | 12 | 24 tháng
+  startDate: string // YYYY-MM-DD (ngày bắt đầu chuyển đổi trả góp)
+  firstStatementDate: string // YYYY-MM-DD (ngày chốt sao kê kỳ đầu tiên thanh toán)
+  conversionFeePct?: number // Phí chuyển đổi (%) nếu có
+  monthlyAmount: number // Số tiền trả góp mỗi kỳ sao kê (VND)
+  totalAmountWithFee: number // Tổng số tiền phải trả sau phí (VND)
+  paidCyclesManual?: number | null // Số kỳ đã thanh toán (nếu người dùng xác nhận/điều chỉnh thủ công)
+}
+
 export interface Tx {
   id?: number
   type: TxType
@@ -43,6 +55,7 @@ export interface Tx {
   createdAt: number
   recurringId?: number | null
   excludeFromReport?: boolean // Không tính vào báo cáo
+  installment?: InstallmentInfo | null // Thông tin chuyển đổi trả góp thẻ tín dụng
 }
 
 export interface Budget {

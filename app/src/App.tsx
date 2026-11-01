@@ -137,9 +137,6 @@ export default function App() {
         <NavLink to="/accounts">
           <span>👤</span>Ví của tôi
         </NavLink>
-        <NavLink to="/settings">
-          <span>⚙️</span>Cài đặt
-        </NavLink>
 
         <div className="desktop-nav-footer">
           <button

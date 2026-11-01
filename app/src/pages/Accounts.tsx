@@ -8,6 +8,7 @@ import { AdjustBalanceModal } from '../components/accounts/AdjustBalanceModal'
 import { TransferWalletModal } from '../components/accounts/TransferWalletModal'
 import { CatForm } from '../components/accounts/CatForm'
 import CatDetailModal from '../components/CatDetailModal'
+import CreditCardDetailModal from '../components/CreditCardDetailModal'
 import { COLORS } from '../components/accounts/palette'
 import { showAlert, showConfirm } from '../components/AppDialog'
 
@@ -23,6 +24,7 @@ export default function Accounts() {
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
 
   const [fundEdit, setFundEdit] = useState<Fund | null>(null)
+  const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
   const [catDetail, setCatDetail] = useState<Category | null>(null)
   const [catEdit, setCatEdit] = useState<Category | null>(null)
   const [adjustFund, setAdjustFund] = useState<Fund | null>(null)
@@ -203,9 +205,9 @@ export default function Accounts() {
         </>
       )}
 
-      {/* 4. PHÂN TÍCH QUỸ TÍN DỤNG (XÀI TRƯỚC TRẢ SAU) */}
+      {/* 4. QUỸ TÍN DỤNG (TINH GỌN CÀI ĐẶT & THÊM THẺ) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '22px 0 8px' }}>
-        <h2 style={{ margin: 0 }}>💳 Quỹ tín dụng (Xài trước trả sau)</h2>
+        <h2 style={{ margin: 0 }}>💳 Quỹ tín dụng</h2>
         <button
           className="btn pri"
           style={{ padding: '6px 12px', fontSize: 13 }}
@@ -226,94 +228,70 @@ export default function Accounts() {
         </button>
       </div>
 
-      {creditFunds.map(f => {
-        const info = analyzeCreditFund(f, txs)
-        const defaultSourceFund = cashFunds[0]?.id ?? funds[0]?.id ?? 1
-        return (
-          <div className="card credit-card" key={f.id}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <div className="ico" style={{ background: f.color + '22', cursor: 'pointer' }} onClick={() => setFundEdit(f)}>
+      <div className="card" style={{ padding: '0 16px' }}>
+        {creditFunds.length === 0 && (
+          <div className="empty" style={{ padding: '16px 0', fontSize: 13 }}>
+            Chưa có thẻ tín dụng nào. Bấm "+ Thêm thẻ tín dụng" để thiết lập hạn mức và ngày chốt sao kê.
+          </div>
+        )}
+        {creditFunds.map(f => {
+          const info = analyzeCreditFund(f, txs)
+          return (
+            <div
+              className="row"
+              key={f.id}
+              onClick={() => setViewingCreditFundId(f.id!)}
+              style={{ cursor: 'pointer', alignItems: 'center' }}
+            >
+              <div className="ico round" style={{ background: f.color + '28' }}>
                 {f.icon}
               </div>
-              <div className="grow" style={{ cursor: 'pointer' }} onClick={() => setFundEdit(f)}>
+              <div className="grow" style={{ minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <b style={{ fontSize: 16 }}>{f.name}</b>
-                  <span className="pill-tag">Miễn lãi {info.interestFreeDaysToday} ngày</span>
-                  {f.excludeFromTotal && <span className="pill-tag">Không tính vào tổng</span>}
+                  {info.activeInstallmentsCount > 0 && (
+                    <span className="pill-tag" style={{ fontSize: 10.5, color: 'var(--acc)' }}>
+                      📅 {info.activeInstallmentsCount} trả góp
+                    </span>
+                  )}
                 </div>
-                <small className="mut">
-                  Chốt sao kê: <b>ngày {info.statementDay}</b> (còn {info.daysUntilStatement} ngày) · Hạn TT:{' '}
-                  <b>ngày {info.dueDay}</b> (còn {info.daysUntilDue} ngày)
+                <small className="mut" style={{ display: 'block', marginTop: 2 }}>
+                  Sao kê ngày {info.statementDay} · Hạn TT ngày {info.dueDay} · Hạn mức{' '}
+                  {money(info.creditLimit)}
                 </small>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <small className="mut" style={{ display: 'block', fontSize: 11 }}>
-                  Dư nợ hiện tại
-                </small>
-                <b className={info.debt > 0 ? 'exp' : 'inc'} style={{ fontSize: 17 }}>
-                  {info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}
-                </b>
-              </div>
-            </div>
-
-            {info.creditLimit > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }} className="mut">
-                  <span>Khả dụng: {money(info.availableCredit)}</span>
-                  <span>
-                    Hạn mức: {money(info.creditLimit)} ({info.utilizationPct}%)
-                  </span>
-                </div>
-                <div className="bar">
-                  <i
-                    className={info.utilizationPct > 80 ? 'over' : ''}
-                    style={{ width: `${info.utilizationPct}%`, background: info.utilizationPct > 80 ? undefined : f.color }}
-                  />
+                <div style={{ fontSize: 14, marginTop: 3 }} className={info.debt > 0 ? 'exp' : 'mut'}>
+                  Dư nợ: <b>{info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}</b> (Kỳ mới:{' '}
+                  {money(info.currentCycleSpend)} · TT {fmtDmy(info.nextCycleDueDate)})
                 </div>
               </div>
-            )}
-
-            <div className={`credit-advice ${info.statusTag}`}>{info.advice}</div>
-            {info.balance > 0 && (
-              <div className="credit-advice due-soon" style={{ marginTop: 8 }}>
-                ⚠️ Số dư thẻ đang <b>dương (+{money(info.balance)})</b> nên Dư nợ hiển thị 0 ₫. Nếu thẻ chưa nợ, hãy vào
-                "Cài đặt ví" và đặt <b>Số dư đầu = 0</b> (hoặc số âm nếu đang nợ sẵn) để dư nợ &amp; hạn mức khả dụng tính đúng.
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 8 }}>
-              <small className="mut">
-                Chi trong kỳ sao kê hiện tại ({fmtDmy(info.lastStatementDate)} → {fmtDmy(info.nextStatementDate)}):{' '}
-                <b>{money(info.currentCycleSpend)}</b>
-                {info.scheduledCycleSpend > 0 && (
-                  <> · trong đó đã ghi trước (sau hôm nay): <b>{money(info.scheduledCycleSpend)}</b></>
-                )}
-              </small>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button className="btn" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => setFundEdit(f)}>
-                  Cài đặt ví
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ padding: '5px 9px', fontSize: 12 }}
+                  onClick={e => {
+                    e.stopPropagation()
+                    setViewingCreditFundId(f.id!)
+                  }}
+                >
+                  Chi tiết
                 </button>
-                {info.debt > 0 && (
-                  <button
-                    className="btn pri"
-                    style={{ padding: '6px 12px', fontSize: 12 }}
-                    onClick={() =>
-                      setTransferModal({
-                        fromFundId: defaultSourceFund,
-                        toFundId: f.id,
-                        amount: info.debt,
-                        note: `Tất toán thẻ ${f.name}`,
-                      })
-                    }
-                  >
-                    Tất toán ({money(info.debt)})
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ padding: '5px 9px', fontSize: 12 }}
+                  onClick={e => {
+                    e.stopPropagation()
+                    setFundEdit(f)
+                  }}
+                >
+                  Cài đặt
+                </button>
               </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
 
       {/* 5. NHÓM GIAO DỊCH */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '20px 0 8px' }}>
@@ -423,20 +401,28 @@ export default function Accounts() {
         )
       })}
 
-      <div className="card" style={{ padding: '4px 16px', marginTop: 18 }}>
-        <div className="row" style={{ cursor: 'pointer' }} onClick={() => nav('/settings')}>
-          <div className="ico round" style={{ background: 'color-mix(in srgb, var(--acc) 18%, transparent)' }}>
-            ⚙️
-          </div>
-          <div className="grow">
-            <b>Cài đặt & Dữ liệu cá nhân</b>
-            <small>Đổi giao diện Sáng/Tối, Xuất file Excel, Sao lưu & Khôi phục</small>
-          </div>
-          <span className="mut" style={{ fontSize: 18 }}>
-            ›
-          </span>
-        </div>
-      </div>
+      {viewingCreditFundId != null && funds.find(f => f.id === viewingCreditFundId) && (
+        <CreditCardDetailModal
+          fund={funds.find(f => f.id === viewingCreditFundId)!}
+          txs={txs}
+          cats={cats}
+          onClose={() => setViewingCreditFundId(null)}
+          onEditFund={f => {
+            setViewingCreditFundId(null)
+            setFundEdit(f)
+          }}
+          onPayCard={(f, amount, note) => {
+            const defaultSourceFund = cashFunds[0]?.id ?? funds[0]?.id ?? 1
+            setViewingCreditFundId(null)
+            setTransferModal({
+              fromFundId: defaultSourceFund,
+              toFundId: f.id,
+              amount,
+              note,
+            })
+          }}
+        />
+      )}
 
       {fundEdit && (
         <FundForm

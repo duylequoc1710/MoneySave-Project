@@ -5,9 +5,10 @@
 
 **categories** (Nhóm giao dịch): `id, name, type(expense|income), icon, color, fundId?` – `fundId` là quỹ mặc định của nhóm. Index: `type, fundId`.
 
-**txs** (Giao dịch): `id, type(expense|income|transfer), amount(>0), date(YYYY-MM-DD), fundId, toFundId?, categoryId?, note, createdAt, recurringId?, excludeFromReport?`. Index: `date, type, fundId, categoryId, recurringId`.
+**txs** (Giao dịch): `id, type(expense|income|transfer), amount(>0), date(YYYY-MM-DD), fundId, toFundId?, categoryId?, note, createdAt, recurringId?, excludeFromReport?, installment?`. Index: `date, type, fundId, categoryId, recurringId`.
 - `transfer`: dùng `fundId` (nguồn) + `toFundId` (đích), không có `categoryId`.
 - `excludeFromReport`: khi bật (`true`), giao dịch vẫn được cộng/trừ vào số dư thực tế của ví qua `effectOn`, nhưng bị loại khỏi các báo cáo thu/chi tổng hợp (`filterReportableTxs`).
+- `installment` (`InstallmentInfo`): dành cho giao dịch chi tiêu thẻ tín dụng chuyển sang trả góp: `{ termMonths: 3 | 6 | 12 | 24, startDate: YYYY-MM-DD, firstStatementDate: YYYY-MM-DD, conversionFeePct?, monthlyAmount, totalAmountWithFee, paidCyclesManual? }`.
 
 **budgets**: `id, categoryId, limit` – hạn mức chi/tháng.
 

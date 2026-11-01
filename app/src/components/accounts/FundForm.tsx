@@ -79,7 +79,7 @@ export function FundForm({
               if (icon === '👛' || icon === '💵') setIcon('💳')
             }}
           >
-            💳 Quỹ Tín Dụng (Trả sau)
+            💳 Quỹ Tín Dụng
           </button>
         </div>
 

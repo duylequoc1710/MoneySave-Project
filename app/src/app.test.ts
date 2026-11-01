@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import {
   analyzeCreditFund,
   buildCalendarWeekBuckets,
+  computeDefaultFirstStatementDate,
+  computeInstallmentStatus,
   fmtDmy,
   monthLabel,
   buildCsvContent,
@@ -274,6 +276,99 @@ describe('Phân tích Quỹ tín dụng – Xài trước trả sau (analyzeCred
     // Giao dịch ngày 24/10 rơi vào kỳ sao kê 20/11 và hạn trả là 05/12 -> miễn lãi 42 ngày!
     assert.equal(info.interestFreeDaysToday, 42)
     assert.equal(info.statusTag, 'optimal')
+  })
+
+  it('Tách bạch dư nợ kỳ đã chốt (05/11) và chi tiêu kỳ mới (20/10 -> 20/11, hạn TT 05/12) để không báo động giả', () => {
+    const vpBankStepup: Fund = {
+      id: 11,
+      name: 'VP Bank Stepup',
+      icon: '💳',
+      color: '#8b5cf6',
+      initialBalance: 0,
+      kind: 'credit',
+      creditLimit: 57_000_000,
+      statementDay: 20,
+      dueDay: 5,
+      excludeFromTotal: true,
+    }
+    const txs: Tx[] = [
+      {
+        id: 1,
+        type: 'expense',
+        amount: 500_200,
+        date: '2026-10-28',
+        fundId: 11,
+        categoryId: 1,
+        note: 'Siêu thị kỳ tháng 11',
+        createdAt: 1,
+      },
+    ]
+    // Hôm nay là 01/11/2026 (còn 4 ngày tới 05/11, nhưng kỳ 20/10 không nợ đồng nào, 500,200 ₫ thuộc kỳ 20/10 -> 20/11 hạn trả 05/12)
+    const info = analyzeCreditFund(vpBankStepup, txs, new Date(2026, 10, 1))
+    assert.equal(info.debt, 500_200)
+    assert.equal(info.currentCycleSpend, 500_200)
+    assert.equal(info.previousStatementDebt, 0)
+    assert.equal(info.nextDueDate, '2026-11-05')
+    assert.equal(info.nextCycleDueDate, '2026-12-05')
+    assert.notEqual(info.statusTag, 'due-soon')
+    assert.ok(info.advice.includes('05/12/2026'))
+
+    // Ngược lại, nếu có khoản chi từ 15/10/2026 (trước ngày chốt 20/10) chưa thanh toán thì phải cảnh báo đỏ due-soon cho hạn 05/11/2026
+    const txsWithOldDebt: Tx[] = [
+      ...txs,
+      {
+        id: 2,
+        type: 'expense',
+        amount: 1_200_000,
+        date: '2026-10-15',
+        fundId: 11,
+        categoryId: 1,
+        note: 'Chi kỳ tháng 10 chưa trả',
+        createdAt: 2,
+      },
+    ]
+    const infoUnpaid = analyzeCreditFund(vpBankStepup, txsWithOldDebt, new Date(2026, 10, 1))
+    assert.equal(infoUnpaid.previousStatementDebt, 1_200_000)
+    assert.equal(infoUnpaid.statusTag, 'due-soon')
+    assert.ok(infoUnpaid.advice.includes('05/11/2026'))
+  })
+
+  it('Chuyển đổi giao dịch thẻ tín dụng sang trả góp kỳ hạn 3, 6, 12, 24 tháng và tính đúng số kỳ còn lại', () => {
+    const firstStmt = computeDefaultFirstStatementDate('2026-10-25', 20)
+    assert.equal(firstStmt, '2026-11-20')
+
+    const tx12m: Tx = {
+      id: 99,
+      type: 'expense',
+      amount: 12_000_000,
+      date: '2026-10-25',
+      fundId: 10,
+      categoryId: 1,
+      note: 'Mua iPad trả góp',
+      createdAt: 99,
+      installment: {
+        termMonths: 12,
+        startDate: '2026-10-26',
+        firstStatementDate: firstStmt,
+        conversionFeePct: 0,
+        monthlyAmount: 1_000_000,
+        totalAmountWithFee: 12_000_000,
+        paidCyclesManual: 3,
+      },
+    }
+
+    const st = computeInstallmentStatus(tx12m, creditFund, new Date(2026, 10, 1))
+    assert.ok(st)
+    assert.equal(st.termMonths, 12)
+    assert.equal(st.monthlyAmount, 1_000_000)
+    assert.equal(st.paidCycles, 3)
+    assert.equal(st.remainingCycles, 9)
+    assert.equal(st.paidAmount, 3_000_000)
+    assert.equal(st.remainingBalance, 9_000_000)
+    assert.equal(st.firstStatementDate, '2026-11-20')
+    assert.equal(st.firstDueDate, '2026-12-05')
+    assert.equal(st.finalStatementDate, '2027-10-20')
+    assert.equal(st.finalDueDate, '2027-11-05')
   })
 })
 

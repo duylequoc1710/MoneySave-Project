@@ -14,7 +14,7 @@ import {
   startOfWeek,
 } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import type { Category, Fund, Tx } from './db'
+import type { Category, Fund, InstallmentInfo, InstallmentTermMonths, Tx } from './db'
 
 export type ThemeMode = 'dark' | 'light' | 'system'
 const THEME_STORAGE_KEY = 'moneygo_theme'
@@ -177,7 +177,7 @@ export function buildExcelXml(funds: Fund[], categories: Category[], txs: Tx[]):
   const walletRowsXml = funds
     .map(f => {
       const curBal = f.initialBalance + txs.reduce((s, t) => s + effectOn(t, f.id!), 0)
-      const kindLabel = f.kind === 'credit' ? 'Quỹ tín dụng (Trả sau)' : 'Ví / Tiết kiệm / Đầu tư'
+      const kindLabel = f.kind === 'credit' ? 'Quỹ tín dụng' : 'Ví / Tiết kiệm / Đầu tư'
       const groupLabel = f.archived
         ? 'Đã lưu trữ (Đóng băng)'
         : f.excludeFromTotal
@@ -485,6 +485,148 @@ function dueDateForStatement(stmtDate: Date, statementDay: number, dueDay: numbe
   return clampDay(addMonths(baseMonth, 1), dueDay)
 }
 
+/**
+ * Gợi ý ngày chốt kỳ sao kê đầu tiên chứa ngày bắt đầu chuyển đổi trả góp (YYYY-MM-DD)
+ */
+export function computeDefaultFirstStatementDate(startDateYmd: string, statementDay = 20): string {
+  const stDay = Math.min(31, Math.max(1, statementDay || 20))
+  const parsed = parseISO(startDateYmd)
+  const ref = Number.isNaN(parsed.getTime()) ? startOfDay(new Date()) : startOfDay(parsed)
+  const baseMonth = new Date(ref.getFullYear(), ref.getMonth(), 1)
+  const stmtThisMonth = clampDay(baseMonth, stDay)
+  if (ref <= stmtThisMonth) {
+    return ymd(stmtThisMonth)
+  }
+  return ymd(clampDay(addMonths(baseMonth, 1), stDay))
+}
+
+export interface InstallmentCycleItem {
+  cycleIndex: number // 1..termMonths
+  statementDate: string // YYYY-MM-DD
+  dueDate: string // YYYY-MM-DD
+  amount: number
+  status: 'paid' | 'current' | 'upcoming'
+}
+
+export interface InstallmentStatus {
+  info: InstallmentInfo
+  termMonths: InstallmentTermMonths
+  startDate: string // YYYY-MM-DD
+  firstStatementDate: string // YYYY-MM-DD
+  firstDueDate: string // YYYY-MM-DD
+  finalStatementDate: string // YYYY-MM-DD
+  finalDueDate: string // YYYY-MM-DD
+  monthlyAmount: number
+  totalAmountWithFee: number
+  conversionFeePct: number
+  paidCycles: number
+  autoPaidCycles: number
+  remainingCycles: number
+  paidAmount: number
+  remainingBalance: number
+  isCompleted: boolean
+  currentCycleNumber: number | null // 1..termMonths hoặc null nếu đã hoàn tất
+  nextPaymentStatementDate: string | null // YYYY-MM-DD
+  nextPaymentDueDate: string | null // YYYY-MM-DD
+  daysUntilFinalDue: number
+  schedule: InstallmentCycleItem[]
+}
+
+/**
+ * Tính toán chi tiết tiến độ trả góp thẻ tín dụng (3 / 6 / 12 / 24 tháng)
+ */
+export function computeInstallmentStatus(
+  tx: Tx,
+  fund: Fund | undefined,
+  refDate: Date = new Date(),
+): InstallmentStatus | null {
+  if (!tx.installment) return null
+  const inst = tx.installment
+  const today = startOfDay(refDate)
+  const statementDay = Math.min(31, Math.max(1, fund?.statementDay ?? 20))
+  const dueDay = Math.min(31, Math.max(1, fund?.dueDay ?? 5))
+  const termMonths = inst.termMonths
+  const feePct = inst.conversionFeePct ?? 0
+  const totalAmountWithFee =
+    inst.totalAmountWithFee > 0
+      ? inst.totalAmountWithFee
+      : Math.round(tx.amount * (1 + feePct / 100))
+  const monthlyAmount =
+    inst.monthlyAmount > 0 ? inst.monthlyAmount : Math.round(totalAmountWithFee / termMonths)
+
+  const firstStmtRaw = parseISO(
+    inst.firstStatementDate || computeDefaultFirstStatementDate(inst.startDate || tx.date, statementDay),
+  )
+  const firstStmtDate = Number.isNaN(firstStmtRaw.getTime())
+    ? clampDay(new Date(today.getFullYear(), today.getMonth(), 1), statementDay)
+    : startOfDay(firstStmtRaw)
+  const firstBaseMonth = new Date(firstStmtDate.getFullYear(), firstStmtDate.getMonth(), 1)
+
+  const rawSchedule: Array<{ cycleIndex: number; stmtDate: Date; dueDate: Date; amount: number }> = []
+  for (let i = 0; i < termMonths; i++) {
+    const stmtD = clampDay(addMonths(firstBaseMonth, i), statementDay)
+    const dueD = dueDateForStatement(stmtD, statementDay, dueDay)
+    const amt =
+      i === termMonths - 1
+        ? Math.max(0, totalAmountWithFee - monthlyAmount * (termMonths - 1))
+        : monthlyAmount
+    rawSchedule.push({
+      cycleIndex: i + 1,
+      stmtDate: stmtD,
+      dueDate: dueD,
+      amount: amt,
+    })
+  }
+
+  // Số kỳ tự động tính là đã qua hạn thanh toán trước hôm nay
+  const autoPaidCycles = rawSchedule.filter(c => c.dueDate < today).length
+  const paidCycles =
+    inst.paidCyclesManual != null
+      ? Math.min(termMonths, Math.max(0, Math.round(inst.paidCyclesManual)))
+      : autoPaidCycles
+  const remainingCycles = Math.max(0, termMonths - paidCycles)
+
+  const schedule: InstallmentCycleItem[] = rawSchedule.map((c, idx) => ({
+    cycleIndex: c.cycleIndex,
+    statementDate: ymd(c.stmtDate),
+    dueDate: ymd(c.dueDate),
+    amount: c.amount,
+    status: idx < paidCycles ? 'paid' : idx === paidCycles ? 'current' : 'upcoming',
+  }))
+
+  const paidAmount = schedule.slice(0, paidCycles).reduce((s, c) => s + c.amount, 0)
+  const remainingBalance = Math.max(0, totalAmountWithFee - paidAmount)
+  const isCompleted = remainingCycles === 0
+  const currentItem = schedule[paidCycles] ?? null
+  const finalItem = schedule[schedule.length - 1]
+  const finalDueParsed = parseISO(finalItem.dueDate)
+  const daysUntilFinalDue = Math.max(0, differenceInCalendarDays(finalDueParsed, today))
+
+  return {
+    info: inst,
+    termMonths,
+    startDate: inst.startDate || tx.date,
+    firstStatementDate: schedule[0].statementDate,
+    firstDueDate: schedule[0].dueDate,
+    finalStatementDate: finalItem.statementDate,
+    finalDueDate: finalItem.dueDate,
+    monthlyAmount,
+    totalAmountWithFee,
+    conversionFeePct: feePct,
+    paidCycles,
+    autoPaidCycles,
+    remainingCycles,
+    paidAmount,
+    remainingBalance,
+    isCompleted,
+    currentCycleNumber: currentItem ? currentItem.cycleIndex : null,
+    nextPaymentStatementDate: currentItem ? currentItem.statementDate : null,
+    nextPaymentDueDate: currentItem ? currentItem.dueDate : null,
+    daysUntilFinalDue,
+    schedule,
+  }
+}
+
 export interface CreditCardAnalysis {
   balance: number
   debt: number
@@ -493,21 +635,31 @@ export interface CreditCardAnalysis {
   utilizationPct: number
   statementDay: number
   dueDay: number
+  prevStatementDate: string
   lastStatementDate: string
   nextStatementDate: string
   daysUntilStatement: number
   nextDueDate: string
   daysUntilDue: number
+  /** Ngày hạn thanh toán của kỳ sao kê đang mở (ví dụ sao kê 20/10 -> 20/11 có hạn TT là 05/12) */
+  nextCycleDueDate: string
+  daysUntilNextCycleDue: number
+  /** Dư nợ còn lại của kỳ sao kê đã chốt (<= lastStatementDate) cần thanh toán vào hạn gần nhất (nextDueDate) */
+  previousStatementDebt: number
   interestFreeDaysToday: number
   currentCycleSpend: number
   /** Phần chi trong kỳ đã ghi trước (ngày sau hôm nay nhưng vẫn thuộc kỳ sao kê hiện tại) */
   scheduledCycleSpend: number
+  /** Thống kê trả góp đang hoạt động trên thẻ */
+  activeInstallmentsCount: number
+  monthlyInstallmentTotal: number
+  remainingInstallmentBalance: number
   statusTag: 'optimal' | 'due-soon' | 'closing-soon' | 'normal'
   advice: string
 }
 
 /**
- * Phân tích chuyên sâu Quỹ tín dụng để tối ưu dòng tiền "xài trước trả sau"
+ * Phân tích chuyên sâu Quỹ tín dụng theo từng kỳ sao kê & hạn thanh toán
  */
 export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Date()): CreditCardAnalysis {
   const today = startOfDay(refDate)
@@ -523,12 +675,15 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
   const thisMonthBase = new Date(today.getFullYear(), today.getMonth(), 1)
   const stmtThisMonth = clampDay(thisMonthBase, statementDay)
 
+  let prevStmt: Date
   let lastStmt: Date
   let nextStmt: Date
   if (stmtThisMonth <= today) {
+    prevStmt = clampDay(addMonths(thisMonthBase, -1), statementDay)
     lastStmt = stmtThisMonth
     nextStmt = clampDay(addMonths(thisMonthBase, 1), statementDay)
   } else {
+    prevStmt = clampDay(addMonths(thisMonthBase, -2), statementDay)
     lastStmt = clampDay(addMonths(thisMonthBase, -1), statementDay)
     nextStmt = stmtThisMonth
   }
@@ -539,10 +694,12 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
   const nextDue = dueOfLastStmt >= today ? dueOfLastStmt : dueOfNextStmt
   const daysUntilStatement = differenceInCalendarDays(nextStmt, today)
   const daysUntilDue = differenceInCalendarDays(nextDue, today)
+  const daysUntilNextCycleDue = differenceInCalendarDays(dueOfNextStmt, today)
 
   // Giao dịch phát sinh hôm nay (sau ngày chốt kỳ trước) sẽ vào kỳ sao kê nextStmt và thanh toán vào dueOfNextStmt
   const interestFreeDaysToday = differenceInCalendarDays(dueOfNextStmt, today)
 
+  const prevStmtYmd = ymd(prevStmt)
   const lastStmtYmd = ymd(lastStmt)
   const todayYmd = ymd(today)
   // Kỳ sao kê hiện tại = (ngày chốt kỳ trước, ngày chốt kỳ tới]. Gồm cả giao dịch ĐÃ GHI TRƯỚC (ngày tương lai
@@ -554,18 +711,49 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
   const currentCycleSpend = cycleExpenses.reduce((s, t) => s + t.amount, 0)
   const scheduledCycleSpend = cycleExpenses.filter(t => t.date > todayYmd).reduce((s, t) => s + t.amount, 0)
 
-  let statusTag: CreditCardAnalysis['statusTag'] = 'normal'
-  let advice = `Chi tiêu hôm nay được miễn lãi ${interestFreeDaysToday} ngày (hạn trả ${format(dueOfNextStmt, 'dd/MM')}).`
+  // Tính dư nợ thuộc kỳ sao kê đã chốt (<= lastStmtYmd) còn chưa thanh toán:
+  // Lấy số dư tại thời điểm chốt sao kê kỳ trước, trừ đi các khoản thanh toán/hoàn tiền vào thẻ từ sau ngày chốt sao kê đó.
+  const balanceAtLastStmt =
+    fund.initialBalance +
+    txs.filter(t => t.date <= lastStmtYmd).reduce((s, t) => s + effectOn(t, fund.id!), 0)
+  const debtAtLastStmt = Math.max(0, -balanceAtLastStmt)
+  const paymentsAfterLastStmt = txs
+    .filter(t => t.date > lastStmtYmd)
+    .reduce((s, t) => {
+      const eff = effectOn(t, fund.id!)
+      return eff > 0 ? s + eff : s
+    }, 0)
+  const previousStatementDebt = Math.max(0, Math.min(debt, debtAtLastStmt - paymentsAfterLastStmt))
 
-  if (debt > 0 && daysUntilDue <= 5) {
+  // Tính tổng trả góp đang hoạt động trên thẻ
+  const installmentStatuses = txs
+    .filter(t => t.fundId === fund.id && t.type === 'expense' && t.installment)
+    .map(t => computeInstallmentStatus(t, fund, today))
+    .filter((st): st is InstallmentStatus => st !== null && !st.isCompleted)
+  const activeInstallmentsCount = installmentStatuses.length
+  const monthlyInstallmentTotal = installmentStatuses.reduce((s, st) => s + st.monthlyAmount, 0)
+  const remainingInstallmentBalance = installmentStatuses.reduce((s, st) => s + st.remainingBalance, 0)
+
+  let statusTag: CreditCardAnalysis['statusTag'] = 'normal'
+  let advice = `Chi tiêu hôm nay thuộc kỳ sao kê ${format(lastStmt, 'dd/MM')} → ${format(nextStmt, 'dd/MM')}, được miễn lãi ${interestFreeDaysToday} ngày (hạn thanh toán ${format(dueOfNextStmt, 'dd/MM/yyyy')}).`
+
+  if (previousStatementDebt > 0 && daysUntilDue <= 5) {
     statusTag = 'due-soon'
-    advice = `⚠️ Còn ${daysUntilDue} ngày đến hạn thanh toán (${format(nextDue, 'dd/MM')}). Hãy tất toán đúng hạn để tránh phí phạt & lãi!`
+    advice = `⚠️ Kỳ sao kê chốt ${format(lastStmt, 'dd/MM/yyyy')} còn ${money(previousStatementDebt)} đến hạn thanh toán vào ngày ${format(nextDue, 'dd/MM/yyyy')} (còn ${daysUntilDue} ngày). Hãy tất toán đúng hạn để tránh phí phạt & lãi!`
+  } else if (previousStatementDebt === 0 && debt > 0 && daysUntilDue <= 5 && dueOfLastStmt >= today) {
+    // Trường hợp thực tế của người dùng: Kỳ sao kê trước (20/10) đã thanh toán xong (0 ₫),
+    // dư nợ hiện tại hoàn toàn là chi tiêu của kỳ sao kê mới (20/10 -> 20/11) với hạn thanh toán kỳ kế tiếp (05/12).
+    statusTag = 'normal'
+    advice = `✅ Kỳ thanh toán ${format(nextDue, 'dd/MM/yyyy')} (sao kê chốt ${format(lastStmt, 'dd/MM')}): Đã hoàn tất (0 ₫ cần trả). Khoản chi ${money(currentCycleSpend)} phát sinh trong kỳ mới (${format(lastStmt, 'dd/MM')} → ${format(nextStmt, 'dd/MM')}) sẽ chốt ngày ${format(nextStmt, 'dd/MM')} và hạn thanh toán là ${format(dueOfNextStmt, 'dd/MM/yyyy')}.`
   } else if (daysUntilStatement <= 3) {
     statusTag = 'closing-soon'
-    advice = `⏳ Còn ${daysUntilStatement} ngày chốt sao kê (${format(nextStmt, 'dd/MM')}). Khoản chi lớn nên dời qua sau ngày ${format(nextStmt, 'dd/MM')} để hưởng trọn chu kỳ miễn lãi mới.`
+    advice = `⏳ Còn ${daysUntilStatement} ngày chốt sao kê (${format(nextStmt, 'dd/MM/yyyy')}). Khoản chi lớn nên dời qua sau ngày ${format(nextStmt, 'dd/MM')} để hưởng trọn chu kỳ miễn lãi mới.`
   } else if (differenceInCalendarDays(today, lastStmt) <= 7) {
     statusTag = 'optimal'
-    advice = `✨ Thời điểm vàng quẹt thẻ! Vừa qua kỳ chốt sao kê — chi hôm nay được giữ tiền mặt tới ${interestFreeDaysToday} ngày.`
+    advice =
+      debt > 0 && previousStatementDebt === 0
+        ? `✨ Vừa qua kỳ chốt sao kê ${format(lastStmt, 'dd/MM')}: Chi tiêu kỳ mới (${money(currentCycleSpend)}) có hạn thanh toán vào ngày ${format(dueOfNextStmt, 'dd/MM/yyyy')} (còn ${interestFreeDaysToday} ngày miễn lãi).`
+        : `✨ Thời điểm vàng quẹt thẻ! Vừa qua kỳ chốt sao kê — chi hôm nay được giữ tiền mặt tới ${interestFreeDaysToday} ngày (hạn trả ${format(dueOfNextStmt, 'dd/MM/yyyy')}).`
   }
 
   return {
@@ -576,14 +764,21 @@ export function analyzeCreditFund(fund: Fund, txs: Tx[], refDate: Date = new Dat
     utilizationPct,
     statementDay,
     dueDay,
+    prevStatementDate: prevStmtYmd,
     lastStatementDate: lastStmtYmd,
     nextStatementDate: ymd(nextStmt),
     daysUntilStatement,
     nextDueDate: ymd(nextDue),
     daysUntilDue,
+    nextCycleDueDate: ymd(dueOfNextStmt),
+    daysUntilNextCycleDue,
+    previousStatementDebt,
     interestFreeDaysToday,
     currentCycleSpend,
     scheduledCycleSpend,
+    activeInstallmentsCount,
+    monthlyInstallmentTotal,
+    remainingInstallmentBalance,
     statusTag,
     advice,
   }

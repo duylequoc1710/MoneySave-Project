@@ -3,9 +3,10 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { db, type Category, type Fund, type Tx } from '../db.ts'
-import { getCategoryFullName, money } from '../lib.ts'
+import { computeInstallmentStatus, fmtDmy, getCategoryFullName, money } from '../lib.ts'
 import type { TxFormDraft } from './TxForm.tsx'
 import { showAlert, showConfirm } from './AppDialog.tsx'
+import { InstallmentConvertModal } from './CreditCardDetailModal.tsx'
 
 interface TxDetailModalProps {
   tx: Tx
@@ -18,14 +19,21 @@ const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
 
 export default function TxDetailModal({
-  tx,
+  tx: initialTx,
   onClose,
   onEdit,
   onDuplicate,
 }: TxDetailModalProps) {
   const [deleting, setDeleting] = useState(false)
+  const [showInstallmentModal, setShowInstallmentModal] = useState(false)
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
+  const liveTx = useLiveQuery(
+    async () => (initialTx.id ? ((await db.txs.get(initialTx.id)) ?? initialTx) : initialTx),
+    [initialTx.id],
+    initialTx,
+  )
+  const tx = liveTx ?? initialTx
 
   const isTransfer = tx.type === 'transfer'
   const isIncome = tx.type === 'income'
@@ -34,6 +42,8 @@ export default function TxDetailModal({
   const cat = isTransfer ? undefined : cats.find(c => c.id === tx.categoryId)
   const fromFund = funds.find(f => f.id === tx.fundId)
   const toFund = isTransfer ? funds.find(f => f.id === tx.toFundId) : undefined
+  const isCreditExpense = isExpense && fromFund?.kind === 'credit'
+  const instStatus = isCreditExpense ? computeInstallmentStatus(tx, fromFund) : null
 
   // Định dạng ngày theo chuẩn tiếng Việt có viết hoa đầu dòng: "Thứ Bảy, 17 tháng 10 2026"
   const rawDate = new Date(tx.date + 'T12:00:00')
@@ -243,6 +253,37 @@ export default function TxDetailModal({
             </span>
           </div>
 
+          {/* Thông tin trả góp thẻ tín dụng (nếu đã chuyển đổi) */}
+          {instStatus && (
+            <div
+              style={{
+                marginTop: 12,
+                padding: '10px 12px',
+                borderRadius: 12,
+                border: '1px solid color-mix(in srgb, var(--acc) 35%, var(--bd))',
+                background: 'color-mix(in srgb, var(--acc) 8%, transparent)',
+                fontSize: 13,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <b style={{ color: 'var(--acc)' }}>
+                  📅 Trả góp {instStatus.termMonths} tháng ({money(instStatus.monthlyAmount)}/kỳ)
+                </b>
+                <span className="pill-tag" style={{ fontSize: 11 }}>
+                  Đã trả {instStatus.paidCycles}/{instStatus.termMonths} kỳ
+                </span>
+              </div>
+              <div className="mut" style={{ marginTop: 4, fontSize: 12 }}>
+                Chuyển đổi ngày: <b>{fmtDmy(instStatus.startDate)}</b> · Bắt đầu sao kê:{' '}
+                <b>{fmtDmy(instStatus.firstStatementDate)}</b>
+              </div>
+              <div className="mut" style={{ marginTop: 2, fontSize: 12 }}>
+                Còn lại: <b className="exp">{instStatus.remainingCycles} kỳ ({money(instStatus.remainingBalance)})</b> · Hoàn tất:{' '}
+                <b>{fmtDmy(instStatus.finalDueDate)}</b>
+              </div>
+            </div>
+          )}
+
           {/* Huy hiệu ghi chú (nếu có) */}
           {(tx.excludeFromReport || tx.recurringId) && (
             <div
@@ -280,6 +321,39 @@ export default function TxDetailModal({
             border: '1px solid var(--bd)',
           }}
         >
+          {isCreditExpense && (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowInstallmentModal(true)}
+                style={{
+                  width: '100%',
+                  padding: '15px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  background: 'transparent',
+                  border: 0,
+                  color: 'var(--acc)',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                }}
+                className="detail-action-btn"
+              >
+                <span>🔄</span>
+                <span>
+                  {instStatus
+                    ? `Tuỳ chỉnh trả góp (${instStatus.termMonths} tháng · còn ${instStatus.remainingCycles} kỳ)`
+                    : 'Chuyển đổi trả góp (3 / 6 / 12 / 24 tháng)'}
+                </span>
+              </button>
+              <div style={{ height: 1, background: 'var(--bd)' }} />
+            </>
+          )}
+
           {/* Sao chép giao dịch */}
           <button
             type="button"
@@ -333,6 +407,16 @@ export default function TxDetailModal({
             <span>{deleting ? 'Đang xóa...' : 'Xóa giao dịch'}</span>
           </button>
         </div>
+
+        {showInstallmentModal && (
+          <InstallmentConvertModal
+            tx={tx}
+            fund={fromFund}
+            catName={cat ? getCategoryFullName(cat, cats) : 'Chi tiêu thẻ'}
+            catIcon={cat?.icon ?? '💳'}
+            onClose={() => setShowInstallmentModal(false)}
+          />
+        )}
       </div>
     </div>
   )
