@@ -412,7 +412,7 @@ export default function Overview() {
                         </span>
                       )}
                     </div>
-                    <small className="mut" style={{ display: 'block', marginTop: 3, whiteSpace: 'nowrap' }}>
+                    <small className="mut" style={{ display: 'block', marginTop: 3, lineHeight: 1.35 }}>
                       Sao kê: <b>ngày {info.statementDay}</b> · Hạn TT kỳ mới:{' '}
                       <b>{fmtDmy(info.nextCycleDueDate)}</b>
                     </small>
@@ -437,23 +437,24 @@ export default function Overview() {
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
+                      flexWrap: 'wrap',
                       fontSize: 12,
                       marginBottom: 4,
-                      gap: 8,
+                      gap: 6,
                     }}
                   >
-                    <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                    <span className="mut">
                       Khả dụng: {hideBalance ? '•••••• ₫' : money(info.availableCredit)}
                     </span>
-                    <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                    <span className="mut">
                       Hạn mức: {hideBalance ? '•••••• ₫' : money(info.creditLimit)} (
                       {info.utilizationPct}%)
                     </span>
                   </div>
                   <div className="bar">
-                    <div
+                    <i
                       style={{
-                        width: `${info.utilizationPct}%`,
+                        width: `${info.debt > 0 ? Math.max(4, info.utilizationPct) : 0}%`,
                         background: info.utilizationPct > 80 ? 'var(--exp)' : f.color,
                       }}
                     />
@@ -461,7 +462,7 @@ export default function Overview() {
                 </div>
               )}
 
-              {/* Hộp diễn giải kỳ sao kê & cảnh báo hạn thanh toán gọn 1 dòng */}
+              {/* Hộp diễn giải kỳ sao kê & cảnh báo hạn thanh toán gọn */}
               <div
                 style={{
                   marginTop: 10,
@@ -492,11 +493,12 @@ export default function Overview() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: 8,
                   fontSize: 12.5,
                 }}
               >
-                <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                <span className="mut" style={{ minWidth: 0 }}>
                   Kỳ này ({fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
                   {fmtDmy(info.nextStatementDate).slice(0, 5)}):{' '}
                   <b>{hideBalance ? '•••••• ₫' : money(info.currentCycleSpend)}</b>
@@ -562,7 +564,7 @@ export default function Overview() {
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 18 }}>{smartInsights.topCat.icon}</span>
               <b
                 style={{
@@ -570,12 +572,13 @@ export default function Overview() {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  maxWidth: '100%',
                 }}
               >
                 {smartInsights.topCat.name}
               </b>
               {smartInsights.topCat.amount > 0 && (
-                <span className="pill-tag" style={{ fontSize: 11 }}>
+                <span className="pill-tag" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
                   ~{smartInsights.topCat.workHours}h làm
                 </span>
               )}
@@ -652,19 +655,15 @@ export default function Overview() {
               <b>{smartInsights.burnRate.timeProgressPct}%</b>
             </span>
           </div>
-          <div
-            style={{
-              position: 'relative',
-              height: 7,
-              background: 'var(--bd)',
-              borderRadius: 99,
-            }}
-          >
+          <div className="sparkbar-track">
             <div
+              className="sparkbar-fill"
               style={{
-                width: `${Math.min(100, smartInsights.burnRate.spendProgressPct)}%`,
-                height: '100%',
-                borderRadius: 99,
+                width: `${
+                  smartInsights.burnRate.spendProgressPct > 0
+                    ? Math.min(100, Math.max(4, smartInsights.burnRate.spendProgressPct))
+                    : 0
+                }%`,
                 background:
                   smartInsights.burnRate.paceStatus === 'overpace'
                     ? 'var(--exp)'
@@ -678,9 +677,9 @@ export default function Overview() {
               style={{
                 position: 'absolute',
                 left: `${Math.min(98, Math.max(2, smartInsights.burnRate.timeProgressPct))}%`,
-                top: -2,
-                bottom: -2,
-                width: 2.5,
+                top: -3,
+                bottom: -3,
+                width: 3,
                 borderRadius: 2,
                 background: 'var(--fg)',
               }}

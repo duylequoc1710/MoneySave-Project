@@ -142,22 +142,16 @@ export default function SmartInsightsModal({
                 {burnRate.elapsedDays}/{burnRate.daysInMonth})
               </span>
             </div>
-            <div
-              style={{
-                position: 'relative',
-                height: 10,
-                background: 'var(--bd)',
-                borderRadius: 99,
-                overflow: 'visible',
-              }}
-            >
+            <div className="sparkbar-track" style={{ height: 10 }}>
               <div
+                className="sparkbar-fill"
                 style={{
-                  width: `${Math.min(100, burnRate.spendProgressPct)}%`,
-                  height: '100%',
+                  width: `${
+                    burnRate.spendProgressPct > 0
+                      ? Math.min(100, Math.max(4, burnRate.spendProgressPct))
+                      : 0
+                  }%`,
                   background: paceColor,
-                  borderRadius: 99,
-                  transition: 'width 0.25s ease',
                 }}
               />
               {/* Vạch đánh dấu tiến độ thời gian */}
@@ -395,9 +389,10 @@ export default function SmartInsightsModal({
                       width: '100%',
                       maxWidth: 28,
                       height: `${barPct}%`,
-                      background: barColor,
+                      background: st.avgAmount > 0 ? barColor : 'var(--bar-track)',
+                      border: st.avgAmount > 0 ? 'none' : '1px solid var(--bar-bd)',
                       borderRadius: '6px 6px 3px 3px',
-                      opacity: st.avgAmount > 0 ? 0.92 : 0.25,
+                      opacity: st.avgAmount > 0 ? 0.95 : 1,
                     }}
                   />
                   <span

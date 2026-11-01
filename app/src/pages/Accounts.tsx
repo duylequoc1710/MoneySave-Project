@@ -241,52 +241,78 @@ export default function Accounts() {
               className="row"
               key={f.id}
               onClick={() => setViewingCreditFundId(f.id!)}
-              style={{ cursor: 'pointer', alignItems: 'center' }}
+              style={{ cursor: 'pointer', alignItems: 'flex-start', padding: '13px 0' }}
             >
-              <div className="ico round" style={{ background: f.color + '28' }}>
+              <div
+                className="ico round"
+                style={{
+                  background: f.color + '28',
+                  border: `1px solid ${f.color}44`,
+                  marginTop: 2,
+                }}
+              >
                 {f.icon}
               </div>
               <div className="grow" style={{ minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <b style={{ fontSize: 16 }}>{f.name}</b>
-                  {info.activeInstallmentsCount > 0 && (
-                    <span className="pill-tag" style={{ fontSize: 10.5, color: 'var(--acc)' }}>
-                      📅 {info.activeInstallmentsCount} trả góp
-                    </span>
-                  )}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
+                    <b style={{ fontSize: 16 }}>{f.name}</b>
+                    {info.activeInstallmentsCount > 0 && (
+                      <span className="pill-tag" style={{ fontSize: 10.5, color: 'var(--acc)', whiteSpace: 'nowrap' }}>
+                        📅 {info.activeInstallmentsCount} trả góp
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ padding: '4px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
+                      onClick={e => {
+                        e.stopPropagation()
+                        setViewingCreditFundId(f.id!)
+                      }}
+                    >
+                      Chi tiết
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ padding: '4px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
+                      onClick={e => {
+                        e.stopPropagation()
+                        setFundEdit(f)
+                      }}
+                    >
+                      Cài đặt
+                    </button>
+                  </div>
                 </div>
-                <small className="mut" style={{ display: 'block', marginTop: 2 }}>
+                <small className="mut" style={{ display: 'block', marginTop: 4, whiteSpace: 'normal', lineHeight: 1.35 }}>
                   Sao kê ngày {info.statementDay} · Hạn TT ngày {info.dueDay} · Hạn mức{' '}
                   {money(info.creditLimit)}
                 </small>
-                <div style={{ fontSize: 14, marginTop: 3 }} className={info.debt > 0 ? 'exp' : 'mut'}>
+                <div style={{ fontSize: 13.5, marginTop: 4 }} className={info.debt > 0 ? 'exp' : 'mut'}>
                   Dư nợ: <b>{info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}</b> (Kỳ mới:{' '}
                   {money(info.currentCycleSpend)} · TT {fmtDmy(info.nextCycleDueDate)})
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ padding: '5px 9px', fontSize: 12 }}
-                  onClick={e => {
-                    e.stopPropagation()
-                    setViewingCreditFundId(f.id!)
-                  }}
-                >
-                  Chi tiết
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ padding: '5px 9px', fontSize: 12 }}
-                  onClick={e => {
-                    e.stopPropagation()
-                    setFundEdit(f)
-                  }}
-                >
-                  Cài đặt
-                </button>
+                {info.creditLimit > 0 && (
+                  <div className="bar" style={{ marginTop: 7 }}>
+                    <i
+                      style={{
+                        width: `${info.debt > 0 ? Math.max(4, info.utilizationPct) : 0}%`,
+                        background: info.utilizationPct > 80 ? 'var(--exp)' : f.color,
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )

@@ -219,7 +219,7 @@ export default function Budgets() {
                       {rec.lastGeneratedDate ? ` (Đã chạy: ${fmtDmy(rec.lastGeneratedDate)})` : ''}
                     </small>
                   </div>
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0, whiteSpace: 'nowrap' }}>
                     <b className={rec.type === 'income' ? 'inc' : rec.type === 'expense' ? 'exp' : ''}>
                       {rec.type === 'income' ? '+' : rec.type === 'expense' ? '-' : ''}
                       {money(rec.amount)}
@@ -252,37 +252,78 @@ export default function Budgets() {
       {tab === 'budget' && (
         <>
           {/* Thẻ Tổng ngân sách tháng & Nút chính + Đặt ngân sách */}
-          <div
-            className="card"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 10,
-            }}
-          >
-            <div>
-              <div className="mut" style={{ fontSize: 12 }}>
-                Tổng ngân sách đã đặt · {monthLabel(curMonth)}
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 2 }}>
-                {money(totalBudgetLimit)}
-              </div>
-              <small className="mut">
-                Đã chi trong {activeBudgets.length} nhóm có ngân sách:{' '}
-                <b className={totalBudgetSpent > totalBudgetLimit && totalBudgetLimit > 0 ? 'exp' : ''}>
-                  {money(totalBudgetSpent)}
-                </b>
-              </small>
-            </div>
-            <button
-              type="button"
-              className="btn pri"
-              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-              onClick={() => setBudgetModalCatId('new')}
+          <div className="card">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 10,
+              }}
             >
-              + Đặt ngân sách
-            </button>
+              <div style={{ minWidth: 0 }}>
+                <div className="mut" style={{ fontSize: 12 }}>
+                  Tổng ngân sách đã đặt · {monthLabel(curMonth)}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, marginTop: 2 }}>
+                  {money(totalBudgetLimit)}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn pri"
+                style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                onClick={() => setBudgetModalCatId('new')}
+              >
+                + Đặt ngân sách
+              </button>
+            </div>
+
+            {totalBudgetLimit > 0 ? (
+              <div style={{ marginTop: 10 }}>
+                <div className="bar">
+                  <i
+                    className={totalBudgetSpent > totalBudgetLimit ? 'over' : ''}
+                    style={{
+                      width: `${
+                        totalBudgetSpent > 0
+                          ? Math.min(100, Math.max(4, Math.round((totalBudgetSpent / totalBudgetLimit) * 100)))
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginTop: 6,
+                    fontSize: 12.5,
+                  }}
+                  className="mut"
+                >
+                  <span>
+                    Đã chi ({activeBudgets.length} nhóm):{' '}
+                    <b className={totalBudgetSpent > totalBudgetLimit ? 'exp' : ''}>
+                      {money(totalBudgetSpent)}
+                    </b>
+                  </span>
+                  <span>
+                    {totalBudgetSpent > totalBudgetLimit
+                      ? `Vượt ${money(totalBudgetSpent - totalBudgetLimit)}`
+                      : `Còn lại ${money(totalBudgetLimit - totalBudgetSpent)}`}{' '}
+                    ({Math.round((totalBudgetSpent / totalBudgetLimit) * 100)}%)
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <small className="mut" style={{ display: 'block', marginTop: 6 }}>
+                Chưa đặt hạn mức chi tiêu cho nhóm nào trong tháng {monthLabel(curMonth)}.
+              </small>
+            )}
           </div>
 
           {/* Chỉ hiển thị các nhóm ĐANG ĐƯỢC ĐẶT NGÂN SÁCH */}
@@ -304,7 +345,8 @@ export default function Budgets() {
                 if (!c) return null
                 const spent = monthExpenseByCat.get(c.id!) ?? 0
                 const lim = b.limit
-                const pct = lim > 0 ? Math.min(100, Math.round((spent / lim) * 100)) : 0
+                const rawPct = lim > 0 ? Math.round((spent / lim) * 100) : 0
+                const pct = Math.min(100, rawPct)
                 const over = lim > 0 && spent > lim
                 const isRepeat = b.repeatNextMonth !== false
 
@@ -312,13 +354,21 @@ export default function Budgets() {
                   <div
                     className="row"
                     key={b.id ?? c.id}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', alignItems: 'flex-start', padding: '13px 0' }}
                     onClick={() => setBudgetModalCatId(c.id!)}
                   >
-                    <div className="ico" style={{ background: c.color + '22' }}>
+                    <div
+                      className="ico"
+                      style={{
+                        background: c.color + '28',
+                        border: `1px solid ${c.color}44`,
+                        marginTop: 2,
+                      }}
+                    >
                       {c.icon}
                     </div>
                     <div className="grow" style={{ minWidth: 0 }}>
+                      {/* Hàng 1: Tên nhóm chi tiêu + Nút Sửa mức (không bao giờ đè chữ trên mobile) */}
                       <div
                         style={{
                           display: 'flex',
@@ -327,59 +377,94 @@ export default function Budgets() {
                           gap: 8,
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                          <b
-                            style={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {getCategoryFullName(c, cats)}
-                          </b>
-                          <span
-                            className="pill-tag"
-                            style={{
-                              fontSize: 10.5,
-                              whiteSpace: 'nowrap',
-                              flexShrink: 0,
-                              color: isRepeat ? 'var(--acc)' : 'var(--mut)',
-                            }}
-                          >
-                            {isRepeat ? '🔁 Lặp lại tháng sau' : `📅 Tháng ${monthLabel(curMonth)}`}
-                          </span>
-                        </div>
+                        <b
+                          style={{
+                            fontSize: 15,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
+                          {getCategoryFullName(c, cats)}
+                        </b>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                          onClick={e => {
+                            e.stopPropagation()
+                            setBudgetModalCatId(c.id!)
+                          }}
+                        >
+                          Sửa mức
+                        </button>
+                      </div>
+
+                      {/* Hàng 2: Số tiền Đã chi / Hạn mức + Huy hiệu Lặp lại tháng sau */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: 6,
+                          marginTop: 5,
+                          flexWrap: 'wrap',
+                        }}
+                      >
                         <span
                           className={over ? 'exp' : 'mut'}
-                          style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}
+                          style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
                         >
                           {money(spent)} / {money(lim)}
                         </span>
+                        <span
+                          className="pill-tag"
+                          style={{
+                            fontSize: 10.5,
+                            whiteSpace: 'nowrap',
+                            color: isRepeat ? 'var(--acc)' : 'var(--mut)',
+                          }}
+                        >
+                          {isRepeat ? '🔁 Lặp lại tháng sau' : `📅 Tháng ${monthLabel(curMonth)}`}
+                        </span>
                       </div>
 
-                      <small className={over ? 'exp' : 'mut'} style={{ display: 'block', marginTop: 3 }}>
-                        {over
-                          ? `⚠️ Vượt ngân sách ${money(spent - lim)} (${Math.round((spent / lim) * 100)}%)`
-                          : `Còn lại ${money(lim - spent)} (${pct}%)`}
-                      </small>
-                      <div className="bar">
+                      {/* Hàng 3: Thanh tiến độ trải rộng toàn chiều ngang */}
+                      <div className="bar" style={{ marginTop: 7 }}>
                         <i
                           className={over ? 'over' : ''}
-                          style={{ width: pct + '%', background: over ? undefined : c.color }}
+                          style={{
+                            width: `${pct > 0 ? Math.max(4, pct) : 0}%`,
+                            background: over ? undefined : c.color,
+                          }}
                         />
                       </div>
+
+                      {/* Hàng 4: Số tiền còn lại / vượt mức + Tỷ lệ % */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: 5,
+                          fontSize: 12,
+                        }}
+                      >
+                        <span className={over ? 'exp' : 'mut'}>
+                          {over
+                            ? `⚠️ Vượt ngân sách ${money(spent - lim)}`
+                            : `Còn lại ${money(lim - spent)}`}
+                        </span>
+                        <b className={over ? 'exp' : 'mut'}>{rawPct}%</b>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ padding: '6px 10px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}
-                      onClick={e => {
-                        e.stopPropagation()
-                        setBudgetModalCatId(c.id!)
-                      }}
-                    >
-                      Sửa mức
-                    </button>
                   </div>
                 )
               })

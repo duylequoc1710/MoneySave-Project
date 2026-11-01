@@ -616,13 +616,14 @@ function SelectTxForInstallmentModal({
                   {catIcon}
                 </div>
                 <div className="grow" style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <b
                       style={{
                         fontSize: 14.5,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        maxWidth: '100%',
                       }}
                     >
                       {catName}
@@ -874,22 +875,23 @@ export default function CreditCardDetailModal({
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
                   fontSize: 12,
                   marginBottom: 4,
-                  gap: 8,
+                  gap: 6,
                 }}
               >
-                <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                <span className="mut">
                   Khả dụng: {money(info.availableCredit)}
                 </span>
-                <span className="mut" style={{ whiteSpace: 'nowrap' }}>
+                <span className="mut">
                   Hạn mức: {money(info.creditLimit)} ({info.utilizationPct}%)
                 </span>
               </div>
               <div className="bar">
-                <div
+                <i
                   style={{
-                    width: `${info.utilizationPct}%`,
+                    width: `${info.debt > 0 ? Math.max(4, info.utilizationPct) : 0}%`,
                     background: info.utilizationPct > 80 ? 'var(--exp)' : fund.color,
                   }}
                 />
@@ -1042,7 +1044,7 @@ export default function CreditCardDetailModal({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
                 marginBottom: 10,
               }}
             >
@@ -1051,9 +1053,10 @@ export default function CreditCardDetailModal({
                 className="pill-tag"
                 style={{
                   cursor: 'pointer',
-                  padding: '6px 12px',
-                  fontSize: 12.5,
+                  padding: '6px 10px',
+                  fontSize: 12,
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   border:
                     filterMode === 'current_cycle'
                       ? '1.5px solid var(--acc)'
@@ -1075,7 +1078,7 @@ export default function CreditCardDetailModal({
                 }}
                 aria-label="Xem lại kỳ hoặc tháng khác"
                 style={{
-                  padding: '6px 10px',
+                  padding: '6px 8px',
                   borderRadius: 99,
                   border:
                     filterMode !== 'current_cycle'
@@ -1083,10 +1086,12 @@ export default function CreditCardDetailModal({
                       : '1px solid var(--bd)',
                   background: 'var(--card)',
                   color: filterMode !== 'current_cycle' ? 'var(--acc)' : 'var(--mut)',
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  maxWidth: 175,
+                  flex: 1,
+                  minWidth: 0,
+                  maxWidth: 165,
                 }}
               >
                 <option value="">📅 Xem lại các tháng...</option>
@@ -1163,13 +1168,14 @@ export default function CreditCardDetailModal({
                       {catIcon}
                     </div>
                     <div className="grow" style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <b
                           style={{
                             fontSize: 14.5,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            maxWidth: '100%',
                           }}
                         >
                           {catName}
@@ -1314,13 +1320,14 @@ export default function CreditCardDetailModal({
                           {catIcon}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             <b
                               style={{
                                 fontSize: 15,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
+                                maxWidth: '100%',
                               }}
                             >
                               {tx.note || catName}
@@ -1363,19 +1370,19 @@ export default function CreditCardDetailModal({
                         fontSize: 12,
                       }}
                     >
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <span className="mut">Ngày chuyển đổi:</span>
                         <div style={{ fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {fmtDmy(st.startDate)}
                         </div>
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <span className="mut">Bắt đầu sao kê:</span>
                         <div style={{ fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {fmtDmy(st.firstStatementDate)}
                         </div>
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <span className="mut">Kỳ TT tiếp theo:</span>
                         <div
                           style={{
@@ -1386,15 +1393,15 @@ export default function CreditCardDetailModal({
                           }}
                         >
                           {st.nextPaymentDueDate
-                            ? `Kỳ ${st.currentCycleNumber}/${st.termMonths} (${fmtDmy(st.nextPaymentDueDate)})`
+                            ? `Kỳ ${st.currentCycleNumber}/${st.termMonths} (${fmtDmy(st.nextPaymentDueDate).slice(0, 5)})`
                             : 'Đã hoàn tất'}
                         </div>
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <span className="mut">Thời gian còn lại:</span>
                         <div style={{ fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {st.remainingCycles > 0
-                            ? `${st.remainingCycles} kỳ (hết ${fmtDmy(st.finalDueDate)})`
+                            ? `${st.remainingCycles} kỳ (hết ${fmtDmy(st.finalDueDate).slice(0, 5)})`
                             : '0 kỳ'}
                         </div>
                       </div>
@@ -1406,21 +1413,23 @@ export default function CreditCardDetailModal({
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 4,
                           fontSize: 12,
                           marginBottom: 4,
                         }}
                       >
-                        <span style={{ whiteSpace: 'nowrap' }}>
+                        <span>
                           Đã trả: <b>{st.paidCycles}/{st.termMonths} kỳ</b> ({money(st.paidAmount)})
                         </span>
-                        <span style={{ whiteSpace: 'nowrap' }}>
+                        <span>
                           Còn: <b className="exp">{money(st.remainingBalance)}</b>
                         </span>
                       </div>
                       <div className="bar">
-                        <div
+                        <i
                           style={{
-                            width: `${progressPct}%`,
+                            width: `${progressPct > 0 ? Math.max(4, progressPct) : 0}%`,
                             background: 'var(--acc)',
                           }}
                         />
