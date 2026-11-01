@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { startOfMonth } from 'date-fns'
 import DateInput from '../components/DateInput'
-import { showConfirm, showPrompt } from '../components/AppDialog'
+import CategoryPickerModal from '../components/CategoryPickerModal'
+import { showConfirm } from '../components/AppDialog'
 import {
   db,
   getNextOccurrence,
@@ -15,7 +16,15 @@ import {
   type Tx,
   type TxType,
 } from '../db'
-import { filterReportableTxs, fmtDmy, money, monthKey, monthLabel, ymd } from '../lib'
+import {
+  filterReportableTxs,
+  fmtDmy,
+  getCategoryFullName,
+  money,
+  monthKey,
+  monthLabel,
+  ymd,
+} from '../lib'
 
 const NO_CATS: Category[] = []
 const NO_FUNDS: Fund[] = []
@@ -30,10 +39,19 @@ const FREQ_LABEL: Record<RecFrequency, string> = {
   yearly: 'Hàng năm',
 }
 
+const BUDGET_QUICK_AMOUNTS = [500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 10_000_000]
+
+function formatDigitsWithCommas(raw: string): string {
+  const digits = raw.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '')
+  if (!digits) return ''
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
 export default function Budgets() {
   const [tab, setTab] = useState<'recurring' | 'budget'>('recurring')
   const [curMonth] = useState(() => startOfMonth(new Date()))
   const [recEdit, setRecEdit] = useState<RecurringTx | 'new' | null>(null)
+  const [budgetModalCatId, setBudgetModalCatId] = useState<number | 'new' | null>(null)
 
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
@@ -41,17 +59,61 @@ export default function Budgets() {
   const budgets = useLiveQuery(() => db.budgets.toArray(), [], NO_BUDGETS)
   const recurrings = useLiveQuery(() => db.recurrings.toArray(), [], NO_RECS)
 
-  const cMap = new Map(cats.map(c => [c.id!, c]))
-  const fMap = new Map(funds.map(f => [f.id!, f]))
-  const bMap = new Map(budgets.map(b => [b.categoryId, b]))
-  const todayStr = ymd(new Date())
+  const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
+  const fMap = useMemo(() => new Map(funds.map(f => [f.id!, f])), [funds])
+  const [todayDate] = useState(() => new Date())
+  const todayStr = ymd(todayDate)
 
   const k = monthKey(curMonth)
-  const reportableTxs = filterReportableTxs(txs, funds, 0)
-  const monthExpenseByCat = new Map<number, number>()
-  reportableTxs
-    .filter(t => t.type === 'expense' && t.date.startsWith(k))
-    .forEach(t => monthExpenseByCat.set(t.categoryId ?? 0, (monthExpenseByCat.get(t.categoryId ?? 0) ?? 0) + t.amount))
+  const reportableTxs = useMemo(() => filterReportableTxs(txs, funds, 0), [txs, funds])
+
+  // Tính tổng đã chi trong tháng cho từng nhóm (nếu là nhóm cha thì cộng cả chi tiêu của các nhóm con)
+  const monthExpenseByCat = useMemo(() => {
+    const directMap = new Map<number, number>()
+    reportableTxs
+      .filter(t => t.type === 'expense' && t.date.startsWith(k))
+      .forEach(t => {
+        const cid = t.categoryId ?? 0
+        directMap.set(cid, (directMap.get(cid) ?? 0) + t.amount)
+      })
+
+    const totalMap = new Map<number, number>()
+    for (const c of cats) {
+      if (!c.id) continue
+      let sum = directMap.get(c.id) ?? 0
+      // Cộng thêm các nhóm con trực thuộc nếu người dùng đặt ngân sách cho Nhóm cha
+      for (const ch of cats) {
+        if (ch.parentId === c.id && ch.id) {
+          sum += directMap.get(ch.id) ?? 0
+        }
+      }
+      totalMap.set(c.id, sum)
+    }
+    return totalMap
+  }, [reportableTxs, k, cats])
+
+  // Chỉ lấy các ngân sách đang hiệu lực trong tháng hiện tại (lặp lại hàng tháng hoặc đặt cho đúng tháng k)
+  const activeBudgets = useMemo(
+    () =>
+      budgets.filter(
+        b =>
+          b.limit > 0 &&
+          cMap.has(b.categoryId) &&
+          (b.repeatNextMonth !== false || !b.month || b.month === k),
+      ),
+    [budgets, cMap, k],
+  )
+
+  const bMap = useMemo(() => new Map(activeBudgets.map(b => [b.categoryId, b])), [activeBudgets])
+
+  const totalBudgetLimit = useMemo(
+    () => activeBudgets.reduce((s, b) => s + b.limit, 0),
+    [activeBudgets],
+  )
+  const totalBudgetSpent = useMemo(
+    () => activeBudgets.reduce((s, b) => s + (monthExpenseByCat.get(b.categoryId) ?? 0), 0),
+    [activeBudgets, monthExpenseByCat],
+  )
 
   const totalFixedExpenseMonthly = recurrings
     .filter(r => r.active && r.type === 'expense')
@@ -81,30 +143,6 @@ export default function Budgets() {
     }
   }
 
-  async function setBudget(c: Category) {
-    const old = bMap.get(c.id!)
-    const v = await showPrompt({
-      title: `Ngân sách tháng · ${c.name}`,
-      message: 'Nhập hạn mức chi tiêu tối đa hàng tháng cho nhóm này (để trống hoặc 0 để xoá):',
-      icon: c.icon,
-      defaultValue: String(old?.limit ?? ''),
-      placeholder: 'Ví dụ: 2,000,000',
-      unit: '₫',
-      numeric: true,
-      quickAmounts: [500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 10_000_000],
-      allowClearZero: Boolean(old?.limit),
-      confirmText: 'Lưu hạn mức',
-    })
-    if (v === null) return
-    const n = Number(v.replace(/[^\d]/g, ''))
-    if (!n) {
-      if (old?.id) await db.budgets.delete(old.id)
-      return
-    }
-    if (old?.id) await db.budgets.put({ ...old, limit: n })
-    else await db.budgets.add({ categoryId: c.id!, limit: n })
-  }
-
   return (
     <>
       <div className="tophead">
@@ -119,13 +157,13 @@ export default function Budgets() {
           🔁 Giao dịch định kỳ ({recurrings.length})
         </button>
         <button className={tab === 'budget' ? 'on' : ''} onClick={() => setTab('budget')}>
-          🎯 Ngân sách tháng ({budgets.length})
+          🎯 Ngân sách tháng ({activeBudgets.length})
         </button>
       </div>
 
       {tab === 'recurring' && (
         <>
-          <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
             <div>
               <div className="mut" style={{ fontSize: 12 }}>
                 Tổng chi cố định cài đặt (đang bật)
@@ -135,7 +173,11 @@ export default function Budgets() {
               </div>
               <small className="mut">Hệ thống tự động ghi sổ khi đến ngày định kỳ</small>
             </div>
-            <button className="btn pri" onClick={() => setRecEdit('new')}>
+            <button
+              className="btn pri"
+              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+              onClick={() => setRecEdit('new')}
+            >
               + Cài đặt mới
             </button>
           </div>
@@ -209,56 +251,139 @@ export default function Budgets() {
 
       {tab === 'budget' && (
         <>
-          <div className="card">
-            <div className="mut" style={{ fontSize: 12 }}>
-              Theo dõi hạn mức chi tiêu · {monthLabel(curMonth)}
+          {/* Thẻ Tổng ngân sách tháng & Nút chính + Đặt ngân sách */}
+          <div
+            className="card"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <div>
+              <div className="mut" style={{ fontSize: 12 }}>
+                Tổng ngân sách đã đặt · {monthLabel(curMonth)}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 2 }}>
+                {money(totalBudgetLimit)}
+              </div>
+              <small className="mut">
+                Đã chi trong {activeBudgets.length} nhóm có ngân sách:{' '}
+                <b className={totalBudgetSpent > totalBudgetLimit && totalBudgetLimit > 0 ? 'exp' : ''}>
+                  {money(totalBudgetSpent)}
+                </b>
+              </small>
             </div>
-            <div style={{ fontSize: 14, marginTop: 4 }}>
-              Chạm vào nút <b>Đặt hạn mức</b> ở từng nhóm chi để giới hạn chi tiêu tháng.
-            </div>
+            <button
+              type="button"
+              className="btn pri"
+              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+              onClick={() => setBudgetModalCatId('new')}
+            >
+              + Đặt ngân sách
+            </button>
           </div>
+
+          {/* Chỉ hiển thị các nhóm ĐANG ĐƯỢC ĐẶT NGÂN SÁCH */}
           <div className="card" style={{ padding: '0 14px' }}>
-            {cats
-              .filter(c => c.type === 'expense')
-              .map(c => {
+            {activeBudgets.length === 0 ? (
+              <div className="empty" style={{ padding: '26px 12px', textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🎯</div>
+                <b style={{ color: 'var(--fg)', fontSize: 15 }}>
+                  Chưa có nhóm nào được đặt ngân sách tháng
+                </b>
+                <p className="mut" style={{ fontSize: 13, marginTop: 6, lineHeight: 1.45 }}>
+                  Bấm nút <b>"+ Đặt ngân sách"</b> phía trên để chọn nhóm chi tiêu muốn giới hạn và
+                  bật tự động lặp lại cho tháng tiếp theo.
+                </p>
+              </div>
+            ) : (
+              activeBudgets.map(b => {
+                const c = cMap.get(b.categoryId)
+                if (!c) return null
                 const spent = monthExpenseByCat.get(c.id!) ?? 0
-                const lim = bMap.get(c.id!)?.limit ?? 0
+                const lim = b.limit
                 const pct = lim > 0 ? Math.min(100, Math.round((spent / lim) * 100)) : 0
                 const over = lim > 0 && spent > lim
+                const isRepeat = b.repeatNextMonth !== false
+
                 return (
-                  <div className="row" key={c.id}>
+                  <div
+                    className="row"
+                    key={b.id ?? c.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setBudgetModalCatId(c.id!)}
+                  >
                     <div className="ico" style={{ background: c.color + '22' }}>
                       {c.icon}
                     </div>
-                    <div className="grow">
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <b>{c.name}</b>
-                        <span className={over ? 'exp' : 'mut'} style={{ fontSize: 13, fontWeight: 600 }}>
-                          {lim > 0 ? `${money(spent)} / ${money(lim)}` : `Đã chi: ${money(spent)}`}
+                    <div className="grow" style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                          <b
+                            style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {getCategoryFullName(c, cats)}
+                          </b>
+                          <span
+                            className="pill-tag"
+                            style={{
+                              fontSize: 10.5,
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                              color: isRepeat ? 'var(--acc)' : 'var(--mut)',
+                            }}
+                          >
+                            {isRepeat ? '🔁 Lặp lại tháng sau' : `📅 Tháng ${monthLabel(curMonth)}`}
+                          </span>
+                        </div>
+                        <span
+                          className={over ? 'exp' : 'mut'}
+                          style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}
+                        >
+                          {money(spent)} / {money(lim)}
                         </span>
                       </div>
-                      {lim > 0 && (
-                        <>
-                          <small className={over ? 'exp' : 'mut'}>
-                            {over
-                              ? `⚠️ Vượt ngân sách ${money(spent - lim)} (${Math.round((spent / lim) * 100)}%)`
-                              : `Còn lại ${money(lim - spent)} (${pct}%)`}
-                          </small>
-                          <div className="bar">
-                            <i
-                              className={over ? 'over' : ''}
-                              style={{ width: pct + '%', background: over ? undefined : c.color }}
-                            />
-                          </div>
-                        </>
-                      )}
+
+                      <small className={over ? 'exp' : 'mut'} style={{ display: 'block', marginTop: 3 }}>
+                        {over
+                          ? `⚠️ Vượt ngân sách ${money(spent - lim)} (${Math.round((spent / lim) * 100)}%)`
+                          : `Còn lại ${money(lim - spent)} (${pct}%)`}
+                      </small>
+                      <div className="bar">
+                        <i
+                          className={over ? 'over' : ''}
+                          style={{ width: pct + '%', background: over ? undefined : c.color }}
+                        />
+                      </div>
                     </div>
-                    <button className="btn" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => setBudget(c)}>
-                      {lim > 0 ? 'Sửa mức' : 'Đặt hạn mức'}
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ padding: '6px 10px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}
+                      onClick={e => {
+                        e.stopPropagation()
+                        setBudgetModalCatId(c.id!)
+                      }}
+                    >
+                      Sửa mức
                     </button>
                   </div>
                 )
-              })}
+              })
+            )}
           </div>
         </>
       )}
@@ -271,7 +396,310 @@ export default function Budgets() {
           onClose={() => setRecEdit(null)}
         />
       )}
+
+      {budgetModalCatId !== null && (
+        <BudgetFormModal
+          initialCategoryId={budgetModalCatId === 'new' ? undefined : budgetModalCatId}
+          cats={cats}
+          bMap={bMap}
+          monthExpenseByCat={monthExpenseByCat}
+          curMonthKey={k}
+          curMonthLabel={monthLabel(curMonth)}
+          onClose={() => setBudgetModalCatId(null)}
+        />
+      )}
     </>
+  )
+}
+
+function BudgetFormModal({
+  initialCategoryId,
+  cats,
+  bMap,
+  monthExpenseByCat,
+  curMonthKey,
+  curMonthLabel,
+  onClose,
+}: {
+  initialCategoryId?: number
+  cats: Category[]
+  bMap: Map<number, Budget>
+  monthExpenseByCat: Map<number, number>
+  curMonthKey: string
+  curMonthLabel: string
+  onClose: () => void
+}) {
+  const expenseCats = useMemo(() => cats.filter(c => c.type === 'expense'), [cats])
+  const defaultCat = useMemo(() => {
+    if (initialCategoryId) return expenseCats.find(c => c.id === initialCategoryId)
+    // Ưu tiên gợi ý nhóm chưa đặt ngân sách khi bấm "+ Đặt ngân sách"
+    return expenseCats.find(c => c.id && !bMap.has(c.id)) ?? expenseCats[0]
+  }, [initialCategoryId, expenseCats, bMap])
+
+  const [categoryId, setCategoryId] = useState<number | ''>(defaultCat?.id ?? '')
+  const existingBudget = typeof categoryId === 'number' ? bMap.get(categoryId) : undefined
+
+  const [limitStr, setLimitStr] = useState<string>(() =>
+    existingBudget?.limit ? formatDigitsWithCommas(String(existingBudget.limit)) : '',
+  )
+  const [repeatNextMonth, setRepeatNextMonth] = useState<boolean>(
+    existingBudget ? existingBudget.repeatNextMonth !== false : true,
+  )
+  const [showCatPicker, setShowCatPicker] = useState(false)
+  const [err, setErr] = useState('')
+
+  const selCat = expenseCats.find(c => c.id === categoryId) ?? defaultCat
+  const currentSpent = selCat?.id ? (monthExpenseByCat.get(selCat.id) ?? 0) : 0
+
+  function handleSelectCategory(cat: Category) {
+    if (!cat.id) return
+    setCategoryId(cat.id)
+    const ex = bMap.get(cat.id)
+    if (ex) {
+      setLimitStr(formatDigitsWithCommas(String(ex.limit)))
+      setRepeatNextMonth(ex.repeatNextMonth !== false)
+    }
+  }
+
+  async function handleSave() {
+    if (!selCat?.id) {
+      setErr('Vui lòng chọn nhóm giao dịch')
+      return
+    }
+    const n = Number(limitStr.replace(/[^\d]/g, ''))
+    if (!n || n <= 0) {
+      setErr('Vui lòng nhập hạn mức ngân sách lớn hơn 0 ₫')
+      return
+    }
+    const existing = await db.budgets.where('categoryId').equals(selCat.id).first()
+    const payload: Budget = {
+      ...(existing?.id ? { id: existing.id } : {}),
+      categoryId: selCat.id,
+      limit: n,
+      repeatNextMonth,
+      month: curMonthKey,
+    }
+    if (existing?.id) await db.budgets.put(payload)
+    else await db.budgets.add(payload)
+    onClose()
+  }
+
+  async function handleDelete() {
+    if (!selCat?.id) return
+    const existing = await db.budgets.where('categoryId').equals(selCat.id).first()
+    if (!existing?.id) return
+    const ok = await showConfirm({
+      title: `Xoá ngân sách "${selCat.name}"?`,
+      message: 'Nhóm này sẽ được gỡ khỏi danh sách theo dõi ngân sách tháng.',
+      icon: selCat.icon,
+      danger: true,
+      confirmText: 'Xoá ngân sách',
+    })
+    if (!ok) return
+    await db.budgets.delete(existing.id)
+    onClose()
+  }
+
+  return (
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 90 }}>
+      <div
+        className="sheet"
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: 480,
+          margin: '0 auto',
+          padding: '16px 16px calc(24px + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          <button
+            type="button"
+            className="close-pill-btn"
+            style={{ whiteSpace: 'nowrap' }}
+            onClick={onClose}
+          >
+            Huỷ
+          </button>
+          <b style={{ fontSize: 16, whiteSpace: 'nowrap' }}>
+            {existingBudget ? 'Chỉnh sửa ngân sách' : 'Đặt ngân sách tháng'}
+          </b>
+          <button
+            type="button"
+            className="close-pill-btn"
+            style={{ color: 'var(--acc)', fontWeight: 700, whiteSpace: 'nowrap' }}
+            onClick={handleSave}
+          >
+            Lưu
+          </button>
+        </div>
+
+        {/* 1. Chọn nhóm giao dịch muốn đặt ngân sách */}
+        <div className="fld">
+          <span>Chọn nhóm chi tiêu muốn đặt ngân sách</span>
+          <div
+            className="ml-select-tile"
+            onClick={() => setShowCatPicker(true)}
+            role="button"
+            tabIndex={0}
+          >
+            <div
+              className="ico round"
+              style={{
+                background: (selCat?.color || 'var(--acc)') + '25',
+                color: selCat?.color || 'var(--acc)',
+                width: 38,
+                height: 38,
+                fontSize: 18,
+              }}
+            >
+              {selCat?.icon || '🏷️'}
+            </div>
+            <div className="grow" style={{ marginLeft: 8, minWidth: 0 }}>
+              <b style={{ fontSize: 15, display: 'block' }}>
+                {selCat ? getCategoryFullName(selCat, cats) : 'Chọn nhóm chi tiêu'}
+              </b>
+              <small className="mut">
+                Đã chi trong tháng {curMonthLabel}: <b>{money(currentSpent)}</b>
+              </small>
+            </div>
+            <span className="mut" style={{ fontSize: 18 }}>
+              ›
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Nhập số tiền hạn mức */}
+        <div className="fld">
+          <span>Hạn mức ngân sách tối đa (₫)</span>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              value={limitStr}
+              placeholder="Ví dụ: 3,000,000"
+              onChange={e => {
+                setErr('')
+                setLimitStr(formatDigitsWithCommas(e.target.value))
+              }}
+              style={{
+                width: '100%',
+                fontSize: 20,
+                fontWeight: 700,
+                paddingRight: 36,
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                right: 14,
+                fontWeight: 700,
+                color: 'var(--mut)',
+                pointerEvents: 'none',
+              }}
+            >
+              ₫
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+            {BUDGET_QUICK_AMOUNTS.map(amt => {
+              const formatted = formatDigitsWithCommas(String(amt))
+              const isSelected = limitStr === formatted
+              return (
+                <button
+                  key={amt}
+                  type="button"
+                  className="pill-tag"
+                  onClick={() => {
+                    setErr('')
+                    setLimitStr(formatted)
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '6px 10px',
+                    fontSize: 12,
+                    border: isSelected ? '1px solid var(--acc)' : '1px solid var(--bd)',
+                    color: isSelected ? 'var(--acc)' : 'var(--fg)',
+                    background: isSelected
+                      ? 'color-mix(in srgb, var(--acc) 14%, transparent)'
+                      : 'var(--card)',
+                  }}
+                >
+                  {formatted} ₫
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* 3. Tuỳ chọn lặp lại cho tháng tiếp theo */}
+        <div
+          className="card"
+          style={{
+            background: 'color-mix(in srgb, var(--fg) 4%, transparent)',
+            padding: '12px 14px',
+            marginTop: 6,
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>
+                🔁 Lặp lại cho tháng tiếp theo
+              </div>
+              <small className="mut" style={{ display: 'block', marginTop: 2 }}>
+                {repeatNextMonth
+                  ? 'Tự động áp dụng hạn mức này cho các tháng kế tiếp'
+                  : `Chỉ áp dụng trong tháng ${curMonthLabel}, không lặp lại tháng sau`}
+              </small>
+            </div>
+            <button
+              type="button"
+              className={`ios-switch ${repeatNextMonth ? 'on' : ''}`}
+              onClick={() => setRepeatNextMonth(v => !v)}
+              aria-label="Lặp lại cho tháng tiếp theo"
+            />
+          </div>
+        </div>
+
+        {err && <p className="exp" style={{ marginBottom: 10, fontSize: 13 }}>{err}</p>}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          {existingBudget && (
+            <button type="button" className="btn dng" onClick={handleDelete}>
+              Xoá ngân sách
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn pri"
+            style={{ flex: 1, padding: '12px 16px', fontSize: 15 }}
+            onClick={handleSave}
+          >
+            Lưu ngân sách
+          </button>
+        </div>
+
+        {showCatPicker && (
+          <CategoryPickerModal
+            type="expense"
+            selectedId={selCat?.id ?? ''}
+            categories={expenseCats}
+            onSelect={handleSelectCategory}
+            onClose={() => setShowCatPicker(false)}
+          />
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -286,15 +714,17 @@ function RecurringForm({
   cats: Category[]
   onClose: () => void
 }) {
+  const [todayDate] = useState(() => new Date())
   const [name, setName] = useState(rec?.name ?? '')
   const [type, setType] = useState<TxType>(rec?.type ?? 'expense')
   const [amount, setAmount] = useState(rec ? String(rec.amount) : '')
   const [frequency, setFrequency] = useState<RecFrequency>(rec?.frequency ?? 'monthly')
-  const [dayOfMonth, setDayOfMonth] = useState<string>(String(rec?.dayOfMonth ?? new Date().getDate()))
-  const [startDate, setStartDate] = useState(rec?.startDate ?? ymd(new Date()))
+  const [dayOfMonth, setDayOfMonth] = useState<string>(String(rec?.dayOfMonth ?? todayDate.getDate()))
+  const [startDate, setStartDate] = useState(rec?.startDate ?? ymd(todayDate))
   const [fundId, setFundId] = useState<number | ''>(rec?.fundId ?? funds[0]?.id ?? '')
   const [toFundId, setToFundId] = useState<number | ''>(rec?.toFundId ?? '')
   const [categoryId, setCategoryId] = useState<number | ''>(rec?.categoryId ?? '')
+  const [showCatPicker, setShowCatPicker] = useState(false)
   const [note, setNote] = useState(rec?.note ?? '')
   const [err, setErr] = useState('')
 
@@ -318,7 +748,7 @@ function RecurringForm({
       categoryId: type === 'transfer' ? null : (selCat?.id ?? null),
       note: note.trim(),
       frequency,
-      dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, Number(dayOfMonth) || new Date().getDate())) : undefined,
+      dayOfMonth: frequency === 'monthly' ? Math.min(31, Math.max(1, Number(dayOfMonth) || todayDate.getDate())) : undefined,
       startDate,
       lastGeneratedDate: rec?.lastGeneratedDate ?? null,
       active: rec?.active ?? true,
@@ -344,7 +774,7 @@ function RecurringForm({
   }
 
   return (
-    <div className="sheetbg" onClick={onClose}>
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 90 }}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
         <h1>{rec ? 'Sửa giao dịch định kỳ' : 'Cài đặt giao dịch định kỳ'}</h1>
         <div className="seg">
@@ -375,24 +805,34 @@ function RecurringForm({
           <input inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
         </label>
         {type !== 'transfer' && (
-          <label className="fld">
-            <span>Nhóm</span>
-            <select
-              value={selCat?.id ?? ''}
-              onChange={e => {
-                const id = Number(e.target.value)
-                setCategoryId(id)
-                const cf = cats.find(c => c.id === id)?.fundId
-                if (cf) setFundId(cf)
-              }}
+          <div className="fld">
+            <span>Nhóm giao dịch</span>
+            <div
+              className="ml-select-tile"
+              onClick={() => setShowCatPicker(true)}
+              role="button"
+              tabIndex={0}
             >
-              {list.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.icon} {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              <div
+                className="ico round"
+                style={{
+                  background: (selCat?.color || 'var(--acc)') + '25',
+                  color: selCat?.color || 'var(--acc)',
+                  width: 36,
+                  height: 36,
+                  fontSize: 18,
+                }}
+              >
+                {selCat?.icon || '🏷️'}
+              </div>
+              <div className="grow" style={{ marginLeft: 8 }}>
+                <b style={{ fontSize: 15, display: 'block' }}>{selCat?.name || 'Chọn nhóm'}</b>
+              </div>
+              <span className="mut" style={{ fontSize: 18 }}>
+                ›
+              </span>
+            </div>
+          </div>
         )}
         <label className="fld">
           <span>{type === 'transfer' ? 'Từ quỹ' : 'Trích từ Quỹ / Thẻ'}</span>
@@ -440,7 +880,7 @@ function RecurringForm({
                 onChange={e => setDayOfMonth(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2))}
                 onBlur={() => {
                   const n = Number(dayOfMonth)
-                  setDayOfMonth(String(!n ? new Date().getDate() : Math.min(31, n)))
+                  setDayOfMonth(String(!n ? todayDate.getDate() : Math.min(31, n)))
                 }}
               />
             </label>
@@ -470,6 +910,20 @@ function RecurringForm({
             Lưu cài đặt
           </button>
         </div>
+
+        {showCatPicker && (
+          <CategoryPickerModal
+            type={type}
+            selectedId={selCat?.id ?? ''}
+            categories={cats}
+            onSelect={cat => {
+              if (cat.type !== type) setType(cat.type)
+              setCategoryId(cat.id!)
+              if (!rec && cat.fundId) setFundId(cat.fundId)
+            }}
+            onClose={() => setShowCatPicker(false)}
+          />
+        )}
       </div>
     </div>
   )

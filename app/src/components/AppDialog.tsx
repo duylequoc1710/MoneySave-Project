@@ -260,7 +260,7 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
       className="sheetbg app-dialog-overlay"
       onClick={handleCancel}
       style={{
-        zIndex: 95,
+        zIndex: 110,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,

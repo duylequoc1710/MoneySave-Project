@@ -114,6 +114,7 @@ export default function TxForm({
       createdAt: tx?.createdAt ?? Date.now(),
       recurringId: tx?.recurringId ?? null,
       excludeFromReport,
+      installment: tx?.installment ?? null,
     }
     if (tx?.id) {
       await db.txs.put({ ...data, id: tx.id })
@@ -417,8 +418,9 @@ export default function TxForm({
             selectedId={selCat?.id ?? ''}
             categories={cats}
             onSelect={cat => {
+              if (cat.type !== type) setType(cat.type)
               setCategoryId(cat.id!)
-              if (cat.fundId) setFundId(cat.fundId)
+              if (!tx && !draft?.fundId && cat.fundId) setFundId(cat.fundId)
             }}
             onClose={() => setShowCatPicker(false)}
           />

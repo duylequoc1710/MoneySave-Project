@@ -25,7 +25,7 @@ export default function CategoryPickerModal({
   if (typeof document === 'undefined') return null
 
   return createPortal(
-    <div className="sheetbg" onClick={onClose} style={{ zIndex: 75 }}>
+    <div className="sheetbg" onClick={onClose} style={{ zIndex: 100 }}>
       <div
         className="sheet cat-picker-sheet"
         onClick={e => e.stopPropagation()}

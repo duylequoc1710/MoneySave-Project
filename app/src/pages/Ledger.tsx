@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -42,6 +42,16 @@ export default function Ledger() {
   const [edit, setEdit] = useState<Tx | null>(null)
   const [draftTx, setDraftTx] = useState<TxFormDraft | null>(null)
   const [showReport, setShowReport] = useState(false)
+  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null)
+  const [dragOffsetX, setDragOffsetX] = useState(0)
+
+  const swipeRef = useRef<{
+    startX: number
+    startY: number
+    startTime: number
+    lockedAxis: 'x' | 'y' | null
+    dx: number
+  } | null>(null)
 
   const allTxs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
@@ -54,7 +64,14 @@ export default function Ledger() {
   const from = resolvedRange.from
   const to = resolvedRange.to
 
-  function selectMonth(nextM: Date) {
+  function selectMonth(nextM: Date, direction?: 'next' | 'prev') {
+    const dir =
+      direction ??
+      (nextM.getTime() > cur.getTime() ? 'next' : nextM.getTime() < cur.getTime() ? 'prev' : undefined)
+    if (dir) {
+      setSlideDir(dir)
+    }
+    setDragOffsetX(0)
     setCur(nextM)
     setTimeFilter({
       mode: 'month',
@@ -112,6 +129,61 @@ export default function Ledger() {
   const tabCenter = cur
   const tabRight = addMonths(cur, 1)
 
+  function handleTouchStart(e: React.TouchEvent) {
+    if (!resolvedRange.isMonthMode || e.touches.length !== 1) return
+    const t = e.touches[0]
+    swipeRef.current = {
+      startX: t.clientX,
+      startY: t.clientY,
+      startTime: Date.now(),
+      lockedAxis: null,
+      dx: 0,
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const st = swipeRef.current
+    if (!st || !resolvedRange.isMonthMode || e.touches.length !== 1) return
+    const t = e.touches[0]
+    const dx = t.clientX - st.startX
+    const dy = t.clientY - st.startY
+
+    if (!st.lockedAxis) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      st.lockedAxis = Math.abs(dx) > Math.abs(dy) * 1.25 ? 'x' : 'y'
+    }
+
+    if (st.lockedAxis === 'x') {
+      st.dx = dx
+      // Hiệu ứng kéo đàn hồi mượt mà theo ngón tay
+      setDragOffsetX(Math.max(-72, Math.min(72, dx * 0.35)))
+    }
+  }
+
+  function handleTouchEnd() {
+    const st = swipeRef.current
+    swipeRef.current = null
+    if (!st || st.lockedAxis !== 'x') {
+      if (dragOffsetX !== 0) setDragOffsetX(0)
+      return
+    }
+    const elapsed = Math.max(1, Date.now() - st.startTime)
+    const velocity = Math.abs(st.dx) / elapsed
+    const shouldSwitch = Math.abs(st.dx) >= 52 || (Math.abs(st.dx) >= 28 && velocity > 0.32)
+
+    if (shouldSwitch) {
+      if (st.dx < 0) {
+        // Vuốt sang trái -> sang Tháng kế tiếp
+        selectMonth(tabRight, 'next')
+      } else {
+        // Vuốt sang phải -> về Tháng trước
+        selectMonth(tabLeft, 'prev')
+      }
+    } else {
+      setDragOffsetX(0)
+    }
+  }
+
   return (
     <>
       {/* Thanh chọn Lịch thời gian & Ví trên đỉnh kiểu MoneySave */}
@@ -162,14 +234,25 @@ export default function Ledger() {
 
       {/* Thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneySave */}
       {resolvedRange.isMonthMode ? (
-        <div className="ml-month-tabs">
-          <button className="m-arrow" onClick={() => selectMonth(tabLeft)} title="Tháng trước">
+        <div
+          className="ml-month-tabs"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+        >
+          <button className="m-arrow" onClick={() => selectMonth(tabLeft, 'prev')} title="Tháng trước">
             ‹
           </button>
           <button
             className="m-tab"
-            onClick={() => selectMonth(tabLeft)}
+            onClick={() => selectMonth(tabLeft, 'prev')}
             title={monthLabel(tabLeft)}
+            style={
+              dragOffsetX !== 0
+                ? { transform: `translate3d(${dragOffsetX * 0.35}px, 0, 0)` }
+                : undefined
+            }
           >
             {getMonthTabLabel(tabLeft, nowMonth)}
           </button>
@@ -177,17 +260,27 @@ export default function Ledger() {
             className="m-tab active"
             onClick={() => selectMonth(tabCenter)}
             title={monthLabel(tabCenter)}
+            style={
+              dragOffsetX !== 0
+                ? { transform: `translate3d(${dragOffsetX * 0.35}px, 0, 0)` }
+                : undefined
+            }
           >
             {getMonthTabLabel(tabCenter, nowMonth)}
           </button>
           <button
             className="m-tab"
-            onClick={() => selectMonth(tabRight)}
+            onClick={() => selectMonth(tabRight, 'next')}
             title={monthLabel(tabRight)}
+            style={
+              dragOffsetX !== 0
+                ? { transform: `translate3d(${dragOffsetX * 0.35}px, 0, 0)` }
+                : undefined
+            }
           >
             {getMonthTabLabel(tabRight, nowMonth)}
           </button>
-          <button className="m-arrow" onClick={() => selectMonth(tabRight)} title="Tháng kế tiếp">
+          <button className="m-arrow" onClick={() => selectMonth(tabRight, 'next')} title="Tháng kế tiếp">
             ›
           </button>
         </div>
@@ -206,101 +299,119 @@ export default function Ledger() {
         </div>
       )}
 
-      {/* Bảng Số dư đầu / Số dư cuối */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span className="mut">Số dư đầu</span>
-          <b>{moneySigned(openingBalance)}</b>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8 }}>
-          <span className="mut">Số dư cuối</span>
-          <b>{moneySigned(closingBalance)}</b>
-        </div>
-        <div
-          style={{
-            borderTop: '1px solid var(--bd)',
-            paddingTop: 8,
-            textAlign: 'right',
-            fontWeight: 700,
-            fontSize: 16,
-          }}
-        >
-          <span className={netChange > 0 ? 'inc' : netChange < 0 ? 'exp' : ''}>{moneySigned(netChange)}</span>
-        </div>
-        <div style={{ textAlign: 'center', marginTop: 10 }}>
-          <button
-            className="link-green"
-            style={{ background: 'none', border: 0, fontSize: 15, fontWeight: 500 }}
-            onClick={() => setShowReport(true)}
-          >
-            Xem báo cáo cho giai đoạn này
-          </button>
-        </div>
-      </div>
-
-      {days.length === 0 && (
-        <div className="empty">Chưa có giao dịch trong giai đoạn ({resolvedRange.label})</div>
-      )}
-
-      {/* Danh sách từng ngày (mỗi ngày 1 thẻ chuẩn MoneySave) */}
-      {days.map(([d, list]) => {
-        const parsed = parseISO(d)
-        const dayNum = format(parsed, 'dd')
-        const weekday = format(parsed, 'EEEE', { locale: vi })
-        const monthYear = format(parsed, "'tháng' M yyyy", { locale: vi })
-        const net = list.reduce(
-          (s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0),
-          0,
-        )
-
-        return (
-          <div className="card day-card" key={d}>
-            <div className="day-card-head">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span className="day-big-num">{dayNum}</span>
-                <div>
-                  <div style={{ fontWeight: 600, textTransform: 'capitalize', fontSize: 14 }}>{weekday}</div>
-                  <div className="mut" style={{ fontSize: 12 }}>
-                    {monthYear}
-                  </div>
-                </div>
-              </div>
-              <b style={{ fontSize: 16 }}>{moneySigned(net)}</b>
-            </div>
-
-            {list.map(t => {
-              const c = cMap.get(t.categoryId ?? -1)
-              const f = fMap.get(t.fundId)
-              const isT = t.type === 'transfer'
-              return (
-                <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
-                  <div
-                    className="ico round"
-                    style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}
-                  >
-                    {isT ? '🔁' : (c?.icon ?? '❓')}
-                    {f && <span className="wallet-mini-badge">{f.icon}</span>}
-                  </div>
-                  <div className="grow">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
-                      {t.recurringId && <span className="pill-tag">Định kỳ</span>}
-                    </div>
-                    <small>
-                      {isT
-                        ? `${f?.name ?? ''} → ${fMap.get(t.toFundId ?? -1)?.name ?? ''}${t.note ? ' · ' + t.note : ''}`
-                        : t.note || f?.name || ''}
-                    </small>
-                  </div>
-                  <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>
-                    {money(t.amount)}
-                  </b>
-                </div>
-              )
-            })}
+      {/* Vùng nội dung hỗ trợ vuốt ngang chuyển tháng mượt mà */}
+      <div
+        key={from}
+        className={`ledger-swipe-stage ${slideDir === 'next' ? 'slide-next' : slideDir === 'prev' ? 'slide-prev' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        style={
+          dragOffsetX !== 0
+            ? {
+                transform: `translate3d(${dragOffsetX}px, 0, 0)`,
+                transition: 'none',
+              }
+            : undefined
+        }
+      >
+        {/* Bảng Số dư đầu / Số dư cuối */}
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span className="mut">Số dư đầu</span>
+            <b>{moneySigned(openingBalance)}</b>
           </div>
-        )
-      })}
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8 }}>
+            <span className="mut">Số dư cuối</span>
+            <b>{moneySigned(closingBalance)}</b>
+          </div>
+          <div
+            style={{
+              borderTop: '1px solid var(--bd)',
+              paddingTop: 8,
+              textAlign: 'right',
+              fontWeight: 700,
+              fontSize: 16,
+            }}
+          >
+            <span className={netChange > 0 ? 'inc' : netChange < 0 ? 'exp' : ''}>{moneySigned(netChange)}</span>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 10 }}>
+            <button
+              className="link-green"
+              style={{ background: 'none', border: 0, fontSize: 15, fontWeight: 500 }}
+              onClick={() => setShowReport(true)}
+            >
+              Xem báo cáo cho giai đoạn này
+            </button>
+          </div>
+        </div>
+
+        {days.length === 0 && (
+          <div className="empty">Chưa có giao dịch trong giai đoạn ({resolvedRange.label})</div>
+        )}
+
+        {/* Danh sách từng ngày (mỗi ngày 1 thẻ chuẩn MoneySave) */}
+        {days.map(([d, list]) => {
+          const parsed = parseISO(d)
+          const dayNum = format(parsed, 'dd')
+          const weekday = format(parsed, 'EEEE', { locale: vi })
+          const monthYear = format(parsed, "'tháng' M yyyy", { locale: vi })
+          const net = list.reduce(
+            (s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0),
+            0,
+          )
+
+          return (
+            <div className="card day-card" key={d}>
+              <div className="day-card-head">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span className="day-big-num">{dayNum}</span>
+                  <div>
+                    <div style={{ fontWeight: 600, textTransform: 'capitalize', fontSize: 14 }}>{weekday}</div>
+                    <div className="mut" style={{ fontSize: 12 }}>
+                      {monthYear}
+                    </div>
+                  </div>
+                </div>
+                <b style={{ fontSize: 16 }}>{moneySigned(net)}</b>
+              </div>
+
+              {list.map(t => {
+                const c = cMap.get(t.categoryId ?? -1)
+                const f = fMap.get(t.fundId)
+                const isT = t.type === 'transfer'
+                return (
+                  <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
+                    <div
+                      className="ico round"
+                      style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}
+                    >
+                      {isT ? '🔁' : (c?.icon ?? '❓')}
+                      {f && <span className="wallet-mini-badge">{f.icon}</span>}
+                    </div>
+                    <div className="grow">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
+                        {t.recurringId && <span className="pill-tag">Định kỳ</span>}
+                      </div>
+                      <small>
+                        {isT
+                          ? `${f?.name ?? ''} → ${fMap.get(t.toFundId ?? -1)?.name ?? ''}${t.note ? ' · ' + t.note : ''}`
+                          : t.note || f?.name || ''}
+                      </small>
+                    </div>
+                    <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>
+                      {money(t.amount)}
+                    </b>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })}
+      </div>
 
       {viewingTx && (
         <TxDetailModal

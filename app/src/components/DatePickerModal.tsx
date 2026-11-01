@@ -77,7 +77,7 @@ export default function DatePickerModal({
     <div
       className="sheetbg"
       onClick={onClose}
-      style={{ zIndex: 75 }}
+      style={{ zIndex: 100 }}
     >
       <div
         className="sheet date-picker-sheet"

@@ -980,29 +980,25 @@ export default function CreditCardDetailModal({
             </div>
           )}
 
-          {/* Hàng nút tác vụ chính cân đối */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 8,
-              marginTop: 12,
-            }}
-          >
-            <button
-              type="button"
-              className="btn"
-              style={{ padding: '7px 12px', fontSize: 12.5, whiteSpace: 'nowrap' }}
-              onClick={() => setShowPickTxModal(true)}
+          {/* Nút Tất toán căn giữa cân đối */}
+          {onPayCard && info.debt > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: 12,
+              }}
             >
-              🔄 Chuyển đổi trả góp
-            </button>
-            {onPayCard && info.debt > 0 && (
               <button
                 type="button"
                 className="btn pri"
-                style={{ padding: '7px 14px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+                style={{
+                  padding: '8px 24px',
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
+                  minWidth: 200,
+                }}
                 onClick={() =>
                   onPayCard(
                     fund,
@@ -1014,8 +1010,8 @@ export default function CreditCardDetailModal({
                 Tất toán (
                 {money(info.previousStatementDebt > 0 ? info.previousStatementDebt : info.debt)})
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 2 Tab chuyển đổi cân bằng 1 dòng */}

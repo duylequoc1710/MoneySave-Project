@@ -62,6 +62,8 @@ export interface Budget {
   id?: number
   categoryId: number
   limit: number
+  repeatNextMonth?: boolean // Tự động lặp lại cho tháng tiếp theo (mặc định true)
+  month?: string // YYYY-MM (tháng áp dụng khi không lặp lại)
 }
 
 export interface RecurringTx {

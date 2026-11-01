@@ -1544,6 +1544,40 @@ h2 {
   }
 }
 
+@keyframes ledgerSlideFromRight {
+  0% {
+    opacity: 0.35;
+    transform: translate3d(38px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ledgerSlideFromLeft {
+  0% {
+    opacity: 0.35;
+    transform: translate3d(-38px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ledger-swipe-stage {
+  touch-action: pan-y;
+  will-change: transform, opacity;
+}
+.ledger-swipe-stage.slide-next {
+  animation: ledgerSlideFromRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ledger-swipe-stage.slide-prev {
+  animation: ledgerSlideFromLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
 
 
 
