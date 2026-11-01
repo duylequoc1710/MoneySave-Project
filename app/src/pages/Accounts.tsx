@@ -1,14 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Category, type Fund, type Tx } from '../db'
-import { analyzeCreditFund, effectOn, fmtDmy, groupCategoriesHierarchy, money } from '../lib'
+import { db, type Category, type Fund, type SavingsGoal, type Tx } from '../db'
+import {
+  analyzeCreditFund,
+  analyzeSavingsGoal,
+  effectOn,
+  findSavingsFund,
+  fmtDmy,
+  groupCategoriesHierarchy,
+  money,
+} from '../lib'
 import { FundForm } from '../components/accounts/FundForm'
 import { AdjustBalanceModal } from '../components/accounts/AdjustBalanceModal'
 import { TransferWalletModal } from '../components/accounts/TransferWalletModal'
 import { CatForm } from '../components/accounts/CatForm'
 import CatDetailModal from '../components/CatDetailModal'
 import CreditCardDetailModal from '../components/CreditCardDetailModal'
+import SavingsGoalsModal from '../components/SavingsGoalsModal'
 import { COLORS } from '../components/accounts/palette'
 import { showAlert, showConfirm } from '../components/AppDialog'
 
@@ -16,15 +25,22 @@ import { showAlert, showConfirm } from '../components/AppDialog'
 const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
 const NO_TXS: Tx[] = []
+const NO_GOALS: SavingsGoal[] = []
 
 export default function Accounts() {
   const nav = useNavigate()
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
+  const savingsGoals = useLiveQuery(() => db.savingsGoals.toArray(), [], NO_GOALS)
 
   const [fundEdit, setFundEdit] = useState<Fund | null>(null)
   const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
+  const [savingsModalState, setSavingsModalState] = useState<{
+    open: boolean
+    goalId?: number | null
+    openCreate?: boolean
+  }>({ open: false })
   const [catDetail, setCatDetail] = useState<Category | null>(null)
   const [catEdit, setCatEdit] = useState<Category | null>(null)
   const [adjustFund, setAdjustFund] = useState<Fund | null>(null)
@@ -42,6 +58,16 @@ export default function Accounts() {
   const archivedWallets = funds.filter(f => f.archived)
   const creditFunds = funds.filter(f => f.kind === 'credit' && !f.archived)
   const cashFunds = funds.filter(f => f.kind !== 'credit' && !f.archived)
+  const defaultSavingsFund = findSavingsFund(funds, savingsGoals[0]?.savingsFundId)
+  const savingsFundBal = defaultSavingsFund ? balance(defaultSavingsFund) : 0
+  const totalSavingsAllocated = savingsGoals.reduce(
+    (s, g) => s + Math.max(0, g.allocatedAmount || 0),
+    0,
+  )
+  const totalSavingsTarget = savingsGoals.reduce(
+    (s, g) => s + Math.max(0, g.targetAmount || 0),
+    0,
+  )
 
   async function delCat(c: Category) {
     const used = await db.txs.where('categoryId').equals(c.id!).count()
@@ -205,7 +231,187 @@ export default function Accounts() {
         </>
       )}
 
-      {/* 4. QUỸ TÍN DỤNG (TINH GỌN CÀI ĐẶT & THÊM THẺ) */}
+      {/* 4. QUỸ TIẾT KIỆM */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 8,
+          margin: '22px 0 8px',
+        }}
+      >
+        <h2 style={{ margin: 0 }}>🐷 Quỹ Tiết Kiệm</h2>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            className="btn"
+            style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+            onClick={() => setSavingsModalState({ open: true })}
+          >
+            Quản lý ({savingsGoals.length})
+          </button>
+          <button
+            type="button"
+            className="btn pri"
+            style={{ padding: '6px 11px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+            onClick={() => setSavingsModalState({ open: true, openCreate: true })}
+          >
+            + Kế hoạch
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: '0 16px' }}>
+        <div
+          className="row"
+          onClick={() => setSavingsModalState({ open: true })}
+          style={{ cursor: 'pointer', padding: '12px 0' }}
+        >
+          <div
+            className="ico round"
+            style={{
+              background: 'rgba(16, 185, 129, 0.18)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+            }}
+          >
+            🐷
+          </div>
+          <div className="grow" style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap',
+              }}
+            >
+              <b style={{ fontSize: 15 }}>
+                {defaultSavingsFund ? defaultSavingsFund.name : 'Quỹ Tiết Kiệm'}
+              </b>
+              <b className="inc" style={{ fontSize: 14.5 }}>
+                {money(totalSavingsAllocated)}
+                {totalSavingsTarget > 0 ? ` / ${money(totalSavingsTarget)}` : ''}
+              </b>
+            </div>
+            <small className="mut" style={{ display: 'block', marginTop: 3 }}>
+              Số dư quỹ: <b>{money(savingsFundBal)}</b> · Chưa phân bổ:{' '}
+              <b>{money(Math.max(0, savingsFundBal - totalSavingsAllocated))}</b>
+            </small>
+            {totalSavingsTarget > 0 && (
+              <div className="bar" style={{ marginTop: 6 }}>
+                <div
+                  style={{
+                    width: `${
+                      totalSavingsAllocated > 0
+                        ? Math.max(
+                            4,
+                            Math.min(
+                              100,
+                              Math.round((totalSavingsAllocated / totalSavingsTarget) * 100),
+                            ),
+                          )
+                        : 0
+                    }%`,
+                    background: '#10b981',
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          <span className="mut" style={{ fontSize: 18 }}>
+            ›
+          </span>
+        </div>
+
+        {savingsGoals.length === 0 ? (
+          <div
+            style={{
+              padding: '10px 0 14px',
+              borderTop: '1px solid var(--bd)',
+              fontSize: 13,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
+            }}
+          >
+            <span className="mut">
+              Phân bổ tiền cho Du lịch, Mua sắm, Khóa học... & theo dõi từng tháng.
+            </span>
+            <button
+              type="button"
+              className="btn"
+              style={{ padding: '5px 10px', fontSize: 12, whiteSpace: 'nowrap' }}
+              onClick={() => setSavingsModalState({ open: true, openCreate: true })}
+            >
+              🎯 Tạo mục tiêu
+            </button>
+          </div>
+        ) : (
+          savingsGoals.map(g => {
+            const info = analyzeSavingsGoal(g)
+            return (
+              <div
+                className="row"
+                key={g.id}
+                onClick={() => setSavingsModalState({ open: true, goalId: g.id })}
+                style={{ cursor: 'pointer', alignItems: 'flex-start', padding: '12px 0' }}
+              >
+                <div
+                  className="ico round"
+                  style={{
+                    background: g.color + '28',
+                    border: `1px solid ${g.color}44`,
+                    marginTop: 2,
+                  }}
+                >
+                  {g.icon}
+                </div>
+                <div className="grow" style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <b style={{ fontSize: 15 }}>{g.name}</b>
+                    <span style={{ fontSize: 13.5 }}>
+                      <b className="inc">{money(info.allocatedAmount)}</b>{' '}
+                      <span className="mut">/ {money(info.targetAmount)}</span>
+                    </span>
+                  </div>
+                  <small
+                    className="mut"
+                    style={{ display: 'block', marginTop: 3, whiteSpace: 'normal', lineHeight: 1.35 }}
+                  >
+                    Hạn {fmtDmy(g.targetDate)} ({info.remainingMonths} tháng) · Cần{' '}
+                    <b>{money(info.monthlyNeededNow)}/tháng</b> · Còn thiếu{' '}
+                    <b>{money(info.remainingAmount)}</b>
+                  </small>
+                  <div className="bar" style={{ marginTop: 6 }}>
+                    <div
+                      style={{
+                        width: `${
+                          info.allocatedAmount > 0 ? Math.max(4, info.progressPct) : 0
+                        }%`,
+                        background: info.isCompleted ? '#10b981' : g.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* 5. QUỸ TÍN DỤNG (TINH GỌN CÀI ĐẶT & THÊM THẺ) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '22px 0 8px' }}>
         <h2 style={{ margin: 0 }}>💳 Quỹ tín dụng</h2>
         <button
@@ -447,6 +653,14 @@ export default function Accounts() {
               note,
             })
           }}
+        />
+      )}
+
+      {savingsModalState.open && (
+        <SavingsGoalsModal
+          initialGoalId={savingsModalState.goalId}
+          initialOpenCreate={savingsModalState.openCreate}
+          onClose={() => setSavingsModalState({ open: false })}
         />
       )}
 

@@ -2,9 +2,11 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   analyzeCreditFund,
+  analyzeSavingsGoal,
   buildCalendarWeekBuckets,
   computeDefaultFirstStatementDate,
   computeInstallmentStatus,
+  findSavingsFund,
   fmtDmy,
   monthLabel,
   buildCsvContent,
@@ -902,5 +904,44 @@ describe('Hệ thống Phân tích Hành vi Tài chính 4 Trụ cột (computeSm
     assert.equal(res.opportunityCost.hourlyWage, 100_000)
     assert.equal(res.opportunityCost.savingFundName, 'Ví Tiết Kiệm')
     assert.ok(res.heroCards.length >= 4)
+  })
+})
+
+describe('Quỹ Tiết Kiệm & Lộ trình kế hoạch từng tháng (analyzeSavingsGoal & findSavingsFund)', () => {
+  it('Tính đúng tiến độ, số tiền còn thiếu, định mức mỗi tháng và lộ trình chi tiết từng tháng', () => {
+    const funds: Fund[] = [
+      { id: 1, name: 'Quỹ Chính', icon: '👛', color: '#f97316', initialBalance: 20_000_000, kind: 'cash' },
+      { id: 2, name: 'Ví Tiết Kiệm', icon: '🐷', color: '#10b981', initialBalance: 15_000_000, kind: 'cash', excludeFromTotal: true },
+    ]
+    const savFund = findSavingsFund(funds)
+    assert.equal(savFund?.id, 2)
+
+    const goal = {
+      id: 1,
+      name: 'Du lịch Nhật Bản',
+      icon: '✈️',
+      color: '#3b82f6',
+      targetAmount: 18_000_000,
+      allocatedAmount: 6_000_000,
+      savingsFundId: 2,
+      startDate: '2026-10-01',
+      targetDate: '2027-03-01', // 6 tháng: 10/2026 -> 03/2027
+      createdAt: 1,
+    }
+
+    // Kiểm tra tại ngày 01/11/2026 (còn 5 tháng: 11/2026, 12/2026, 01/2027, 02/2027, 03/2027)
+    const info = analyzeSavingsGoal(goal, new Date(2026, 10, 1))
+    assert.equal(info.progressPct, 33)
+    assert.equal(info.remainingAmount, 12_000_000)
+    assert.equal(info.totalMonths, 6)
+    assert.equal(info.remainingMonths, 5)
+    assert.equal(info.monthlyNeededNow, 2_400_000) // 12,000,000 / 5 tháng = 2,400,000 ₫/tháng
+    assert.equal(info.status, 'on_track')
+    assert.equal(info.monthlyRoadmap.length, 6)
+    assert.equal(info.monthlyRoadmap[0].monthLabel, '10/2026')
+    assert.equal(info.monthlyRoadmap[1].monthLabel, '11/2026')
+    assert.equal(info.monthlyRoadmap[1].isCurrent, true)
+    assert.equal(info.monthlyRoadmap[5].monthLabel, '03/2027')
+    assert.equal(info.monthlyRoadmap[5].remainingToGoalAfterMonth, 0)
   })
 })

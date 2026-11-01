@@ -598,7 +598,7 @@ export function startRealtimeCloudSyncEngine() {
   })
 
   // Lắng nghe mọi thao tác Thêm / Sửa / Xoá trên tất cả các bảng của Dexie
-  const tables = [db.funds, db.categories, db.txs, db.budgets, db.recurrings]
+  const tables = [db.funds, db.categories, db.txs, db.budgets, db.recurrings, db.savingsGoals]
   for (const tbl of tables) {
     tbl.hook('creating', () => scheduleAutoPush())
     tbl.hook('updating', () => scheduleAutoPush())

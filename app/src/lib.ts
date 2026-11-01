@@ -14,7 +14,7 @@ import {
   startOfWeek,
 } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import type { Category, Fund, InstallmentInfo, InstallmentTermMonths, Tx } from './db'
+import type { Category, Fund, InstallmentInfo, InstallmentTermMonths, SavingsGoal, Tx } from './db'
 
 export type ThemeMode = 'dark' | 'light' | 'system'
 const THEME_STORAGE_KEY = 'moneygo_theme'
@@ -882,4 +882,184 @@ export function buildCalendarWeekBuckets(curMonth: Date, today: Date, monthTxs: 
     startDay = endDay + 1
   }
   return buckets
+}
+
+export interface SavingsMonthMilestone {
+  monthKey: string // YYYY-MM
+  monthLabel: string // MM/yyyy
+  monthIndex: number // 1..totalMonths
+  plannedCumulative: number // Mốc tích lũy mục tiêu tính đến hết tháng này
+  remainingToGoalAfterMonth: number // Còn bao nhiêu nữa sẽ đạt mục tiêu sau tháng này
+  suggestedContribution: number // Số tiền cần tích lũy trong tháng này (theo tiến độ thực tế còn lại)
+  remainingNeededFromCurrentToThisMilestone: number // Từ số tiền hiện tại cần thêm bao nhiêu để chạm mốc tháng này
+  isPast: boolean
+  isCurrent: boolean
+  isAchieved: boolean
+}
+
+export interface SavingsGoalAnalysis {
+  goal: SavingsGoal
+  targetAmount: number
+  allocatedAmount: number
+  remainingAmount: number
+  progressPct: number
+  isCompleted: boolean
+  isOverdue: boolean
+  daysRemaining: number
+  totalMonths: number
+  remainingMonths: number
+  monthlyNeededNow: number // Số tiền cần tiết kiệm mỗi tháng từ nay đến hạn để đạt mục tiêu
+  plannedCumulativeNow: number // Mốc kế hoạch tính đến tháng hiện tại
+  status: 'completed' | 'on_track' | 'behind' | 'overdue'
+  statusLabel: string
+  monthlyRoadmap: SavingsMonthMilestone[]
+}
+
+/**
+ * Tìm quỹ Ví Tiết Kiệm mặc định trong danh sách ví (ưu tiên tên có chữ "Tiết kiệm", "Saving", "Tích lũy")
+ */
+export function findSavingsFund(funds: Fund[], preferredFundId?: number | null): Fund | undefined {
+  const activeCash = funds.filter(f => f.kind !== 'credit' && !f.archived)
+  if (preferredFundId) {
+    const exact = activeCash.find(f => f.id === preferredFundId)
+    if (exact) return exact
+  }
+  const byName = activeCash.find(f =>
+    /tiết kiệm|tiet kiem|saving|tích lũy|tich luy/i.test(f.name),
+  )
+  if (byName) return byName
+  const excluded = activeCash.find(f => f.excludeFromTotal)
+  return excluded ?? activeCash[0]
+}
+
+/**
+ * Phân tích tiến độ kế hoạch tiết kiệm & xây dựng lộ trình chi tiết từng tháng
+ */
+export function analyzeSavingsGoal(
+  goal: SavingsGoal,
+  refDate: Date = new Date(),
+): SavingsGoalAnalysis {
+  const today = startOfDay(refDate)
+  const targetAmount = Math.max(0, goal.targetAmount || 0)
+  const allocatedAmount = Math.max(0, goal.allocatedAmount || 0)
+  const remainingAmount = Math.max(0, targetAmount - allocatedAmount)
+  const progressPct =
+    targetAmount > 0 ? Math.min(100, Math.round((allocatedAmount / targetAmount) * 100)) : 0
+  const isCompleted = targetAmount > 0 && allocatedAmount >= targetAmount
+
+  const rawStart = parseISO(goal.startDate || ymd(today))
+  const startD = Number.isNaN(rawStart.getTime()) ? today : startOfDay(rawStart)
+  const rawTarget = parseISO(goal.targetDate || ymd(addMonths(today, 6)))
+  const targetD = Number.isNaN(rawTarget.getTime()) ? addMonths(today, 6) : startOfDay(rawTarget)
+
+  const daysRemaining = differenceInCalendarDays(targetD, today)
+  const isOverdue = !isCompleted && daysRemaining < 0
+
+  const startMonthDate = new Date(startD.getFullYear(), startD.getMonth(), 1)
+  const targetMonthDate = new Date(targetD.getFullYear(), targetD.getMonth(), 1)
+  const curMonthDate = new Date(today.getFullYear(), today.getMonth(), 1)
+
+  const diffMonths = (a: Date, b: Date) =>
+    (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+
+  // Tổng số tháng của kế hoạch (tối thiểu 1, tối đa 60 để hiển thị mượt)
+  const totalMonths = Math.min(60, Math.max(1, diffMonths(startMonthDate, targetMonthDate) + 1))
+
+  // Số tháng còn lại tính từ tháng hiện tại đến tháng đích (bao gồm tháng hiện tại)
+  const rawRemMonths = diffMonths(curMonthDate, targetMonthDate) + 1
+  const remainingMonths = isCompleted ? 0 : Math.max(1, rawRemMonths)
+
+  const monthlyNeededNow = isCompleted
+    ? 0
+    : Math.ceil(remainingAmount / Math.max(1, remainingMonths))
+
+  const curMonthKey = monthKey(curMonthDate)
+  const monthlyRoadmap: SavingsMonthMilestone[] = []
+
+  // Xây dựng từng tháng trong lộ trình
+  let futureStepIdx = 0
+  for (let i = 0; i < totalMonths; i++) {
+    const mDate = addMonths(startMonthDate, i)
+    const mKey = monthKey(mDate)
+    const [yyyy, mm] = mKey.split('-')
+    const mLabel = `${mm}/${yyyy}`
+    const isPast = mKey < curMonthKey
+    const isCurrent = mKey === curMonthKey
+
+    const plannedCumulative =
+      i === totalMonths - 1
+        ? targetAmount
+        : Math.round((targetAmount * (i + 1)) / totalMonths)
+    const remainingToGoalAfterMonth = Math.max(0, targetAmount - plannedCumulative)
+
+    let suggestedContribution = 0
+    if (!isCompleted && !isPast) {
+      if (futureStepIdx === remainingMonths - 1) {
+        suggestedContribution = Math.max(
+          0,
+          remainingAmount - monthlyNeededNow * Math.max(0, remainingMonths - 1),
+        )
+      } else {
+        suggestedContribution = Math.min(remainingAmount, monthlyNeededNow)
+      }
+      futureStepIdx++
+    }
+
+    const remainingNeededFromCurrentToThisMilestone = Math.max(
+      0,
+      plannedCumulative - allocatedAmount,
+    )
+
+    monthlyRoadmap.push({
+      monthKey: mKey,
+      monthLabel: mLabel,
+      monthIndex: i + 1,
+      plannedCumulative,
+      remainingToGoalAfterMonth,
+      suggestedContribution,
+      remainingNeededFromCurrentToThisMilestone,
+      isPast,
+      isCurrent,
+      isAchieved: allocatedAmount >= plannedCumulative,
+    })
+  }
+
+  // Nếu hạn mục tiêu đã qua so với tháng hiện tại nhưng chưa hoàn thành, vẫn đảm bảo có mốc tháng hiện tại để người dùng biết cần bù bao nhiêu
+  const curMilestone =
+    monthlyRoadmap.find(m => m.isCurrent) ?? monthlyRoadmap[monthlyRoadmap.length - 1]
+  const plannedCumulativeNow = curMilestone ? curMilestone.plannedCumulative : targetAmount
+
+  let status: 'completed' | 'on_track' | 'behind' | 'overdue' = 'on_track'
+  let statusLabel = 'Đúng tiến độ'
+  if (isCompleted) {
+    status = 'completed'
+    statusLabel = 'Đã đạt mục tiêu'
+  } else if (isOverdue) {
+    status = 'overdue'
+    statusLabel = 'Quá hạn kế hoạch'
+  } else if (allocatedAmount + 1000 < plannedCumulativeNow * 0.85) {
+    status = 'behind'
+    statusLabel = 'Cần nạp thêm'
+  } else {
+    status = 'on_track'
+    statusLabel = allocatedAmount >= plannedCumulativeNow ? 'Vượt tiến độ' : 'Đúng tiến độ'
+  }
+
+  return {
+    goal,
+    targetAmount,
+    allocatedAmount,
+    remainingAmount,
+    progressPct,
+    isCompleted,
+    isOverdue,
+    daysRemaining,
+    totalMonths,
+    remainingMonths: rawRemMonths <= 0 && !isCompleted ? 0 : remainingMonths,
+    monthlyNeededNow,
+    plannedCumulativeNow,
+    status,
+    statusLabel,
+    monthlyRoadmap,
+  }
 }

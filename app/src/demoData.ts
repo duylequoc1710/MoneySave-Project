@@ -271,20 +271,25 @@ export async function seedDemoData3Months(force = false) {
 
   // An toàn dữ liệu: lưu bản sao trước khi xoá/ghi đè dữ liệu thật
   await saveSafetySnapshot(await exportAll(db), 'Trước khi nạp dữ liệu mẫu')
-  await db.transaction('rw', [db.funds, db.categories, db.txs, db.budgets, db.recurrings], async () => {
-    await Promise.all([
-      db.funds.clear(),
-      db.categories.clear(),
-      db.txs.clear(),
-      db.budgets.clear(),
-      db.recurrings.clear(),
-    ])
-    await db.funds.bulkAdd(funds)
-    await db.categories.bulkAdd(categories)
-    await db.budgets.bulkAdd(budgets)
-    await db.recurrings.bulkAdd(recurrings)
-    await db.txs.bulkAdd(txs)
-  })
+  await db.transaction(
+    'rw',
+    [db.funds, db.categories, db.txs, db.budgets, db.recurrings, db.savingsGoals],
+    async () => {
+      await Promise.all([
+        db.funds.clear(),
+        db.categories.clear(),
+        db.txs.clear(),
+        db.budgets.clear(),
+        db.recurrings.clear(),
+        db.savingsGoals.clear(),
+      ])
+      await db.funds.bulkAdd(funds)
+      await db.categories.bulkAdd(categories)
+      await db.budgets.bulkAdd(budgets)
+      await db.recurrings.bulkAdd(recurrings)
+      await db.txs.bulkAdd(txs)
+    },
+  )
 
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(DEMO_FLAG_KEY, 'done')
@@ -299,14 +304,18 @@ export async function clearAllToCleanState() {
   ]
   // An toàn dữ liệu: lưu bản sao trước khi xoá/ghi đè dữ liệu thật
   await saveSafetySnapshot(await exportAll(db), 'Trước khi xoá sạch dữ liệu')
-  await db.transaction('rw', [db.funds, db.categories, db.txs, db.budgets, db.recurrings], async () => {
-    await Promise.all([
-      db.funds.clear(),
-      db.categories.clear(),
-      db.txs.clear(),
-      db.budgets.clear(),
-      db.recurrings.clear(),
-    ])
+  await db.transaction(
+    'rw',
+    [db.funds, db.categories, db.txs, db.budgets, db.recurrings, db.savingsGoals],
+    async () => {
+      await Promise.all([
+        db.funds.clear(),
+        db.categories.clear(),
+        db.txs.clear(),
+        db.budgets.clear(),
+        db.recurrings.clear(),
+        db.savingsGoals.clear(),
+      ])
     await db.funds.bulkAdd(defaultFunds)
     const p1 = await db.categories.add({ name: 'Thiết Yếu 50%', type: 'expense', icon: '🏡', color: '#eab308' })
     const p2 = await db.categories.add({ name: 'Cá nhân 25%', type: 'expense', icon: '👤', color: '#ef4444' })

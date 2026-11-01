@@ -82,12 +82,36 @@ export interface RecurringTx {
   active: boolean
 }
 
+export interface SavingsAllocationLog {
+  id: string
+  date: string // YYYY-MM-DD
+  amount: number // Dương: phân bổ thêm vào kế hoạch; Âm: rút bớt khỏi kế hoạch
+  fromFundId?: number | null // ID quỹ nguồn nếu trích chuyển trực tiếp vào Quỹ Tiết Kiệm
+  note?: string
+}
+
+export interface SavingsGoal {
+  id?: number
+  name: string // Ví dụ: "Du lịch", "Mua sắm", "Khóa học"...
+  icon: string
+  color: string
+  targetAmount: number // Số tiền mục tiêu (VND)
+  allocatedAmount: number // Số tiền đã phân bổ vào kế hoạch từ Quỹ Tiết Kiệm (VND)
+  savingsFundId?: number | null // ID của ví Quỹ Tiết Kiệm liên kết
+  startDate: string // YYYY-MM-DD (ngày bắt đầu kế hoạch)
+  targetDate: string // YYYY-MM-DD (hạn hoàn thành kế hoạch)
+  note?: string
+  history?: SavingsAllocationLog[]
+  createdAt: number
+}
+
 class MoneyDB extends Dexie {
   funds!: Table<Fund, number>
   categories!: Table<Category, number>
   txs!: Table<Tx, number>
   budgets!: Table<Budget, number>
   recurrings!: Table<RecurringTx, number>
+  savingsGoals!: Table<SavingsGoal, number>
 
   constructor() {
     super('moneygo')
@@ -110,6 +134,14 @@ class MoneyDB extends Dexie {
       txs: '++id, date, type, fundId, categoryId, recurringId',
       budgets: '++id, categoryId',
       recurrings: '++id, active, frequency, fundId, categoryId',
+    })
+    this.version(4).stores({
+      funds: '++id, kind',
+      categories: '++id, type, fundId, parentId',
+      txs: '++id, date, type, fundId, categoryId, recurringId',
+      budgets: '++id, categoryId',
+      recurrings: '++id, active, frequency, fundId, categoryId',
+      savingsGoals: '++id, savingsFundId, targetDate',
     })
   }
 }
@@ -270,6 +302,7 @@ export async function processRecurringTransactions(todayYmd = format(new Date(),
 
 type StoreSubset = Pick<MoneyDB, 'funds' | 'categories' | 'txs' | 'budgets'> & {
   recurrings?: Table<RecurringTx, number>
+  savingsGoals?: Table<SavingsGoal, number>
 }
 
 export async function exportAll(store: StoreSubset = db) {
@@ -283,6 +316,7 @@ export async function exportAll(store: StoreSubset = db) {
       txs: await store.txs.toArray(),
       budgets: await store.budgets.toArray(),
       recurrings: store.recurrings ? await store.recurrings.toArray() : [],
+      savingsGoals: store.savingsGoals ? await store.savingsGoals.toArray() : [],
     },
     null,
     2,
@@ -320,7 +354,14 @@ export async function importAll(
   if (store === (db as unknown)) {
     await saveSafetySnapshot(await exportAll(db), 'Trước khi khôi phục / đồng bộ ghi đè')
   }
-  const tables = [store.funds, store.categories, store.txs, store.budgets, ...(store.recurrings ? [store.recurrings] : [])]
+  const tables = [
+    store.funds,
+    store.categories,
+    store.txs,
+    store.budgets,
+    ...(store.recurrings ? [store.recurrings] : []),
+    ...(store.savingsGoals ? [store.savingsGoals] : []),
+  ]
   await store.transaction('rw', tables, async () => {
     await Promise.all([
       store.funds.clear(),
@@ -328,6 +369,7 @@ export async function importAll(
       store.txs.clear(),
       store.budgets.clear(),
       store.recurrings ? store.recurrings.clear() : Promise.resolve(),
+      store.savingsGoals ? store.savingsGoals.clear() : Promise.resolve(),
     ])
     await store.funds.bulkAdd(d.funds)
     await store.categories.bulkAdd(d.categories)
@@ -335,6 +377,9 @@ export async function importAll(
     await store.budgets.bulkAdd(d.budgets ?? [])
     if (store.recurrings && Array.isArray(d.recurrings)) {
       await store.recurrings.bulkAdd(d.recurrings)
+    }
+    if (store.savingsGoals && Array.isArray(d.savingsGoals)) {
+      await store.savingsGoals.bulkAdd(d.savingsGoals)
     }
   })
 }

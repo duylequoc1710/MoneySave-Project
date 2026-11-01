@@ -14,9 +14,10 @@ import {
   YAxis,
 } from 'recharts'
 import { addDays, addMonths, endOfMonth, format, getDaysInMonth, startOfMonth, startOfWeek } from 'date-fns'
-import { db, type Budget, type Category, type Fund, type Tx } from '../db'
+import { db, type Budget, type Category, type Fund, type SavingsGoal, type Tx } from '../db'
 import {
   analyzeCreditFund,
+  analyzeSavingsGoal,
   computeTotalBalance,
   effectOn,
   filterReportableTxs,
@@ -36,6 +37,7 @@ import TxDetailModal from '../components/TxDetailModal'
 import PeriodReport from '../components/PeriodReport'
 import SmartInsightsModal from '../components/SmartInsightsModal'
 import CreditCardDetailModal from '../components/CreditCardDetailModal'
+import SavingsGoalsModal from '../components/SavingsGoalsModal'
 import { showAlert, showPrompt } from '../components/AppDialog'
 import { computeSmartInsights, type HeroInsightCard } from '../smartInsights'
 
@@ -43,6 +45,7 @@ const NO_TXS: Tx[] = []
 const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
 const NO_BUDGETS: Budget[] = []
+const NO_GOALS: SavingsGoal[] = []
 
 export default function Overview() {
   const nav = useNavigate()
@@ -55,6 +58,7 @@ export default function Overview() {
   const [topScope, setTopScope] = useState<'week' | 'month'>('month')
   const [viewingTx, setViewingTx] = useState<Tx | null>(null)
   const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
+  const [showSavingsModal, setShowSavingsModal] = useState(false)
   const [editTx, setEditTx] = useState<Tx | null>(null)
   const [payDraft, setPayDraft] = useState<TxFormDraft | null>(null)
   const [today] = useState(() => new Date())
@@ -87,6 +91,7 @@ export default function Overview() {
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
   const budgets = useLiveQuery(() => db.budgets.toArray(), [], NO_BUDGETS)
+  const savingsGoals = useLiveQuery(() => db.savingsGoals.toArray(), [], NO_GOALS)
 
   const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
   const fMap = useMemo(() => new Map(funds.map(f => [f.id!, f])), [funds])
@@ -542,6 +547,75 @@ export default function Overview() {
             </div>
           )
         })
+      )}
+
+      {/* 2C. Quỹ Tiết Kiệm (Tóm tắt kế hoạch mục tiêu) */}
+      {savingsGoals.length > 0 && (
+        <>
+          <div className="sec-head">
+            <span>🐷 Quỹ Tiết Kiệm</span>
+            <span className="link-green" onClick={() => setShowSavingsModal(true)}>
+              Xem chi tiết
+            </span>
+          </div>
+          <div
+            className="card"
+            style={{ cursor: 'pointer', padding: '4px 16px' }}
+            onClick={() => setShowSavingsModal(true)}
+          >
+            {savingsGoals.slice(0, 3).map(g => {
+              const info = analyzeSavingsGoal(g, today)
+              return (
+                <div className="row" key={g.id} style={{ padding: '10px 0' }}>
+                  <div
+                    className="ico round"
+                    style={{
+                      background: g.color + '28',
+                      border: `1px solid ${g.color}44`,
+                    }}
+                  >
+                    {g.icon}
+                  </div>
+                  <div className="grow" style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <b style={{ fontSize: 14.5 }}>{g.name}</b>
+                      <span style={{ fontSize: 13 }}>
+                        <b className="inc">
+                          {hideBalance ? '•••••• ₫' : money(info.allocatedAmount)}
+                        </b>{' '}
+                        <span className="mut">
+                          / {hideBalance ? '•••••• ₫' : money(info.targetAmount)} ({info.progressPct}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="bar" style={{ marginTop: 5 }}>
+                      <div
+                        style={{
+                          width: `${
+                            info.allocatedAmount > 0 ? Math.max(4, info.progressPct) : 0
+                          }%`,
+                          background: info.isCompleted ? '#10b981' : g.color,
+                        }}
+                      />
+                    </div>
+                    <small className="mut" style={{ display: 'block', marginTop: 3 }}>
+                      Hạn {fmtDmy(g.targetDate)} · Cần{' '}
+                      <b>{hideBalance ? '•••• ₫' : money(info.monthlyNeededNow)}/tháng</b>
+                    </small>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
 
       {/* 3. Smart Insights (Phân tích hành vi, Dự báo dòng tiền & Đề xuất 1-chạm) */}
@@ -1111,6 +1185,9 @@ export default function Overview() {
             })
           }}
         />
+      )}
+      {showSavingsModal && (
+        <SavingsGoalsModal onClose={() => setShowSavingsModal(false)} />
       )}
     </>
   )
