@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -215,6 +215,15 @@ export default function PeriodReport({
   const [viewingTx, setViewingTx] = useState<Tx | null>(null)
   const [editTx, setEditTx] = useState<Tx | null>(null)
   const [draftTx, setDraftTx] = useState<TxFormDraft | null>(null)
+  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null)
+  const [dragOffsetX, setDragOffsetX] = useState(0)
+  const swipeRef = useRef<{
+    startX: number
+    startY: number
+    startTime: number
+    lockedAxis: 'x' | 'y' | null
+    dx: number
+  } | null>(null)
   const [today] = useState(() => new Date())
   const nowMonth = useMemo(() => startOfMonth(today), [today])
 
@@ -237,7 +246,15 @@ export default function PeriodReport({
   const from = resolvedRange.from
   const to = resolvedRange.to
 
-  function updateMonth(nextM: Date) {
+  function updateMonth(nextM: Date, direction?: 'next' | 'prev') {
+    const dir =
+      direction ??
+      (nextM.getTime() > cur.getTime() ? 'next' : nextM.getTime() < cur.getTime() ? 'prev' : undefined)
+    if (dir) {
+      setSlideDir(dir)
+    }
+    setDragOffsetX(0)
+    setExpandedKey(null)
     setCur(nextM)
     if (setTimeFilter) {
       setTimeFilter({
@@ -326,16 +343,90 @@ export default function PeriodReport({
   const tabCenter = cur
   const tabRight = addMonths(cur, 1)
 
+  function handleTouchStart(e: React.TouchEvent) {
+    if (!resolvedRange.isMonthMode || e.touches.length !== 1) return
+    const t = e.touches[0]
+    swipeRef.current = {
+      startX: t.clientX,
+      startY: t.clientY,
+      startTime: Date.now(),
+      lockedAxis: null,
+      dx: 0,
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const st = swipeRef.current
+    if (!st || !resolvedRange.isMonthMode || e.touches.length !== 1) return
+    const t = e.touches[0]
+    const dx = t.clientX - st.startX
+    const dy = t.clientY - st.startY
+
+    if (!st.lockedAxis) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      st.lockedAxis = Math.abs(dx) > Math.abs(dy) * 1.25 ? 'x' : 'y'
+    }
+
+    if (st.lockedAxis === 'x') {
+      st.dx = dx
+      setDragOffsetX(Math.max(-72, Math.min(72, dx * 0.35)))
+    }
+  }
+
+  function handleTouchEnd() {
+    const st = swipeRef.current
+    swipeRef.current = null
+    if (!st || st.lockedAxis !== 'x') {
+      if (dragOffsetX !== 0) setDragOffsetX(0)
+      return
+    }
+    const elapsed = Math.max(1, Date.now() - st.startTime)
+    const velocity = Math.abs(st.dx) / elapsed
+    const shouldSwitch = Math.abs(st.dx) >= 52 || (Math.abs(st.dx) >= 28 && velocity > 0.32)
+
+    if (shouldSwitch) {
+      if (st.dx < 0) {
+        updateMonth(tabRight, 'next')
+      } else {
+        updateMonth(tabLeft, 'prev')
+      }
+    } else {
+      setDragOffsetX(0)
+    }
+  }
+
+  const swipeStageClass = `ledger-swipe-stage ${
+    slideDir === 'next' ? 'slide-next' : slideDir === 'prev' ? 'slide-prev' : ''
+  }`
+  const swipeStageStyle =
+    dragOffsetX !== 0
+      ? {
+          transform: `translate3d(${dragOffsetX}px, 0, 0)`,
+          transition: 'none',
+        }
+      : undefined
+
   const renderMonthBar = () =>
     resolvedRange.isMonthMode ? (
-      <div className="ml-month-tabs">
-        <button className="m-arrow" onClick={() => updateMonth(tabLeft)} title="Tháng trước">
+      <div
+        className="ml-month-tabs"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      >
+        <button className="m-arrow" onClick={() => updateMonth(tabLeft, 'prev')} title="Tháng trước">
           ‹
         </button>
         <button
           className="m-tab"
-          onClick={() => updateMonth(tabLeft)}
+          onClick={() => updateMonth(tabLeft, 'prev')}
           title={monthLabel(tabLeft)}
+          style={
+            dragOffsetX !== 0
+              ? { transform: `translate3d(${dragOffsetX * 0.35}px, 0, 0)` }
+              : undefined
+          }
         >
           {getMonthTabLabel(tabLeft, nowMonth)}
         </button>
@@ -343,17 +434,27 @@ export default function PeriodReport({
           className="m-tab active"
           onClick={() => updateMonth(tabCenter)}
           title={monthLabel(tabCenter)}
+          style={
+            dragOffsetX !== 0
+              ? { transform: `translate3d(${dragOffsetX * 0.35}px, 0, 0)` }
+              : undefined
+          }
         >
           {getMonthTabLabel(tabCenter, nowMonth)}
         </button>
         <button
           className="m-tab"
-          onClick={() => updateMonth(tabRight)}
+          onClick={() => updateMonth(tabRight, 'next')}
           title={monthLabel(tabRight)}
+          style={
+            dragOffsetX !== 0
+              ? { transform: `translate3d(${dragOffsetX * 0.35}px, 0, 0)` }
+              : undefined
+          }
         >
           {getMonthTabLabel(tabRight, nowMonth)}
         </button>
-        <button className="m-arrow" onClick={() => updateMonth(tabRight)} title="Tháng kế tiếp">
+        <button className="m-arrow" onClick={() => updateMonth(tabRight, 'next')} title="Tháng kế tiếp">
           ›
         </button>
       </div>
@@ -411,81 +512,91 @@ export default function PeriodReport({
 
           {renderMonthBar()}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 4px 14px' }}>
-            <b style={{ fontSize: 20 }}>Tổng cộng</b>
-            <b style={{ fontSize: 20, color: netIncome >= 0 ? '#1d9bf0' : '#f0534f' }}>{money(netIncome)}</b>
-          </div>
-
-          <div className="card" style={{ paddingTop: 18 }}>
-            <div style={{ width: '100%', height: 220 }}>
-              <ResponsiveContainer>
-                <BarChart data={netBuckets} stackOffset="sign" margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
-                  <CartesianGrid vertical={false} stroke="#8884" />
-                  <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
-                  <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
-                  <ReferenceLine y={0} stroke="#8e98a4" />
-                  <Bar dataKey="income" name="Khoản thu" stackId="n" fill="#1d9bf0" barSize={44} />
-                  <Bar dataKey="negExpense" name="Khoản chi" stackId="n" fill="#f0534f" barSize={44} />
-                </BarChart>
-              </ResponsiveContainer>
+          <div
+            key={from}
+            className={swipeStageClass}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            style={swipeStageStyle}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 4px 14px' }}>
+              <b style={{ fontSize: 20 }}>Tổng cộng</b>
+              <b style={{ fontSize: 20, color: netIncome >= 0 ? '#1d9bf0' : '#f0534f' }}>{money(netIncome)}</b>
             </div>
-          </div>
 
-          <div className="card" style={{ padding: '4px 16px' }}>
-            {netBuckets.map(b => {
-              const key = `net-${b.label}`
-              const isOpen = expandedKey === key
-              const byDay = new Map<string, Tx[]>()
-              b.txs.forEach(t => byDay.set(t.date, [...(byDay.get(t.date) ?? []), t]))
-              return (
-                <div key={b.label} style={{ borderBottom: '1px solid var(--bd)' }}>
-                  <div
-                    className="row"
-                    style={{ borderBottom: 0, cursor: 'pointer', alignItems: 'flex-start' }}
-                    onClick={() => setExpandedKey(isOpen ? null : key)}
-                  >
-                    <div className="grow">
-                      <span style={{ fontSize: 16, color: 'var(--mut)' }}>{b.label}</span>
+            <div className="card" style={{ paddingTop: 18 }}>
+              <div style={{ width: '100%', height: 220 }}>
+                <ResponsiveContainer>
+                  <BarChart data={netBuckets} stackOffset="sign" margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
+                    <CartesianGrid vertical={false} stroke="#8884" />
+                    <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
+                    <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
+                    <ReferenceLine y={0} stroke="#8e98a4" />
+                    <Bar dataKey="income" name="Khoản thu" stackId="n" fill="#1d9bf0" barSize={44} />
+                    <Bar dataKey="negExpense" name="Khoản chi" stackId="n" fill="#f0534f" barSize={44} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '4px 16px' }}>
+              {netBuckets.map(b => {
+                const key = `net-${b.label}`
+                const isOpen = expandedKey === key
+                const byDay = new Map<string, Tx[]>()
+                b.txs.forEach(t => byDay.set(t.date, [...(byDay.get(t.date) ?? []), t]))
+                return (
+                  <div key={b.label} style={{ borderBottom: '1px solid var(--bd)' }}>
+                    <div
+                      className="row"
+                      style={{ borderBottom: 0, cursor: 'pointer', alignItems: 'flex-start' }}
+                      onClick={() => setExpandedKey(isOpen ? null : key)}
+                    >
+                      <div className="grow">
+                        <span style={{ fontSize: 16, color: 'var(--mut)' }}>{b.label}</span>
+                      </div>
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <b style={{ color: '#1d9bf0' }}>{money(b.income)}</b>
+                        <b style={{ color: '#f0534f' }}>{money(b.expense)}</b>
+                        <b>
+                          {b.net > 0 ? '+' : ''}
+                          {money(b.net)}
+                        </b>
+                      </div>
+                      <span className="mut" style={{ fontSize: 18, marginLeft: 6, alignSelf: 'center' }}>
+                        {isOpen ? '⌄' : '›'}
+                      </span>
                     </div>
-                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <b style={{ color: '#1d9bf0' }}>{money(b.income)}</b>
-                      <b style={{ color: '#f0534f' }}>{money(b.expense)}</b>
-                      <b>
-                        {b.net > 0 ? '+' : ''}
-                        {money(b.net)}
-                      </b>
-                    </div>
-                    <span className="mut" style={{ fontSize: 18, marginLeft: 6, alignSelf: 'center' }}>
-                      {isOpen ? '⌄' : '›'}
-                    </span>
-                  </div>
-                  {isOpen && b.txs.length > 0 && (
-                    <div style={{ padding: '0 0 10px 12px' }}>
-                      {[...byDay.entries()].map(([day, list]) => (
-                        <div key={day} style={{ marginBottom: 6 }}>
-                          <div className="mut" style={{ fontSize: 12, fontWeight: 600, padding: '4px 0' }}>
-                            {fmtDmy(day)}
-                          </div>
-                          {list.map(t => (
-                            <div
-                              key={t.id}
-                              onClick={() => setViewingTx(t)}
-                              style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', cursor: 'pointer' }}
-                              className="mut"
-                            >
-                              <span>
-                                {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'} {t.note ? `(${t.note})` : ''}
-                              </span>
-                              <b style={{ color: t.type === 'income' ? '#1d9bf0' : '#f0534f' }}>{money(t.amount)}</b>
+                    {isOpen && b.txs.length > 0 && (
+                      <div style={{ padding: '0 0 10px 12px' }}>
+                        {[...byDay.entries()].map(([day, list]) => (
+                          <div key={day} style={{ marginBottom: 6 }}>
+                            <div className="mut" style={{ fontSize: 12, fontWeight: 600, padding: '4px 0' }}>
+                              {fmtDmy(day)}
                             </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                            {list.map(t => (
+                              <div
+                                key={t.id}
+                                onClick={() => setViewingTx(t)}
+                                style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', cursor: 'pointer' }}
+                                className="mut"
+                              >
+                                <span>
+                                  {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'} {t.note ? `(${t.note})` : ''}
+                                </span>
+                                <b style={{ color: t.type === 'income' ? '#1d9bf0' : '#f0534f' }}>{money(t.amount)}</b>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
           {showTimeModal && (
             <TimeRangeModal
@@ -553,227 +664,237 @@ export default function PeriodReport({
 
           {renderMonthBar()}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 4px 14px' }}>
-            <div>
-              <div className="mut" style={{ fontSize: 13 }}>
-                Tổng cộng
-              </div>
-              <b style={{ fontSize: 20, color: accentColor }}>{money(total)}</b>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div className="mut" style={{ fontSize: 13 }}>
-                Trung bình hàng ngày
-              </div>
-              <b style={{ fontSize: 20, color: accentColor }}>
-                {new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(avgDaily)} ₫
-              </b>
-            </div>
-          </div>
-
-          {/* Card So sánh với trung bình 3 tháng trước */}
-          <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>
-                So sánh với trung bình 3<br />
-                tháng trước <span className="mut">?</span>
-              </div>
-              {showAvgCompare && (
-                <div className="mut" style={{ fontSize: 18, fontWeight: 600 }}>
-                  {new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(avg3M)} ₫
+          <div
+            key={from}
+            className={swipeStageClass}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            style={swipeStageStyle}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 4px 14px' }}>
+              <div>
+                <div className="mut" style={{ fontSize: 13 }}>
+                  Tổng cộng
                 </div>
-              )}
-            </div>
-            <button
-              onClick={() => setShowAvgCompare(v => !v)}
-              style={{
-                background: 'none',
-                border: 0,
-                color: 'var(--acc)',
-                fontWeight: 600,
-                fontSize: 15,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <span>👁</span> {showAvgCompare ? 'Hiện' : 'Ẩn'}
-            </button>
-          </div>
-
-          {/* Chuyển đổi Chi tiết / Xu hướng */}
-          <div className="seg" style={{ margin: '14px 0 18px' }}>
-            <button className={subMode === 'detail' ? 'on' : ''} onClick={() => setSubMode('detail')}>
-              Chi tiết
-            </button>
-            <button className={subMode === 'trend' ? 'on' : ''} onClick={() => setSubMode('trend')}>
-              Xu hướng
-            </button>
-          </div>
-
-          {subMode === 'detail' ? (
-            <>
-              <div style={{ margin: '10px 0 20px' }}>
-                <DonutWithBadges items={catList} size={240} />
+                <b style={{ fontSize: 20, color: accentColor }}>{money(total)}</b>
               </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="mut" style={{ fontSize: 13 }}>
+                  Trung bình hàng ngày
+                </div>
+                <b style={{ fontSize: 20, color: accentColor }}>
+                  {new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(avgDaily)} ₫
+                </b>
+              </div>
+            </div>
 
-              <div className="card" style={{ padding: '4px 16px' }}>
-                {catList.length === 0 && <div className="empty">Chưa có phát sinh trong giai đoạn này</div>}
-                {catList.map(c => {
-                  const key = `cat-${c.id}`
-                  const isOpen = expandedKey === key
-                  return (
-                    <div key={c.id} style={{ borderBottom: '1px solid var(--bd)' }}>
-                      <div
-                        className="row"
-                        style={{ borderBottom: 0, cursor: 'pointer' }}
-                        onClick={() => setExpandedKey(isOpen ? null : key)}
-                      >
-                        <div className="ico round" style={{ background: c.color }}>
-                          {c.icon}
+            {/* Card So sánh với trung bình 3 tháng trước */}
+            <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>
+                  So sánh với trung bình 3<br />
+                  tháng trước <span className="mut">?</span>
+                </div>
+                {showAvgCompare && (
+                  <div className="mut" style={{ fontSize: 18, fontWeight: 600 }}>
+                    {new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(avg3M)} ₫
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setShowAvgCompare(v => !v)}
+                style={{
+                  background: 'none',
+                  border: 0,
+                  color: 'var(--acc)',
+                  fontWeight: 600,
+                  fontSize: 15,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>👁</span> {showAvgCompare ? 'Hiện' : 'Ẩn'}
+              </button>
+            </div>
+
+            {/* Chuyển đổi Chi tiết / Xu hướng */}
+            <div className="seg" style={{ margin: '14px 0 18px' }}>
+              <button className={subMode === 'detail' ? 'on' : ''} onClick={() => setSubMode('detail')}>
+                Chi tiết
+              </button>
+              <button className={subMode === 'trend' ? 'on' : ''} onClick={() => setSubMode('trend')}>
+                Xu hướng
+              </button>
+            </div>
+
+            {subMode === 'detail' ? (
+              <>
+                <div style={{ margin: '10px 0 20px' }}>
+                  <DonutWithBadges items={catList} size={240} />
+                </div>
+
+                <div className="card" style={{ padding: '4px 16px' }}>
+                  {catList.length === 0 && <div className="empty">Chưa có phát sinh trong giai đoạn này</div>}
+                  {catList.map(c => {
+                    const key = `cat-${c.id}`
+                    const isOpen = expandedKey === key
+                    return (
+                      <div key={c.id} style={{ borderBottom: '1px solid var(--bd)' }}>
+                        <div
+                          className="row"
+                          style={{ borderBottom: 0, cursor: 'pointer' }}
+                          onClick={() => setExpandedKey(isOpen ? null : key)}
+                        >
+                          <div className="ico round" style={{ background: c.color }}>
+                            {c.icon}
+                          </div>
+                          <div className="grow">
+                            <b style={{ fontSize: 16 }}>{c.name}</b>
+                          </div>
+                          <b style={{ fontSize: 16, color: accentColor }}>{money(c.amount)}</b>
+                          <span className="mut" style={{ fontSize: 18, marginLeft: 4 }}>
+                            {isOpen ? '⌄' : '›'}
+                          </span>
                         </div>
-                        <div className="grow">
-                          <b style={{ fontSize: 16 }}>{c.name}</b>
-                        </div>
-                        <b style={{ fontSize: 16, color: accentColor }}>{money(c.amount)}</b>
-                        <span className="mut" style={{ fontSize: 18, marginLeft: 4 }}>
-                          {isOpen ? '⌄' : '›'}
-                        </span>
-                      </div>
-                      {isOpen && (
-                        <div className="report-subtx-container">
-                          <div className="report-subtx-table">
-                            {c.txs.map(t => (
-                              <div
-                                key={t.id}
-                                onClick={() => setViewingTx(t)}
-                                className="report-subtx-item"
-                              >
-                                <div className="report-subtx-date-badge">
-                                  {fmtDmy(t.date).slice(0, 5)}
-                                </div>
-                                <div className="report-subtx-content">
-                                  <div className="report-subtx-note">
-                                    {t.note || fMap.get(t.fundId)?.name || 'Giao dịch'}
+                        {isOpen && (
+                          <div className="report-subtx-container">
+                            <div className="report-subtx-table">
+                              {c.txs.map(t => (
+                                <div
+                                  key={t.id}
+                                  onClick={() => setViewingTx(t)}
+                                  className="report-subtx-item"
+                                >
+                                  <div className="report-subtx-date-badge">
+                                    {fmtDmy(t.date).slice(0, 5)}
                                   </div>
-                                  {t.note && (
+                                  <div className="report-subtx-content">
+                                    <div className="report-subtx-note">
+                                      {t.note || fMap.get(t.fundId)?.name || 'Giao dịch'}
+                                    </div>
+                                    {t.note && (
+                                      <small className="mut" style={{ fontSize: 11 }}>
+                                        {fMap.get(t.fundId)?.name}
+                                      </small>
+                                    )}
+                                  </div>
+                                  <div className="report-subtx-money">
+                                    <b style={{ color: accentColor }}>{money(t.amount)}</b>
+                                    <span className="report-subtx-chevron">›</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="card" style={{ paddingTop: 18 }}>
+                  <div style={{ width: '100%', height: 220 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={weekBuckets} margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
+                        <CartesianGrid vertical={false} stroke="#8884" />
+                        <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
+                        <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
+                        <Tooltip
+                          cursor={{ fill: 'rgba(148, 163, 184, 0.1)', radius: 6 }}
+                          contentStyle={{
+                            background: 'var(--card)',
+                            border: '1px solid var(--bd)',
+                            borderRadius: 12,
+                            boxShadow: '0 8px 24px #0006',
+                            color: 'var(--fg)',
+                            fontSize: 13,
+                          }}
+                          labelStyle={{ color: 'var(--mut)', fontWeight: 600, marginBottom: 4 }}
+                          itemStyle={{ color: accentColor, fontWeight: 700 }}
+                          labelFormatter={lbl => `Ngày ${lbl}/${format(cur, 'MM')}`}
+                          formatter={v => [money(Number(v)), isExp ? 'Khoản chi' : 'Khoản thu']}
+                        />
+                        {showAvgCompare && avg3M > 0 && (
+                          <ReferenceLine
+                            y={Math.round(avg3M / 4)}
+                            stroke="#8e98a4"
+                            strokeDasharray="4 4"
+                          />
+                        )}
+                        <Bar
+                          dataKey="amount"
+                          name={isExp ? 'Khoản chi' : 'Khoản thu'}
+                          fill={accentColor}
+                          radius={[4, 4, 0, 0]}
+                          barSize={52}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="card" style={{ padding: '4px 16px' }}>
+                  {weekBuckets.map(b => {
+                    const key = `wk-${b.label}`
+                    const isOpen = expandedKey === key
+                    return (
+                      <div key={b.label} style={{ borderBottom: '1px solid var(--bd)' }}>
+                        <div
+                          className="row"
+                          style={{ borderBottom: 0, cursor: 'pointer' }}
+                          onClick={() => setExpandedKey(isOpen ? null : key)}
+                        >
+                          <div className="grow">
+                            <span style={{ fontSize: 16, color: 'var(--mut)' }}>{b.label}</span>
+                          </div>
+                          <b style={{ fontSize: 16, color: accentColor }}>{money(b.amount)}</b>
+                          <span className="mut" style={{ fontSize: 18, marginLeft: 6 }}>
+                            {isOpen ? '⌄' : '›'}
+                          </span>
+                        </div>
+                        {isOpen && b.txs.length > 0 && (
+                          <div className="report-subtx-container">
+                            <div className="report-subtx-table">
+                              {b.txs.map(t => (
+                                <div
+                                  key={t.id}
+                                  onClick={() => setViewingTx(t)}
+                                  className="report-subtx-item"
+                                >
+                                  <div className="report-subtx-date-badge">
+                                    {fmtDmy(t.date).slice(0, 5)}
+                                  </div>
+                                  <div className="report-subtx-content">
+                                    <div className="report-subtx-note">
+                                      {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'}
+                                      {t.note ? ` · ${t.note}` : ''}
+                                    </div>
                                     <small className="mut" style={{ fontSize: 11 }}>
                                       {fMap.get(t.fundId)?.name}
                                     </small>
-                                  )}
-                                </div>
-                                <div className="report-subtx-money">
-                                  <b style={{ color: accentColor }}>{money(t.amount)}</b>
-                                  <span className="report-subtx-chevron">›</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="card" style={{ paddingTop: 18 }}>
-                <div style={{ width: '100%', height: 220 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={weekBuckets} margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
-                      <CartesianGrid vertical={false} stroke="#8884" />
-                      <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
-                      <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(148, 163, 184, 0.1)', radius: 6 }}
-                        contentStyle={{
-                          background: 'var(--card)',
-                          border: '1px solid var(--bd)',
-                          borderRadius: 12,
-                          boxShadow: '0 8px 24px #0006',
-                          color: 'var(--fg)',
-                          fontSize: 13,
-                        }}
-                        labelStyle={{ color: 'var(--mut)', fontWeight: 600, marginBottom: 4 }}
-                        itemStyle={{ color: accentColor, fontWeight: 700 }}
-                        labelFormatter={lbl => `Ngày ${lbl}/${format(cur, 'MM')}`}
-                        formatter={v => [money(Number(v)), isExp ? 'Khoản chi' : 'Khoản thu']}
-                      />
-                      {showAvgCompare && avg3M > 0 && (
-                        <ReferenceLine
-                          y={Math.round(avg3M / 4)}
-                          stroke="#8e98a4"
-                          strokeDasharray="4 4"
-                        />
-                      )}
-                      <Bar
-                        dataKey="amount"
-                        name={isExp ? 'Khoản chi' : 'Khoản thu'}
-                        fill={accentColor}
-                        radius={[4, 4, 0, 0]}
-                        barSize={52}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="card" style={{ padding: '4px 16px' }}>
-                {weekBuckets.map(b => {
-                  const key = `wk-${b.label}`
-                  const isOpen = expandedKey === key
-                  return (
-                    <div key={b.label} style={{ borderBottom: '1px solid var(--bd)' }}>
-                      <div
-                        className="row"
-                        style={{ borderBottom: 0, cursor: 'pointer' }}
-                        onClick={() => setExpandedKey(isOpen ? null : key)}
-                      >
-                        <div className="grow">
-                          <span style={{ fontSize: 16, color: 'var(--mut)' }}>{b.label}</span>
-                        </div>
-                        <b style={{ fontSize: 16, color: accentColor }}>{money(b.amount)}</b>
-                        <span className="mut" style={{ fontSize: 18, marginLeft: 6 }}>
-                          {isOpen ? '⌄' : '›'}
-                        </span>
-                      </div>
-                      {isOpen && b.txs.length > 0 && (
-                        <div className="report-subtx-container">
-                          <div className="report-subtx-table">
-                            {b.txs.map(t => (
-                              <div
-                                key={t.id}
-                                onClick={() => setViewingTx(t)}
-                                className="report-subtx-item"
-                              >
-                                <div className="report-subtx-date-badge">
-                                  {fmtDmy(t.date).slice(0, 5)}
-                                </div>
-                                <div className="report-subtx-content">
-                                  <div className="report-subtx-note">
-                                    {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'}
-                                    {t.note ? ` · ${t.note}` : ''}
                                   </div>
-                                  <small className="mut" style={{ fontSize: 11 }}>
-                                    {fMap.get(t.fundId)?.name}
-                                  </small>
+                                  <div className="report-subtx-money">
+                                    <b style={{ color: accentColor }}>{money(t.amount)}</b>
+                                    <span className="report-subtx-chevron">›</span>
+                                  </div>
                                 </div>
-                                <div className="report-subtx-money">
-                                  <b style={{ color: accentColor }}>{money(t.amount)}</b>
-                                  <span className="report-subtx-chevron">›</span>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
           {showTimeModal && (
             <TimeRangeModal
               filter={effectiveFilter}
@@ -837,121 +958,131 @@ export default function PeriodReport({
 
         {renderMonthBar()}
 
-        <div style={{ padding: '4px 4px 14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span className="mut">Số dư đầu</span>
-            <b>{money(openingBalance)}</b>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="mut">Số dư cuối</span>
-            <b>{money(closingBalance)}</b>
-          </div>
-        </div>
-
-        {/* Card 1: Thu nhập ròng */}
-        <div className="card">
-          <div className="card-head">
-            <b style={{ fontSize: 17 }}>
-              Thu nhập ròng <span className="mut">?</span>
-            </b>
-            <span className="link-green" onClick={() => setScreen('net')}>
-              Xem chi tiết
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                background: netIncome >= 0 ? '#28c76f28' : '#f0534f28',
-                color: netIncome >= 0 ? 'var(--inc)' : 'var(--exp)',
-                display: 'grid',
-                placeItems: 'center',
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
-              {netIncome >= 0 ? '+' : '−'}
-            </span>
-            <b className={netIncome >= 0 ? 'inc' : 'exp'} style={{ fontSize: 22 }}>
-              {money(Math.abs(netIncome))}
-            </b>
-          </div>
-
-          {/* Thanh Khoản thu */}
-          <div style={{ marginBottom: 14, cursor: 'pointer' }} onClick={() => setScreen('income')}>
-            <div style={{ color: '#1d9bf0', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
-              {money(totalIncome)}
+        <div
+          key={from}
+          className={swipeStageClass}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          style={swipeStageStyle}
+        >
+          <div style={{ padding: '4px 4px 14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span className="mut">Số dư đầu</span>
+              <b>{money(openingBalance)}</b>
             </div>
-            <div className="net-bar-track">
-              <div
-                className="net-bar-fill"
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="mut">Số dư cuối</span>
+              <b>{money(closingBalance)}</b>
+            </div>
+          </div>
+
+          {/* Card 1: Thu nhập ròng */}
+          <div className="card">
+            <div className="card-head">
+              <b style={{ fontSize: 17 }}>
+                Thu nhập ròng <span className="mut">?</span>
+              </b>
+              <span className="link-green" onClick={() => setScreen('net')}>
+                Xem chi tiết
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <span
                 style={{
-                  width: `${Math.max(18, Math.round((totalIncome / maxBar) * 100))}%`,
-                  background: '#1d9bf0',
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: netIncome >= 0 ? '#28c76f28' : '#f0534f28',
+                  color: netIncome >= 0 ? 'var(--inc)' : 'var(--exp)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontWeight: 700,
+                  fontSize: 14,
                 }}
               >
-                Khoản thu
-              </div>
+                {netIncome >= 0 ? '+' : '−'}
+              </span>
+              <b className={netIncome >= 0 ? 'inc' : 'exp'} style={{ fontSize: 22 }}>
+                {money(Math.abs(netIncome))}
+              </b>
             </div>
-          </div>
 
-          {/* Thanh Khoản chi */}
-          <div style={{ cursor: 'pointer' }} onClick={() => setScreen('expense')}>
-            <div style={{ color: '#f0534f', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
-              {money(totalExpense)}
-            </div>
-            <div className="net-bar-track">
-              <div
-                className="net-bar-fill"
-                style={{
-                  width: `${Math.max(18, Math.round((totalExpense / maxBar) * 100))}%`,
-                  background: '#f0534f',
-                }}
-              >
-                Khoản chi
+            {/* Thanh Khoản thu */}
+            <div style={{ marginBottom: 14, cursor: 'pointer' }} onClick={() => setScreen('income')}>
+              <div style={{ color: '#1d9bf0', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
+                {money(totalIncome)}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Báo cáo theo nhóm */}
-        <div className="card">
-          <b style={{ fontSize: 17, display: 'block', marginBottom: 12 }}>Báo cáo theo nhóm</b>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-            <div className="group-stat-box" onClick={() => setScreen('income')}>
-              <div>
-                <div className="mut" style={{ fontSize: 14 }}>
+              <div className="net-bar-track">
+                <div
+                  className="net-bar-fill"
+                  style={{
+                    width: `${Math.max(18, Math.round((totalIncome / maxBar) * 100))}%`,
+                    background: '#1d9bf0',
+                  }}
+                >
                   Khoản thu
                 </div>
-                <b style={{ color: '#1d9bf0', fontSize: 16 }}>{money(totalIncome)}</b>
               </div>
-              <span className="mut" style={{ fontSize: 18 }}>
-                ›
-              </span>
             </div>
 
-            <div className="group-stat-box" onClick={() => setScreen('expense')}>
-              <div>
-                <div className="mut" style={{ fontSize: 14 }}>
+            {/* Thanh Khoản chi */}
+            <div style={{ cursor: 'pointer' }} onClick={() => setScreen('expense')}>
+              <div style={{ color: '#f0534f', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
+                {money(totalExpense)}
+              </div>
+              <div className="net-bar-track">
+                <div
+                  className="net-bar-fill"
+                  style={{
+                    width: `${Math.max(18, Math.round((totalExpense / maxBar) * 100))}%`,
+                    background: '#f0534f',
+                  }}
+                >
                   Khoản chi
                 </div>
-                <b style={{ color: '#f0534f', fontSize: 16 }}>{money(totalExpense)}</b>
               </div>
-              <span className="mut" style={{ fontSize: 18 }}>
-                ›
-              </span>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center' }}>
-            <div onClick={() => setScreen('income')} style={{ cursor: 'pointer' }}>
-              <DonutWithBadges items={incomeCats} size={156} />
+          {/* Card 2: Báo cáo theo nhóm */}
+          <div className="card">
+            <b style={{ fontSize: 17, display: 'block', marginBottom: 12 }}>Báo cáo theo nhóm</b>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+              <div className="group-stat-box" onClick={() => setScreen('income')}>
+                <div>
+                  <div className="mut" style={{ fontSize: 14 }}>
+                    Khoản thu
+                  </div>
+                  <b style={{ color: '#1d9bf0', fontSize: 16 }}>{money(totalIncome)}</b>
+                </div>
+                <span className="mut" style={{ fontSize: 18 }}>
+                  ›
+                </span>
+              </div>
+
+              <div className="group-stat-box" onClick={() => setScreen('expense')}>
+                <div>
+                  <div className="mut" style={{ fontSize: 14 }}>
+                    Khoản chi
+                  </div>
+                  <b style={{ color: '#f0534f', fontSize: 16 }}>{money(totalExpense)}</b>
+                </div>
+                <span className="mut" style={{ fontSize: 18 }}>
+                  ›
+                </span>
+              </div>
             </div>
-            <div onClick={() => setScreen('expense')} style={{ cursor: 'pointer' }}>
-              <DonutWithBadges items={expenseCats} size={156} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center' }}>
+              <div onClick={() => setScreen('income')} style={{ cursor: 'pointer' }}>
+                <DonutWithBadges items={incomeCats} size={156} />
+              </div>
+              <div onClick={() => setScreen('expense')} style={{ cursor: 'pointer' }}>
+                <DonutWithBadges items={expenseCats} size={156} />
+              </div>
             </div>
           </div>
         </div>
