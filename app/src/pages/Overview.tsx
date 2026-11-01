@@ -14,7 +14,7 @@ import {
   YAxis,
 } from 'recharts'
 import { addDays, addMonths, endOfMonth, format, getDaysInMonth, startOfMonth, startOfWeek } from 'date-fns'
-import { db, type Category, type Fund, type Tx } from '../db'
+import { db, type Budget, type Category, type Fund, type Tx } from '../db'
 import {
   analyzeCreditFund,
   computeTotalBalance,
@@ -32,15 +32,21 @@ import {
 import TxForm, { type TxFormDraft } from '../components/TxForm'
 import TxDetailModal from '../components/TxDetailModal'
 import PeriodReport from '../components/PeriodReport'
+import SmartInsightsModal from '../components/SmartInsightsModal'
+import { showAlert, showPrompt } from '../components/AppDialog'
+import { computeSmartInsights, type HeroInsightCard } from '../smartInsights'
 
 const NO_TXS: Tx[] = []
 const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
+const NO_BUDGETS: Budget[] = []
 
 export default function Overview() {
   const nav = useNavigate()
   const [hideBalance, setHideBalance] = useState(false)
   const [reportSlide, setReportSlide] = useState<0 | 1>(0) // 0: Báo cáo xu hướng, 1: Báo cáo chi tiêu
+  const [insightIdx, setInsightIdx] = useState(0)
+  const [showInsightsModal, setShowInsightsModal] = useState(false)
   const [trendTab, setTrendTab] = useState<'expense' | 'income'>('expense')
   const [barScope, setBarScope] = useState<'week' | 'month'>('month')
   const [topScope, setTopScope] = useState<'week' | 'month'>('month')
@@ -76,6 +82,7 @@ export default function Overview() {
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
   const cats = useLiveQuery(() => db.categories.toArray(), [], NO_CATS)
+  const budgets = useLiveQuery(() => db.budgets.toArray(), [], NO_BUDGETS)
 
   const cMap = useMemo(() => new Map(cats.map(c => [c.id!, c])), [cats])
   const fMap = useMemo(() => new Map(funds.map(f => [f.id!, f])), [funds])
@@ -109,21 +116,75 @@ export default function Overview() {
     .filter(t => t.type === 'expense' && t.date >= prevWeekStart && t.date < weekStart)
     .reduce((s, t) => s + t.amount, 0)
 
-  // Money Insider: nhóm chi lớn nhất tháng (hoặc Thiết Yếu 50%)
-  const topCatThisMonth = useMemo(() => {
-    const m = new Map<number, number>()
-    thisMonthTxs
-      .filter(t => t.type === 'expense')
-      .forEach(t => m.set(t.categoryId ?? 0, (m.get(t.categoryId ?? 0) ?? 0) + t.amount))
-    const sorted = [...m.entries()].sort((a, b) => b[1] - a[1])
-    if (sorted.length === 0) return { name: 'Thiết Yếu 50%', amount: 0 }
-    const [cid, amt] = sorted[0]
-    return { name: cMap.get(cid)?.name ?? 'Chi tiêu chính', amount: amt }
-  }, [thisMonthTxs, cMap])
+  const smartInsights = useMemo(
+    () => computeSmartInsights({ txs, funds, cats, budgets, today }),
+    [txs, funds, cats, budgets, today],
+  )
 
-  const avgDailyThisMonth = currentDayNum > 0 ? thisMonthExpense / currentDayNum : 0
-  const monthDiffPct =
-    prevMonthExpense > 0 ? Math.round(((thisMonthExpense - prevMonthExpense) / prevMonthExpense) * 100) : 0
+  const activeHeroCard: HeroInsightCard | undefined =
+    smartInsights.heroCards[insightIdx % Math.max(1, smartInsights.heroCards.length)] ??
+    smartInsights.heroCards[0]
+
+  async function handleQuickBudget(categoryId: number, suggestedLimit: number) {
+    const c = cMap.get(categoryId)
+    if (!c) return
+    const existing = budgets.find(b => b.categoryId === categoryId)
+    const v = await showPrompt({
+      title: `Hạn mức tháng · ${c.name}`,
+      message: 'Đặt trần ngân sách tháng cho nhóm này để kiểm soát tốc độ chi tiêu (để trống hoặc 0 để xoá):',
+      icon: c.icon,
+      defaultValue: String(existing?.limit ?? suggestedLimit),
+      placeholder: 'Ví dụ: 1,500,000',
+      unit: '₫',
+      numeric: true,
+      quickAmounts: [500_000, 1_000_000, 1_500_000, 2_000_000, 3_000_000, 5_000_000],
+      allowClearZero: Boolean(existing?.limit),
+      confirmText: 'Lưu hạn mức',
+    })
+    if (v === null) return
+    const n = Number(v.replace(/[^\d]/g, ''))
+    if (!n) {
+      if (existing?.id) await db.budgets.delete(existing.id)
+      return
+    }
+    if (existing?.id) await db.budgets.put({ ...existing, limit: n })
+    else await db.budgets.add({ categoryId, limit: n })
+    await showAlert({
+      title: 'Đã kích hoạt hạn mức',
+      message: `Đã đặt trần ngân sách tháng cho "${c.name}" ở mức ${money(n)}.`,
+      icon: '🎯',
+      tone: 'success',
+    })
+  }
+
+  function handleQuickTransferSaving(amount: number) {
+    const fromId = cashFunds[0]?.id ?? funds[0]?.id
+    const toId =
+      smartInsights.opportunityCost.savingFundId &&
+      smartInsights.opportunityCost.savingFundId !== fromId
+        ? smartInsights.opportunityCost.savingFundId
+        : funds.find(f => !f.archived && f.id !== fromId)?.id
+    setPayDraft({
+      type: 'transfer',
+      amount,
+      fundId: fromId,
+      toFundId: toId ?? null,
+      note: `Tích lũy thông minh tháng ${smartInsights.monthStr}`,
+    })
+  }
+
+  function handleHeroCta(card: HeroInsightCard) {
+    const { cta } = card
+    if (cta.actionType === 'set_budget' && cta.categoryId) {
+      handleQuickBudget(cta.categoryId, cta.suggestedLimit ?? 1_000_000)
+    } else if (cta.actionType === 'transfer_saving') {
+      handleQuickTransferSaving(cta.suggestedTransferAmount ?? 500_000)
+    } else if (cta.actionType === 'open_expense_report') {
+      openReport('expense')
+    } else {
+      setShowInsightsModal(true)
+    }
+  }
 
   // Dữ liệu biểu đồ xu hướng lũy kế theo ngày trong tháng (Tháng này vs TB 3 tháng trước)
   const trendData = useMemo(() => {
@@ -323,52 +384,263 @@ export default function Overview() {
         )}
       </div>
 
-      {/* 3. Money Insider */}
+      {/* 3. Smart Insights (Phân tích hành vi, Dự báo dòng tiền & Đề xuất 1-chạm) */}
       <div className="sec-head">
-        <span>Money Insider</span>
-        <span className="link-green" onClick={() => nav('/budgets')}>
-          ☰
+        <span>Smart Insights</span>
+        <span className="link-green" onClick={() => setShowInsightsModal(true)}>
+          Xem chi tiết
         </span>
       </div>
       <div className="card">
-        <div style={{ paddingBottom: 12, borderBottom: '1px solid var(--bd)' }}>
-          <div style={{ fontWeight: 600, fontSize: 16 }}>
-            {topCatThisMonth.name} <span className="mut">ⓘ</span>
-          </div>
-          <div style={{ marginTop: 4 }}>
-            <span className="mut">Tổng đã chi </span>
-            <b className="exp" style={{ fontSize: 20 }}>
-              {money(topCatThisMonth.amount)}
-            </b>
-          </div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12 }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>Tháng này</div>
-            <div className="mut" style={{ fontSize: 13, margin: '2px 0' }}>
-              Trung bình
-            </div>
-            <div>
-              <b style={{ fontSize: 18 }}>
-                {new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(avgDailyThisMonth)} ₫
+        {/* Phần trên: Nhóm chi dẫn đầu + Dự báo dòng tiền & Dual-Pace Sparkbar */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 12,
+            paddingBottom: 12,
+            borderBottom: '1px solid var(--bd)',
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 18 }}>{smartInsights.topCat.icon}</span>
+              <b
+                style={{
+                  fontSize: 16,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {smartInsights.topCat.name}
               </b>
-              <span className="mut">/ngày</span>
+              {smartInsights.topCat.amount > 0 && (
+                <span className="pill-tag" style={{ fontSize: 11 }}>
+                  ~{smartInsights.topCat.workHours}h làm
+                </span>
+              )}
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <span className="mut" style={{ fontSize: 13 }}>
+                Tổng đã chi{' '}
+              </span>
+              <b className="exp" style={{ fontSize: 19 }}>
+                {money(smartInsights.topCat.amount)}
+              </b>
+            </div>
+            <div className="mut" style={{ fontSize: 12.5, marginTop: 4 }}>
+              Dự báo chốt tháng {smartInsights.monthStr}:{' '}
+              <b style={{ color: 'var(--fg)' }}>
+                ~{money(smartInsights.burnRate.projectedMonthExpense)}
+              </b>{' '}
+              ({money(smartInsights.burnRate.weightedDailyBurn)}/ngày)
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
+
+          <div
+            style={{ textAlign: 'center', flexShrink: 0, cursor: 'pointer' }}
+            onClick={() => setShowInsightsModal(true)}
+            title="Nhấn để xem phân tích chi tiết"
+          >
             <div
               className="ring-badge"
               style={{
-                borderColor: monthDiffPct > 0 ? 'var(--exp)' : 'var(--inc)',
+                borderColor:
+                  smartInsights.burnRate.projectedVsBaselinePct > 0
+                    ? 'var(--exp)'
+                    : 'var(--inc)',
               }}
             >
-              {Math.abs(monthDiffPct)}%
+              {Math.abs(smartInsights.burnRate.projectedVsBaselinePct)}%
             </div>
-            <small className="mut" style={{ display: 'block', marginTop: 4 }}>
-              {monthDiffPct >= 0 ? 'Cao hơn tháng trước' : 'Thấp hơn tháng trước'}
+            <small className="mut" style={{ display: 'block', marginTop: 4, fontSize: 11.5 }}>
+              {smartInsights.burnRate.projectedVsBaselinePct > 0
+                ? 'Cao hơn TB tháng'
+                : 'Thấp hơn TB tháng'}
             </small>
           </div>
         </div>
+
+        {/* Thanh nhịp độ chi tiêu siêu gọn (Micro-visualization / Dual-Pace Sparkbar) */}
+        <div style={{ paddingTop: 10, paddingBottom: 10 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 11.5,
+              marginBottom: 5,
+            }}
+            className="mut"
+          >
+            <span>
+              Tốc độ chi:{' '}
+              <b
+                style={{
+                  color:
+                    smartInsights.burnRate.paceStatus === 'overpace'
+                      ? 'var(--exp)'
+                      : smartInsights.burnRate.paceStatus === 'watch'
+                        ? '#f59e0b'
+                        : 'var(--inc)',
+                }}
+              >
+                {smartInsights.burnRate.spendProgressPct}%
+              </b>
+            </span>
+            <span>
+              Thời gian tháng ({smartInsights.todayStr}):{' '}
+              <b>{smartInsights.burnRate.timeProgressPct}%</b>
+            </span>
+          </div>
+          <div
+            style={{
+              position: 'relative',
+              height: 7,
+              background: 'var(--bd)',
+              borderRadius: 99,
+            }}
+          >
+            <div
+              style={{
+                width: `${Math.min(100, smartInsights.burnRate.spendProgressPct)}%`,
+                height: '100%',
+                borderRadius: 99,
+                background:
+                  smartInsights.burnRate.paceStatus === 'overpace'
+                    ? 'var(--exp)'
+                    : smartInsights.burnRate.paceStatus === 'watch'
+                      ? '#f59e0b'
+                      : 'var(--inc)',
+              }}
+            />
+            <div
+              title={`Tiến độ thời gian tháng: ${smartInsights.burnRate.timeProgressPct}%`}
+              style={{
+                position: 'absolute',
+                left: `${Math.min(98, Math.max(2, smartInsights.burnRate.timeProgressPct))}%`,
+                top: -2,
+                bottom: -2,
+                width: 2.5,
+                borderRadius: 2,
+                background: 'var(--fg)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Hộp nhận định hành vi thông minh & Nút can thiệp 1-chạm */}
+        {activeHeroCard && (
+          <div
+            style={{
+              background: 'color-mix(in srgb, var(--fg) 5%, transparent)',
+              borderRadius: 14,
+              padding: '11px 12px',
+              marginTop: 2,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 4,
+                gap: 6,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color:
+                    activeHeroCard.tone === 'danger'
+                      ? 'var(--exp)'
+                      : activeHeroCard.tone === 'warn'
+                        ? '#f59e0b'
+                        : activeHeroCard.tone === 'good'
+                          ? 'var(--inc)'
+                          : '#06b6d4',
+                }}
+              >
+                {activeHeroCard.icon} {activeHeroCard.badge.toUpperCase()}
+              </span>
+              <span className="mut" style={{ fontSize: 11.5 }}>
+                {activeHeroCard.metricLabel}: <b>{activeHeroCard.metricValue}</b>
+              </span>
+            </div>
+
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              {activeHeroCard.title}
+            </div>
+            <div
+              className="mut"
+              style={{ fontSize: 12.8, lineHeight: 1.45, marginBottom: 10 }}
+            >
+              {activeHeroCard.body}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <button
+                type="button"
+                className="btn primary"
+                style={{
+                  padding: '7px 12px',
+                  fontSize: 12.5,
+                  borderRadius: 10,
+                  fontWeight: 600,
+                }}
+                onClick={() => handleHeroCta(activeHeroCard)}
+              >
+                {activeHeroCard.cta.label}
+              </button>
+
+              {smartInsights.heroCards.length > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    style={{ fontSize: 15, padding: '2px 6px' }}
+                    onClick={() =>
+                      setInsightIdx(
+                        i =>
+                          (i - 1 + smartInsights.heroCards.length) %
+                          smartInsights.heroCards.length,
+                      )
+                    }
+                    title="Nhận định trước"
+                  >
+                    ‹
+                  </button>
+                  <span className="mut" style={{ fontSize: 11.5 }}>
+                    {(insightIdx % smartInsights.heroCards.length) + 1}/
+                    {smartInsights.heroCards.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    style={{ fontSize: 15, padding: '2px 6px' }}
+                    onClick={() =>
+                      setInsightIdx(
+                        i => (i + 1) % smartInsights.heroCards.length,
+                      )
+                    }
+                    title="Nhận định tiếp theo"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. Báo cáo tháng này (Xu hướng & Chi tiêu) */}
@@ -649,6 +921,15 @@ export default function Overview() {
           cats={cats}
           initialScreen={reportScreen}
           onClose={() => setReportScreen(null)}
+        />
+      )}
+      {showInsightsModal && (
+        <SmartInsightsModal
+          insights={smartInsights}
+          onClose={() => setShowInsightsModal(false)}
+          onQuickBudget={handleQuickBudget}
+          onQuickTransferSaving={handleQuickTransferSaving}
+          onOpenExpenseReport={() => openReport('expense')}
         />
       )}
     </>

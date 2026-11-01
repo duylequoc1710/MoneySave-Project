@@ -23,5 +23,6 @@
 | T-19 | Thẻ tín dụng: báo cáo tổng gồm chi tiêu thẻ, kỳ sao kê gồm giao dịch ghi trước (01/11), tổng số dư không lẫn dư nợ; `auditData` (số tiền/ngày/ví/nhóm/chuyển quỹ/trùng/thẻ dương); sửa test nhắc sao lưu bị chập chờn | ✅ Pass (40/40 unit tests) |
 | T-20 | Kiểm thử In-App `CategoryPickerModal`, `DatePickerModal`, `CatDetailModal` và sự kiện mở lịch trên `DateInput` | ✅ Pass (42/42 unit tests) |
 | T-21 | Kiểm thử Hệ thống Popup In-App (`AppDialog`: `showAlert`, `showConfirm`, `showPrompt` thay thế 100% hộp thoại trình duyệt), liên kết `"Xem chi tiết"` tại trang Tổng quan (mở Báo cáo Thu nhập ròng & Chi tiết khoản chi), kiểm tra bảo mật `importAll` và xoá sạch toàn bộ tham chiếu `MoneyLover` | ✅ Pass (43/43 unit tests) |
+| T-22 | Kiểm thử Hệ thống Phân tích Hành vi Tài chính 4 Trụ cột `Smart Insights` (`computeSmartInsights` & `SmartInsightsModal`): Dự báo dòng tiền làm mượt đầu tháng, Phát hiện rò rỉ vi mô & đột biến, Nhịp sinh học Thứ 2–CN & Payday Effect, Quy đổi giờ làm việc/lãi kép và hành động 1-chạm | ✅ Pass (44/44 unit tests) |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.

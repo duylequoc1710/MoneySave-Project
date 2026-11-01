@@ -42,6 +42,7 @@ import {
   parseFirebaseConfigInput,
 } from './cloudSync.ts'
 import { auditData } from './dataAudit.ts'
+import { computeSmartInsights } from './smartInsights.ts'
 import { signInWithEmail, signUpWithEmail } from './auth.ts'
 
 describe('effectOn – tính số dư quỹ theo giao dịch', () => {
@@ -745,5 +746,66 @@ describe('Bảo mật & Kiểm tra định dạng khi Khôi phục dữ liệu (
       txs: [{ id: 2, type: 'expense', amount: 'not-a-number', date: 'invalid-date', fundId: 1 }],
     })
     await assert.rejects(() => importAll(corruptedPayload, store), /Dữ liệu giao dịch trong bản sao lưu không hợp lệ/)
+  })
+})
+
+describe('Hệ thống Phân tích Hành vi Tài chính 4 Trụ cột (computeSmartInsights)', () => {
+  it('Tính đúng Dự báo dòng tiền, Phát hiện rò rỉ vi mô, Nhịp chi cuối tuần, Chi phí cơ hội & hiển thị dd/MM/yyyy', () => {
+    const funds: Fund[] = [
+      { id: 1, name: 'Ví chính', icon: '💵', color: '#22c55e', initialBalance: 10_000_000 },
+      { id: 2, name: 'Ví Tiết Kiệm', icon: '🏦', color: '#06b6d4', initialBalance: 50_000_000, excludeFromTotal: true },
+    ]
+    const cats: Category[] = [
+      { id: 1, name: 'Siêu Thị', type: 'expense', icon: '🛒', color: '#10b981', fundId: 1 },
+      { id: 2, name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', fundId: 1 },
+      { id: 3, name: 'Lương', type: 'income', icon: '💰', color: '#22c55e', fundId: 1 },
+    ]
+    const txs: Tx[] = [
+      // Tháng 10/2026: Lương + chi tiêu
+      { id: 1, type: 'income', amount: 17_600_000, date: '2026-10-05', fundId: 1, categoryId: 3, note: 'Lương tháng 10', createdAt: 1 },
+      { id: 2, type: 'expense', amount: 2_500_000, date: '2026-10-06', fundId: 1, categoryId: 1, note: 'Mua đồ sau lương', createdAt: 2 },
+      // Các khoản nhỏ lẻ rò rỉ vi mô
+      { id: 3, type: 'expense', amount: 55_000, date: '2026-10-18', fundId: 1, categoryId: 2, note: 'Cà phê', createdAt: 3 },
+      { id: 4, type: 'expense', amount: 65_000, date: '2026-10-24', fundId: 1, categoryId: 2, note: 'Trà sữa', createdAt: 4 },
+      { id: 5, type: 'expense', amount: 70_000, date: '2026-10-25', fundId: 1, categoryId: 2, note: 'Ăn vặt CN', createdAt: 5 },
+      // Ngày 01/11/2026 (Chủ Nhật)
+      { id: 6, type: 'expense', amount: 348_200, date: '2026-11-01', fundId: 1, categoryId: 1, note: 'Đi siêu thị', createdAt: 6 },
+      { id: 7, type: 'expense', amount: 45_000, date: '2026-11-01', fundId: 1, categoryId: 2, note: 'Cà phê sáng', createdAt: 7 },
+    ]
+
+    const res = computeSmartInsights({
+      txs,
+      funds,
+      cats,
+      budgets: [],
+      today: new Date(2026, 10, 1), // 01/11/2026
+    })
+
+    // Định dạng hiển thị luôn là MM/yyyy và dd/MM/yyyy
+    assert.equal(res.monthStr, '11/2026')
+    assert.equal(res.todayStr, '01/11/2026')
+
+    // Top nhóm chi tháng 11/2026 là Siêu Thị (348,200 ₫)
+    assert.equal(res.topCat.name, 'Siêu Thị')
+    assert.equal(res.topCat.amount, 348_200)
+
+    // Trụ cột 1: Dự báo dòng tiền được làm mượt theo lịch sử thay vì lấy 393,200 * 30 = 11.79tr cứng nhắc
+    assert.equal(res.burnRate.thisMonthExpense, 393_200)
+    assert.ok(res.burnRate.projectedMonthExpense > 0)
+
+    // Trụ cột 2: Phát hiện rò rỉ vi mô ở nhóm Ăn uống (4 lần nhỏ lẻ trong 30 ngày qua)
+    assert.ok(res.anomalies.microLeaks.length >= 1)
+    assert.equal(res.anomalies.microLeaks[0].categoryName, 'Ăn uống')
+    assert.equal(res.anomalies.microLeaks[0].txCount, 4)
+
+    // Trụ cột 3: Phát hiện hiệu ứng sau ngày nhận lương (05/10/2026)
+    assert.equal(res.temporal.paydayDetected, true)
+    assert.equal(res.temporal.lastPaydayDateDmy, '05/10/2026')
+    assert.ok(res.temporal.payday5DaySharePct > 50)
+
+    // Trụ cột 4: Lương 17,600,000 / 176 giờ = 100,000 ₫/giờ và chọn đúng Ví Tiết Kiệm
+    assert.equal(res.opportunityCost.hourlyWage, 100_000)
+    assert.equal(res.opportunityCost.savingFundName, 'Ví Tiết Kiệm')
+    assert.ok(res.heroCards.length >= 4)
   })
 })
