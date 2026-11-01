@@ -1,9 +1,9 @@
-# 03 – Mô hình dữ liệu (Dexie schema v2)
+# 03 – Mô hình dữ liệu (Dexie schema v4)
 
 ## Bảng
 **funds** (Quỹ & Thẻ tín dụng): `id, name, icon, color, initialBalance, archived?, kind?(cash|credit), creditLimit?, statementDay?(1..31), dueDay?(1..31), excludeFromTotal?, notifyOnTx?`. Index: `kind`.
 
-**categories** (Nhóm giao dịch): `id, name, type(expense|income), icon, color, fundId?` – `fundId` là quỹ mặc định của nhóm. Index: `type, fundId`.
+**categories** (Nhóm giao dịch): `id, name, type(expense|income), icon, color, fundId?, parentId?` – `fundId` là quỹ mặc định của nhóm, `parentId` là nhóm cha đại diện. Index: `type, fundId, parentId`.
 
 **txs** (Giao dịch): `id, type(expense|income|transfer), amount(>0), date(YYYY-MM-DD), fundId, toFundId?, categoryId?, note, createdAt, recurringId?, excludeFromReport?, installment?`. Index: `date, type, fundId, categoryId, recurringId`.
 - `transfer`: dùng `fundId` (nguồn) + `toFundId` (đích), không có `categoryId`.
@@ -13,6 +13,10 @@
 **budgets**: `id, categoryId, limit, repeatNextMonth?, month?` – hạn mức chi/tháng (`repeatNextMonth` mặc định `true` để lặp lại sang tháng tiếp theo; nếu `false` chỉ áp dụng cho tháng `month` dạng `YYYY-MM`).
 
 **recurrings** (Giao dịch định kỳ tự động): `id, name, type, amount, fundId, toFundId?, categoryId?, note, frequency(monthly|weekly|daily|yearly), dayOfMonth?(1..31), startDate(YYYY-MM-DD), lastGeneratedDate?, active`. Index: `active, frequency, fundId, categoryId`.
+
+**savingsGoals** (Kế hoạch Mục tiêu trong Quỹ Tiết Kiệm): `id, name, icon, color, targetAmount, allocatedAmount, savingsFundId?, startDate(YYYY-MM-DD), targetDate(YYYY-MM-DD), note?, history?, createdAt`. Index: `savingsFundId, targetDate`.
+- `allocatedAmount`: số tiền trích từ số dư của Quỹ Ví Tiết Kiệm phân bổ vào kế hoạch mục tiêu này.
+- `history`: mảng nhật ký phân bổ / rút tiền (`{ id, date, amount, fromFundId?, note? }`).
 
 ## Quy tắc
 - Số dư quỹ = `initialBalance` + Σ `effectOn(tx, fund)`:

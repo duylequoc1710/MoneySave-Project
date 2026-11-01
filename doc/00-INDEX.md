@@ -2,6 +2,8 @@
 
 | File | Nội dung |
 |---|---|
+| ../README.md | **Trang giới thiệu tổng quan dự án (GitHub Landing Page)**, kiến trúc, tính năng & hướng dẫn chạy nhanh |
+| ../CHANGELOG.md | **Nhật ký phát hành phiên bản (`v1.0.0` → `v2.7.2`)** theo chuẩn Keep a Changelog |
 | 01-SRS.md | Đặc tả yêu cầu (chức năng, phi chức năng, user stories, tiêu chí nghiệm thu) |
 | 02-ARCHITECTURE.md | Kiến trúc, công nghệ, luồng dữ liệu, bảo mật |
 | 03-DATA-MODEL.md | Các bảng dữ liệu, quy tắc tính số dư |

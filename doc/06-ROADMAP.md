@@ -20,3 +20,9 @@ Host tĩnh miễn phí (Firebase Hosting / Netlify / GitHub Pages) để cài l�
 
 ## Cập nhật 2026-10-26
 Định dạng `MM/yyyy`/`dd/MM/yyyy` thống nhất; màn Chi tiết thu nhập ròng theo tuần; khoá cuộn nền khi mở sheet; bàn phím số dạng panel nổi (xem sessions/2026-10-26-01.md).
+
+## Cập nhật 2026-11-01 (`v2.7.2` – HOÀN THÀNH)
+- **Smart Insights 4 Trụ cột:** Dự báo dòng tiền (`Burn Rate`), Phát hiện rò rỉ vi mô (`Micro-leaks`), Nhịp sinh học tài chính (`Payday Effect`) & Quy đổi chi phí cơ hội 1-chạm.
+- **Quỹ Tín Dụng & Trả Góp (`3/6/12/24` tháng):** Tách bạch kỳ sao kê đã chốt vs kỳ đang mở, chuyển đổi giao dịch thẻ sang trả góp và theo dõi tiến độ từng kỳ.
+- **Quỹ Tiết Kiệm & Kế Hoạch Mục Tiêu:** Phân bổ dòng tiền 2 tầng (từ các ví khác → Ví Tiết Kiệm → Kế hoạch mục tiêu) với lộ trình 3 giai đoạn `0% → 50% → 100%` kèm Tháng mục tiêu.
+- **Cử chỉ Vuốt Ngang & Đồng bộ UI Đa Nền Tảng:** Vuốt ngang chuyển tháng trên Sổ giao dịch & Báo cáo chi tiết, Ngân sách tháng có lặp lại, hộp thoại `AppDialog` toàn hệ thống và tương thích tuyệt đối với trình duyệt Android / iOS.
