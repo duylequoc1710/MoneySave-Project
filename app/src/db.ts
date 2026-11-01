@@ -279,8 +279,27 @@ export async function importAll(
   store: StoreSubset & Pick<MoneyDB, 'transaction'> = db,
 ) {
   const d = JSON.parse(json)
-  if (d?.app !== 'MoneyGo' || !Array.isArray(d.funds) || !Array.isArray(d.categories) || !Array.isArray(d.txs)) {
-    throw new Error('File không phải bản sao lưu MoneyGo')
+  if (
+    (d?.app !== 'MoneyGo' && d?.app !== 'MoneySave') ||
+    !Array.isArray(d.funds) ||
+    !Array.isArray(d.categories) ||
+    !Array.isArray(d.txs)
+  ) {
+    throw new Error('File không phải bản sao lưu MoneySave / MoneyGo hợp lệ')
+  }
+  const validTxTypes = new Set(['expense', 'income', 'transfer'])
+  for (const t of d.txs) {
+    if (
+      !t ||
+      typeof t !== 'object' ||
+      !validTxTypes.has(t.type) ||
+      typeof t.amount !== 'number' ||
+      !Number.isFinite(t.amount) ||
+      typeof t.date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(t.date)
+    ) {
+      throw new Error('Dữ liệu giao dịch trong bản sao lưu không hợp lệ')
+    }
   }
   // An toàn dữ liệu: tự lưu bản sao dữ liệu hiện tại (CSDL riêng) trước khi bị ghi đè
   if (store === (db as unknown)) {

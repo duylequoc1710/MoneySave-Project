@@ -146,7 +146,7 @@ export default function Keypad({
         </div>
       )}
 
-      {/* Lưới bàn phím máy tính 4x5 chuẩn MoneyLover */}
+      {/* Lưới bàn phím máy tính 4x5 chuẩn MoneySave */}
       <div className="ml-keypad-grid">
         <button
           type="button"

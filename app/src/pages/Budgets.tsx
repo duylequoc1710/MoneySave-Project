@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { startOfMonth } from 'date-fns'
 import DateInput from '../components/DateInput'
+import { showConfirm, showPrompt } from '../components/AppDialog'
 import {
   db,
   getNextOccurrence,
@@ -81,13 +82,21 @@ export default function Budgets() {
   }
 
   async function setBudget(c: Category) {
-    const v = prompt(
-      `Ngân sách tháng cho "${c.name}" (₫). Để trống hoặc 0 để xoá:`,
-      String(bMap.get(c.id!)?.limit ?? ''),
-    )
+    const old = bMap.get(c.id!)
+    const v = await showPrompt({
+      title: `Ngân sách tháng · ${c.name}`,
+      message: 'Nhập hạn mức chi tiêu tối đa hàng tháng cho nhóm này (để trống hoặc 0 để xoá):',
+      icon: c.icon,
+      defaultValue: String(old?.limit ?? ''),
+      placeholder: 'Ví dụ: 2,000,000',
+      unit: '₫',
+      numeric: true,
+      quickAmounts: [500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 10_000_000],
+      allowClearZero: Boolean(old?.limit),
+      confirmText: 'Lưu hạn mức',
+    })
     if (v === null) return
     const n = Number(v.replace(/[^\d]/g, ''))
-    const old = bMap.get(c.id!)
     if (!n) {
       if (old?.id) await db.budgets.delete(old.id)
       return
@@ -321,7 +330,14 @@ function RecurringForm({
   }
 
   async function del() {
-    if (rec?.id && confirm(`Xoá cài đặt định kỳ "${rec.name}"?`)) {
+    if (!rec?.id) return
+    const ok = await showConfirm({
+      title: 'Xoá cài đặt định kỳ',
+      message: `Bạn có chắc muốn xoá cài đặt định kỳ "${rec.name}" không?`,
+      danger: true,
+      confirmText: 'Xoá định kỳ',
+    })
+    if (ok) {
       await db.recurrings.delete(rec.id)
       onClose()
     }

@@ -119,7 +119,7 @@ function DonutWithBadges({
               <Cell key={idx} fill={entry.color} />
             ))}
           </Pie>
-          {/* Vòng trong tạo hiệu ứng chiều sâu giống MoneyLover */}
+          {/* Vòng trong tạo hiệu ứng chiều sâu giống MoneySave */}
           <Pie
             data={data}
             dataKey="value"
@@ -279,33 +279,36 @@ export default function PeriodReport({
   const netIncome = totalIncome - totalExpense
   const maxBar = Math.max(totalIncome, totalExpense, 1)
 
-  const groupByCategory = (type: 'expense' | 'income'): CatSummary[] => {
-    const filtered = monthTxs.filter(t => t.type === type)
-    const total = filtered.reduce((s, t) => s + t.amount, 0)
-    const map = new Map<number, Tx[]>()
-    filtered.forEach(t => {
-      const cid = t.categoryId ?? 0
-      map.set(cid, [...(map.get(cid) ?? []), t])
-    })
-    return [...map.entries()]
-      .map(([cid, list]) => {
-        const c = cMap.get(cid)
-        const amount = list.reduce((s, t) => s + t.amount, 0)
-        return {
-          id: cid,
-          name: c ? getCategoryFullName(c, cats) : 'Không nhóm',
-          icon: c?.icon ?? (type === 'income' ? '💵' : '📦'),
-          color: c?.color ?? (type === 'income' ? '#1d9bf0' : '#f0534f'),
-          amount,
-          pct: total > 0 ? Math.round((amount / total) * 100) : 0,
-          txs: list.sort((a, b) => b.date.localeCompare(a.date)),
-        }
+  const groupByCategory = useCallback(
+    (type: 'expense' | 'income'): CatSummary[] => {
+      const filtered = monthTxs.filter(t => t.type === type)
+      const total = filtered.reduce((s, t) => s + t.amount, 0)
+      const map = new Map<number, Tx[]>()
+      filtered.forEach(t => {
+        const cid = t.categoryId ?? 0
+        map.set(cid, [...(map.get(cid) ?? []), t])
       })
-      .sort((a, b) => b.amount - a.amount)
-  }
+      return [...map.entries()]
+        .map(([cid, list]) => {
+          const c = cMap.get(cid)
+          const amount = list.reduce((s, t) => s + t.amount, 0)
+          return {
+            id: cid,
+            name: c ? getCategoryFullName(c, cats) : 'Không nhóm',
+            icon: c?.icon ?? (type === 'income' ? '💵' : '📦'),
+            color: c?.color ?? (type === 'income' ? '#1d9bf0' : '#f0534f'),
+            amount,
+            pct: total > 0 ? Math.round((amount / total) * 100) : 0,
+            txs: list.sort((a, b) => b.date.localeCompare(a.date)),
+          }
+        })
+        .sort((a, b) => b.amount - a.amount)
+    },
+    [monthTxs, cMap, cats],
+  )
 
-  const incomeCats = useMemo(() => groupByCategory('income'), [monthTxs, cMap])
-  const expenseCats = useMemo(() => groupByCategory('expense'), [monthTxs, cMap])
+  const incomeCats = useMemo(() => groupByCategory('income'), [groupByCategory])
+  const expenseCats = useMemo(() => groupByCategory('expense'), [groupByCategory])
 
   // Trung bình 3 tháng trước cho Khoản chi & Khoản thu
   const { avg3Expense, avg3Income } = useMemo(() => {
@@ -394,7 +397,8 @@ export default function PeriodReport({
               className="circle-pill-btn"
               onClick={() => {
                 setExpandedKey(null)
-                setScreen('main')
+                if (initialScreen === 'net') onClose()
+                else setScreen('main')
               }}
             >
               ‹
@@ -531,7 +535,8 @@ export default function PeriodReport({
               className="circle-pill-btn"
               onClick={() => {
                 setExpandedKey(null)
-                setScreen('main')
+                if (initialScreen === screen) onClose()
+                else setScreen('main')
               }}
             >
               ‹
@@ -645,7 +650,7 @@ export default function PeriodReport({
                                 className="report-subtx-item"
                               >
                                 <div className="report-subtx-date-badge">
-                                  {format(new Date(t.date), 'dd/MM')}
+                                  {fmtDmy(t.date).slice(0, 5)}
                                 </div>
                                 <div className="report-subtx-content">
                                   <div className="report-subtx-note">
@@ -743,7 +748,7 @@ export default function PeriodReport({
                                 className="report-subtx-item"
                               >
                                 <div className="report-subtx-date-badge">
-                                  {format(new Date(t.date), 'dd/MM')}
+                                  {fmtDmy(t.date).slice(0, 5)}
                                 </div>
                                 <div className="report-subtx-content">
                                   <div className="report-subtx-note">

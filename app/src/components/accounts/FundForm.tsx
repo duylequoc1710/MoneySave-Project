@@ -141,7 +141,7 @@ export function FundForm({
 
         <Colors v={color} on={setColor} />
 
-        {/* 3 Nút gạt giống hệt MoneyLover (Ảnh 2) */}
+        {/* 3 Nút gạt cài đặt ví chuẩn MoneySave */}
         <div className="wallet-toggle-group">
           <div className="wallet-toggle-card">
             <span>Bật thông báo</span>

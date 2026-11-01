@@ -9,6 +9,7 @@ import { TransferWalletModal } from '../components/accounts/TransferWalletModal'
 import { CatForm } from '../components/accounts/CatForm'
 import CatDetailModal from '../components/CatDetailModal'
 import { COLORS } from '../components/accounts/palette'
+import { showAlert, showConfirm } from '../components/AppDialog'
 
 
 const NO_FUNDS: Fund[] = []
@@ -42,8 +43,24 @@ export default function Accounts() {
 
   async function delCat(c: Category) {
     const used = await db.txs.where('categoryId').equals(c.id!).count()
-    if (used) return alert(`Nhóm đang có ${used} giao dịch, không thể xoá.`)
-    if (confirm(`Xoá nhóm "${c.name}"? (Các nhóm con nếu có sẽ trở thành nhóm độc lập, không bị mất dữ liệu).`)) {
+    if (used) {
+      await showAlert({
+        title: 'Không thể xoá nhóm',
+        message: `Nhóm "${c.name}" đang có ${used} giao dịch, không thể xoá.`,
+        icon: c.icon,
+        tone: 'warning',
+      })
+      return
+    }
+    const ok = await showConfirm({
+      title: `Xoá nhóm "${c.name}"?`,
+      message:
+        'Các nhóm con (nếu có) sẽ trở thành nhóm độc lập, không bị mất dữ liệu.',
+      icon: c.icon,
+      danger: true,
+      confirmText: 'Xoá nhóm',
+    })
+    if (ok) {
       if (c.id) {
         await db.categories.where('parentId').equals(c.id).modify({ parentId: null })
       }
@@ -54,8 +71,23 @@ export default function Accounts() {
 
   async function delFund(f: Fund) {
     const used = txs.filter(t => t.fundId === f.id || t.toFundId === f.id).length
-    if (used) return alert(`Quỹ đang có ${used} giao dịch. Hãy dùng tính năng "Lưu trữ" hoặc xoá giao dịch trước.`)
-    if (confirm(`Xoá quỹ "${f.name}"?`)) {
+    if (used) {
+      await showAlert({
+        title: 'Không thể xoá ví',
+        message: `Quỹ "${f.name}" đang có ${used} giao dịch. Hãy dùng tính năng "Lưu trữ" hoặc xoá giao dịch trước.`,
+        icon: f.icon,
+        tone: 'warning',
+      })
+      return
+    }
+    const ok = await showConfirm({
+      title: `Xoá quỹ "${f.name}"?`,
+      message: 'Bạn có chắc chắn muốn xoá quỹ này khỏi hệ thống không?',
+      icon: f.icon,
+      danger: true,
+      confirmText: 'Xoá quỹ',
+    })
+    if (ok) {
       await db.categories.where('fundId').equals(f.id!).modify({ fundId: null })
       await db.funds.delete(f.id!)
     }

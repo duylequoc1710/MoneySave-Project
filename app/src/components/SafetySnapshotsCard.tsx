@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { importAll } from '../db'
 import { deleteSafetySnapshot, listSafetySnapshots, type SafetySnapshot } from '../safetyBackup'
+import { showAlert, showConfirm } from './AppDialog'
 
 /**
  * Danh sách bản sao an toàn tự động (lưu trên thiết bị, CSDL riêng) – cho phép khôi phục
@@ -21,13 +22,28 @@ export default function SafetySnapshotsCard() {
 
   async function restore(s: SafetySnapshot) {
     const label = format(new Date(s.createdAt), 'dd/MM/yyyy HH:mm')
-    if (!confirm(`Khôi phục bản sao lúc ${label} (${s.txCount} giao dịch)?\nDữ liệu hiện tại sẽ được tự lưu thành một bản sao mới trước khi ghi đè.`)) return
+    const ok = await showConfirm({
+      title: `Khôi phục bản sao ${label}?`,
+      message: `Bản sao gồm ${s.txCount} giao dịch. Dữ liệu hiện tại sẽ được tự lưu thành một bản sao mới trước khi ghi đè.`,
+      icon: '🛟',
+      tone: 'warning',
+      confirmText: 'Khôi phục',
+    })
+    if (!ok) return
     try {
       await importAll(s.json)
-      alert('Đã khôi phục từ bản sao an toàn.')
+      await showAlert({
+        title: 'Khôi phục thành công',
+        message: 'Đã khôi phục dữ liệu từ bản sao an toàn.',
+        tone: 'success',
+      })
       await reload()
     } catch (e) {
-      alert('Lỗi khôi phục: ' + (e as Error).message)
+      await showAlert({
+        title: 'Lỗi khôi phục',
+        message: 'Lỗi khôi phục: ' + (e as Error).message,
+        tone: 'danger',
+      })
     }
   }
 
@@ -73,7 +89,14 @@ export default function SafetySnapshotsCard() {
               className="btn dng"
               style={{ padding: '4px 10px', fontSize: 12 }}
               onClick={async () => {
-                if (s.id != null && confirm('Xoá bản sao này?')) {
+                if (s.id == null) return
+                const ok = await showConfirm({
+                  title: 'Xoá bản sao an toàn?',
+                  message: 'Bạn có chắc muốn xoá bản sao này khỏi thiết bị không?',
+                  danger: true,
+                  confirmText: 'Xoá bản sao',
+                })
+                if (ok) {
                   await deleteSafetySnapshot(s.id)
                   await reload()
                 }

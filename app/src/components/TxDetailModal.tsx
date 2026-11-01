@@ -5,6 +5,7 @@ import { vi } from 'date-fns/locale'
 import { db, type Category, type Fund, type Tx } from '../db.ts'
 import { getCategoryFullName, money } from '../lib.ts'
 import type { TxFormDraft } from './TxForm.tsx'
+import { showAlert, showConfirm } from './AppDialog.tsx'
 
 interface TxDetailModalProps {
   tx: Tx
@@ -49,14 +50,23 @@ export default function TxDetailModal({
 
   async function handleDelete() {
     if (!tx.id) return
-    const ok = window.confirm('Bạn có chắc chắn muốn xóa giao dịch này không?')
+    const ok = await showConfirm({
+      title: 'Xoá giao dịch này?',
+      message: 'Bạn có chắc chắn muốn xoá giao dịch này khỏi sổ giao dịch không?',
+      danger: true,
+      confirmText: 'Xoá giao dịch',
+    })
     if (!ok) return
     try {
       setDeleting(true)
       await db.txs.delete(tx.id)
       onClose()
     } catch (e) {
-      alert('Lỗi khi xóa giao dịch: ' + (e as Error).message)
+      await showAlert({
+        title: 'Lỗi khi xoá giao dịch',
+        message: 'Lỗi khi xóa giao dịch: ' + (e as Error).message,
+        tone: 'danger',
+      })
       setDeleting(false)
     }
   }

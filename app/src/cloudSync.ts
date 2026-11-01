@@ -1,5 +1,5 @@
 import { db, exportAll, importAll } from './db.ts'
-import { getAuthUser, subscribeAuth } from './auth.ts'
+import { getAuthUser, refreshTokenIfNeeded, subscribeAuth } from './auth.ts'
 import { DEFAULT_FIREBASE_CONFIG } from './firebaseConfig.ts'
 
 export interface CloudSyncConfig {
@@ -454,6 +454,7 @@ export async function pullCloudToLocal(customCfg?: CloudSyncConfig): Promise<boo
   syncState = { ...syncState, status: 'syncing', lastError: null }
   notifySyncListeners()
   try {
+    await refreshTokenIfNeeded()
     const remote = await fetchRemoteVault(cfg)
     if (!remote) {
       syncState = { ...syncState, status: 'idle', lastError: null }
@@ -504,6 +505,7 @@ export async function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' 
   }
 
   try {
+    await refreshTokenIfNeeded()
     const remote = await fetchRemoteVault(cfg)
     const lastSync = getLastSyncedAt() ?? 0
     const localMut = getLocalMutatedAt()

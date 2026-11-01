@@ -5,6 +5,7 @@ import { evaluateKeypadExpression, formatKeypadDisplay, money, ymd } from '../li
 import DateInput from './DateInput'
 import Keypad from './Keypad'
 import CategoryPickerModal from './CategoryPickerModal'
+import { showConfirm } from './AppDialog'
 
 export interface TxFormDraft {
   type?: TxType
@@ -136,7 +137,7 @@ export default function TxForm({
       }
       const targetFund = funds.find(f => f.id === fid)
       if (targetFund?.notifyOnTx && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification(`MoneyGo · ${targetFund.name}`, {
+        new Notification(`MoneySave · ${targetFund.name}`, {
           body: `${type === 'income' ? '+' : '-'}${money(amt)} · ${note || selCat?.name || 'Giao dịch mới'}`,
         })
       }
@@ -145,7 +146,14 @@ export default function TxForm({
   }
 
   async function del() {
-    if (tx?.id && confirm('Xoá giao dịch này?')) {
+    if (!tx?.id) return
+    const ok = await showConfirm({
+      title: 'Xoá giao dịch này?',
+      message: 'Bạn có chắc chắn muốn xoá giao dịch này khỏi sổ giao dịch không?',
+      danger: true,
+      confirmText: 'Xoá giao dịch',
+    })
+    if (ok) {
       await db.txs.delete(tx.id)
       onClose()
     }
@@ -180,7 +188,7 @@ export default function TxForm({
           ))}
         </div>
 
-        {/* Khối hiển thị Số tiền kiểu MoneyLover – không kích hoạt bàn phím hệ thống của OS */}
+        {/* Khối hiển thị Số tiền kiểu MoneySave – không kích hoạt bàn phím hệ thống của OS */}
         <div
           ref={amountBoxRef}
           className={`ml-amount-display-box ${showKeypad ? 'active' : ''}`}
@@ -213,7 +221,7 @@ export default function TxForm({
           </div>
         </div>
 
-        {/* Bàn phím số tích hợp liền mạch chuẩn MoneyLover */}
+        {/* Bàn phím số tích hợp liền mạch chuẩn MoneySave */}
         {showKeypad && (
           <Keypad
             containerRef={keypadRef}

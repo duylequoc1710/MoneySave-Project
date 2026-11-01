@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { addDays, addMonths, format, getDaysInMonth, startOfWeek } from 'date-fns'
+import { addDays, addMonths, endOfMonth, format, getDaysInMonth, startOfMonth, startOfWeek } from 'date-fns'
 import { db, type Category, type Fund, type Tx } from '../db'
 import {
   analyzeCreditFund,
@@ -26,10 +26,12 @@ import {
   money,
   moneyShort,
   monthKey,
+  type TimeFilter,
   ymd,
 } from '../lib'
 import TxForm, { type TxFormDraft } from '../components/TxForm'
 import TxDetailModal from '../components/TxDetailModal'
+import PeriodReport from '../components/PeriodReport'
 
 const NO_TXS: Tx[] = []
 const NO_FUNDS: Fund[] = []
@@ -46,6 +48,30 @@ export default function Overview() {
   const [editTx, setEditTx] = useState<Tx | null>(null)
   const [payDraft, setPayDraft] = useState<TxFormDraft | null>(null)
   const [today] = useState(() => new Date())
+  const [reportScreen, setReportScreen] = useState<'main' | 'expense' | 'income' | 'net' | null>(null)
+  const [reportCur, setReportCur] = useState(() => startOfMonth(new Date()))
+  const [reportFundFilter, setReportFundFilter] = useState(0)
+  const [reportTimeFilter, setReportTimeFilter] = useState<TimeFilter>(() => {
+    const m = startOfMonth(new Date())
+    return {
+      mode: 'month',
+      month: m,
+      startDate: ymd(m),
+      endDate: ymd(endOfMonth(m)),
+    }
+  })
+
+  function openReport(screen: 'main' | 'expense' | 'income' | 'net') {
+    const m = startOfMonth(today)
+    setReportCur(m)
+    setReportTimeFilter({
+      mode: 'month',
+      month: m,
+      startDate: ymd(m),
+      endDate: ymd(endOfMonth(m)),
+    })
+    setReportScreen(screen)
+  }
 
   const txs = useLiveQuery(() => db.txs.toArray(), [], NO_TXS)
   const funds = useLiveQuery(() => db.funds.toArray(), [], NO_FUNDS)
@@ -192,7 +218,7 @@ export default function Overview() {
 
   return (
     <>
-      {/* 1. Header Tổng số dư kiểu MoneyLover */}
+      {/* 1. Header Tổng số dư kiểu MoneySave */}
       <div className="ml-balance-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -348,8 +374,8 @@ export default function Overview() {
       {/* 4. Báo cáo tháng này (Xu hướng & Chi tiêu) */}
       <div className="sec-head">
         <span>Báo cáo tháng này</span>
-        <span className="link-green" onClick={() => setReportSlide(s => (s === 0 ? 1 : 0))}>
-          Đổi biểu đồ
+        <span className="link-green" onClick={() => openReport('main')}>
+          Xem chi tiết
         </span>
       </div>
       <div className="card">
@@ -535,7 +561,7 @@ export default function Overview() {
       {/* 5. Chi tiêu nhiều nhất */}
       <div className="sec-head">
         <span>Chi tiêu nhiều nhất</span>
-        <span className="link-green" onClick={() => nav('/budgets')}>
+        <span className="link-green" onClick={() => openReport('expense')}>
           Xem chi tiết
         </span>
       </div>
@@ -610,6 +636,21 @@ export default function Overview() {
       )}
       {editTx && <TxForm tx={editTx} onClose={() => setEditTx(null)} />}
       {payDraft && <TxForm draft={payDraft} onClose={() => setPayDraft(null)} />}
+      {reportScreen && (
+        <PeriodReport
+          cur={reportCur}
+          setCur={setReportCur}
+          timeFilter={reportTimeFilter}
+          setTimeFilter={setReportTimeFilter}
+          fundFilter={reportFundFilter}
+          setFundFilter={setReportFundFilter}
+          allTxs={txs}
+          funds={funds}
+          cats={cats}
+          initialScreen={reportScreen}
+          onClose={() => setReportScreen(null)}
+        />
+      )}
     </>
   )
 }

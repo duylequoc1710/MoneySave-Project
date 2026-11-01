@@ -21,6 +21,7 @@ import {
 } from '../cloudSync'
 import { getAuthUser, signOutUser, subscribeAuth, type AuthUser } from '../auth.ts'
 import AuthModal from '../components/AuthModal.tsx'
+import { showAlert, showConfirm } from '../components/AppDialog'
 
 const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
@@ -106,9 +107,17 @@ export default function Settings() {
     if (!file) return
     try {
       await importAll(await file.text())
-      alert('Đã khôi phục dữ liệu thành công!')
+      await showAlert({
+        title: 'Khôi phục thành công',
+        message: 'Đã khôi phục dữ liệu từ file sao lưu thành công!',
+        tone: 'success',
+      })
     } catch (e) {
-      alert('Lỗi khôi phục: ' + (e as Error).message)
+      await showAlert({
+        title: 'Lỗi khôi phục',
+        message: 'Lỗi khôi phục: ' + (e as Error).message,
+        tone: 'danger',
+      })
     }
   }
 
@@ -327,7 +336,7 @@ export default function Settings() {
           </div>
           <div className="grow">
             <b>Giao diện Tối (Dark Theme)</b>
-            <small>Nền đen OLED chuẩn MoneyLover, dịu mắt và tiết kiệm pin</small>
+            <small>Nền đen OLED hiện đại, dịu mắt và tiết kiệm pin</small>
           </div>
           <span
             style={{
@@ -525,9 +534,21 @@ export default function Settings() {
             type="button"
             className="btn"
             onClick={async () => {
-              if (confirm('⚠️ Thao tác này GHI ĐÈ toàn bộ dữ liệu hiện tại bằng dữ liệu mẫu (một bản sao an toàn sẽ được lưu tự động trước đó). Tiếp tục?')) {
+              const ok = await showConfirm({
+                title: 'Nạp dữ liệu mẫu 3 tháng?',
+                message:
+                  'Thao tác này GHI ĐÈ toàn bộ dữ liệu hiện tại bằng dữ liệu mẫu (một bản sao an toàn sẽ được lưu tự động trước đó). Tiếp tục?',
+                icon: '🧪',
+                tone: 'warning',
+                confirmText: 'Nạp dữ liệu mẫu',
+              })
+              if (ok) {
                 await seedDemoData3Months(true)
-                alert('Đã nạp đầy đủ dữ liệu mẫu 3 tháng!')
+                await showAlert({
+                  title: 'Đã nạp dữ liệu mẫu',
+                  message: 'Đã nạp đầy đủ dữ liệu mẫu 3 tháng!',
+                  tone: 'success',
+                })
               }
             }}
           >
@@ -547,9 +568,20 @@ export default function Settings() {
             type="button"
             className="btn dng"
             onClick={async () => {
-              if (confirm('⚠️ Thao tác này XOÁ SẠCH toàn bộ dữ liệu hiện tại (kể cả dữ liệu thật). Một bản sao an toàn sẽ được lưu tự động trước đó. Tiếp tục?')) {
+              const ok = await showConfirm({
+                title: 'Xoá sạch toàn bộ dữ liệu?',
+                message:
+                  'Thao tác này XOÁ SẠCH toàn bộ dữ liệu hiện tại (kể cả dữ liệu thật). Một bản sao an toàn sẽ được lưu tự động trước đó. Tiếp tục?',
+                danger: true,
+                confirmText: 'Xoá sạch',
+              })
+              if (ok) {
                 await clearAllToCleanState()
-                alert('Đã xoá sạch dữ liệu test về 0 ₫.')
+                await showAlert({
+                  title: 'Đã xoá sạch dữ liệu',
+                  message: 'Đã xoá sạch dữ liệu test về 0 ₫.',
+                  tone: 'success',
+                })
               }
             }}
           >

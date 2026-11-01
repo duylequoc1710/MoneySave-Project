@@ -1,7 +1,7 @@
 <div align="center">
   <img src="app/public/logo-moneysave-nav.png" alt="MoneySave Logo" width="220" />
   <h1>MoneySave</h1>
-  <p><b>Ứng dụng Quản lý Tài chính Cá nhân & Gia đình Chuẩn MoneyLover</b></p>
+  <p><b>Ứng dụng Quản lý Tài chính Cá nhân & Gia đình Hiện đại</b></p>
   <p><i>Local-first · Offline-first · Bảo mật Mã hóa Đầu cuối (E2EE AES-256) · Đồng bộ Realtime Đa thiết bị</i></p>
 
   <p>
@@ -17,7 +17,7 @@
 
 ## 🌟 Tính Năng Nổi Bật
 
-* **📱 Trải Nghiệm Chuẩn MoneyLover (PWA):**
+* **📱 Trải Nghiệm Đa Nền Tảng (PWA):**
   * Giao diện Dark / Light theme hiện đại, tối ưu 100% hiển thị trên mọi kích thước màn hình điện thoại (iPhone, Android) và Máy tính (Mac, Windows).
   * Cài đặt ra Màn hình chính (Add to Home Screen) chạy độc lập toàn màn hình như ứng dụng gốc, mở offline tức thì không cần mạng.
 * **🔒 Bảo Mật Tuyệt Đối (Local-first & Zero-Knowledge E2EE):**

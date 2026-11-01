@@ -8,6 +8,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 import TxForm from './components/TxForm'
 import AuthLanding from './components/AuthLanding'
 import BackupReminder from './components/BackupReminder'
+import { AppDialogHost } from './components/AppDialog'
 import { applyTheme, getStoredTheme } from './lib'
 import {
   startRealtimeCloudSyncEngine,
@@ -97,12 +98,15 @@ export default function App() {
 
   if (!authUser && !skipAuth) {
     return (
-      <AuthLanding
-        onSuccess={user => {
-          setAuthUser(user)
-        }}
-        onSkip={() => setSkipAuth(true)}
-      />
+      <>
+        <AuthLanding
+          onSuccess={user => {
+            setAuthUser(user)
+          }}
+          onSkip={() => setSkipAuth(true)}
+        />
+        <AppDialogHost />
+      </>
     )
   }
 
@@ -233,6 +237,7 @@ export default function App() {
         </div>
       )}
       {addingTx && <TxForm onClose={() => setAddingTx(false)} />}
+      <AppDialogHost />
     </div>
   )
 }

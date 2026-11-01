@@ -77,7 +77,7 @@ export default function Ledger() {
     return init + allTxs.reduce((s, t) => s + effectOnSelection(t), 0)
   }, [activeFunds, allTxs, effectOnSelection])
 
-  // Số dư đầu kỳ & Số dư cuối kỳ giống hệt MoneyLover
+  // Số dư đầu kỳ & Số dư cuối kỳ chuẩn MoneySave
   const { openingBalance, closingBalance, netChange } = useMemo(() => {
     const init = activeFunds.reduce((s, f) => s + f.initialBalance, 0)
     const beforePeriod = allTxs.filter(t => t.date < from).reduce((s, t) => s + effectOnSelection(t), 0)
@@ -114,7 +114,7 @@ export default function Ledger() {
 
   return (
     <>
-      {/* Thanh chọn Lịch thời gian & Ví trên đỉnh kiểu MoneyLover */}
+      {/* Thanh chọn Lịch thời gian & Ví trên đỉnh kiểu MoneySave */}
       <div className="ledger-topbar">
         <button
           type="button"
@@ -160,7 +160,7 @@ export default function Ledger() {
         <div style={{ fontSize: 24, fontWeight: 700 }}>{money(currentTotalBalance)}</div>
       </div>
 
-      {/* Thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneyLover */}
+      {/* Thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneySave */}
       {resolvedRange.isMonthMode ? (
         <div className="ml-month-tabs">
           <button className="m-arrow" onClick={() => selectMonth(tabLeft)} title="Tháng trước">
@@ -242,7 +242,7 @@ export default function Ledger() {
         <div className="empty">Chưa có giao dịch trong giai đoạn ({resolvedRange.label})</div>
       )}
 
-      {/* Danh sách từng ngày (mỗi ngày 1 thẻ giống MoneyLover) */}
+      {/* Danh sách từng ngày (mỗi ngày 1 thẻ chuẩn MoneySave) */}
       {days.map(([d, list]) => {
         const parsed = parseISO(d)
         const dayNum = format(parsed, 'dd')

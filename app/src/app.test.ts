@@ -85,7 +85,7 @@ describe('Định dạng tiền tệ & ngày tháng', () => {
     assert.equal(monthKey(shiftMonth(d, -1)), '2026-09')
   })
 
-  it('getMonthTabLabel định dạng nhãn trượt cửa sổ chuẩn MoneyLover', () => {
+  it('getMonthTabLabel định dạng nhãn trượt cửa sổ chuẩn MoneySave', () => {
     const now = new Date(2026, 9, 1) // 10/2026
     assert.equal(getMonthTabLabel(new Date(2026, 9, 1), now), 'THÁNG NÀY')
     assert.equal(getMonthTabLabel(new Date(2026, 8, 1), now), 'THÁNG TRƯỚC')
@@ -720,5 +720,30 @@ describe('Đồng bộ DatePickerModal & DateInput', () => {
     const d = new Date(2026, 9, 1)
     const startDayOfWeek = (d.getDay() + 6) % 7
     assert.equal(startDayOfWeek, 3)
+  })
+})
+
+describe('Bảo mật & Kiểm tra định dạng khi Khôi phục dữ liệu (importAll)', () => {
+  it('Chấp nhận cả bản sao lưu định danh MoneySave lẫn MoneyGo và chặn dữ liệu giao dịch hỏng', async () => {
+    const store = createMockStore()
+    const validPayload = JSON.stringify({
+      app: 'MoneySave',
+      version: 1,
+      funds: [{ id: 1, name: 'Ví chính', icon: '💵', color: '#22c55e', initialBalance: 100000 }],
+      categories: [{ id: 1, name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', fundId: 1 }],
+      txs: [{ id: 1, type: 'expense', amount: 50000, date: '2026-11-01', fundId: 1, categoryId: 1, note: 'Ăn sáng', createdAt: 1 }],
+      budgets: [],
+    })
+    await importAll(validPayload, store)
+    assert.equal((await store.txs.toArray()).length, 1)
+
+    const corruptedPayload = JSON.stringify({
+      app: 'MoneySave',
+      version: 1,
+      funds: [],
+      categories: [],
+      txs: [{ id: 2, type: 'expense', amount: 'not-a-number', date: 'invalid-date', fundId: 1 }],
+    })
+    await assert.rejects(() => importAll(corruptedPayload, store), /Dữ liệu giao dịch trong bản sao lưu không hợp lệ/)
   })
 })

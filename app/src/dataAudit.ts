@@ -2,7 +2,7 @@ import type { Budget, Category, Fund, RecurringTx, Tx } from './db.ts'
 
 /**
  * Kiểm tra toàn vẹn dữ liệu (CHỈ ĐỌC – không sửa gì). Dùng để rà soát dữ liệu thật
- * trước/sau khi nhập từ MoneyLover, và trước khi sao lưu.
+ * trước/sau khi khôi phục dữ liệu, và trước khi sao lưu.
  */
 export interface DataIssue {
   level: 'error' | 'warn'

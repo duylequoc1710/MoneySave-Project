@@ -410,7 +410,7 @@ export const fmtDmy = (s: string) => {
 }
 
 /**
- * Nhãn hiển thị cho thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneyLover
+ * Nhãn hiển thị cho thanh chuyển tháng dạng trượt cửa sổ (Windowed Month Tabs) chuẩn MoneySave
  */
 export function getMonthTabLabel(targetMonth: Date, referenceNow: Date): string {
   const diff =

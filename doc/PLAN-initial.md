@@ -4,7 +4,7 @@
 <!-- session: 07831335 -->
 <!-- channel: webchat -->
 
-# PLAN — Xây MoneyGo – web app (PWA) quản lý thu chi kiểu MoneyLover, dùng trên Android/iOS/macOS, đồng bộ realtime, mọi thứ nằm trong MoneyGo-Project
+# PLAN — Xây MoneyGo – web app (PWA) quản lý thu chi hiện đại, dùng trên Android/iOS/macOS, đồng bộ realtime, mọi thứ nằm trong MoneyGo-Project
 
 ## Problem analysis
 

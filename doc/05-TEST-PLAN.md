@@ -11,7 +11,7 @@
 | T-07 | Cài PWA thực trên iPhone/Android | ⏳ Cần deploy https |
 | T-08 | Màn hình desktop ≥900px (sidebar) | ✅ Pass (đã kiểm tra & chụp 1280×840) |
 | T-09 | Unit test (`npm test` – `app/src/app.test.ts`): `effectOn`, định dạng, `computeDueDates`, `analyzeCreditFund`, `excludeFromTotal`/`excludeFromReport`, `archived`, `resolveTimeRange`, `buildExcelXml`, `exportAll`/`importAll`, `cloudSync` (E2EE `AES-GCM 256-bit` + `PBKDF2-SHA256`) | ✅ Pass (18/18 tests) |
-| T-10 | Kiểm thử E2E v2: Giao diện MoneyLover, tự động phát sinh Giao dịch định kỳ, phân tích Quỹ tín dụng | ✅ Pass |
+| T-10 | Kiểm thử E2E v2: Giao diện MoneySave, tự động phát sinh Giao dịch định kỳ, phân tích Quỹ tín dụng | ✅ Pass |
 | T-11 | Kiểm thử Báo cáo giai đoạn (`PeriodReport`) & Sửa lỗi nền trắng Tooltip Recharts trên toàn ứng dụng | ✅ Pass |
 | T-12 | Kiểm thử tính năng Ví nâng cao (`TÍNH VÀO TỔNG` / `KHÔNG TÍNH VÀO TỔNG`, `Lưu trữ`, `Điều chỉnh số dư`, `Chuyển tiền đến ví khác` + phí chuyển khoản) | ✅ Pass |
 | T-13 | Kiểm thử Module Cài đặt (Dark/Light Theme, Xuất Excel `.xls`), `WalletSelectorPill`, `TimeRangeModal` & Responsive đa màn hình điện thoại (`360x800`, `375x667`, `393x852`, `430x932`) | ✅ Pass |
@@ -21,5 +21,7 @@
 | T-17 | Kiểm thử định dạng `MM/yyyy` & `dd/MM/yyyy`, màn Chi tiết thu nhập ròng theo tuần, khoá cuộn nền, ô ngày định kỳ, bàn phím số nổi, PWA tự cập nhật (tsc + build + unit test; xác nhận bản live trên Vercel và điện thoại) | ✅ Pass (24/24 unit tests) |
 | T-18 | Test biên Định kỳ (ngày 31, năm nhuận 2028, tuần/ngày, không trùng kỳ), chia tuần Thứ 2–CN (tháng 10/2026: 1-4, 5-11…), `monthLabel`/`fmtDmy`, nhắc sao lưu; benchmark 50.000 giao dịch ≈ 1 ms/lần tính | ✅ Pass (34/34 unit tests) |
 | T-19 | Thẻ tín dụng: báo cáo tổng gồm chi tiêu thẻ, kỳ sao kê gồm giao dịch ghi trước (01/11), tổng số dư không lẫn dư nợ; `auditData` (số tiền/ngày/ví/nhóm/chuyển quỹ/trùng/thẻ dương); sửa test nhắc sao lưu bị chập chờn | ✅ Pass (40/40 unit tests) |
+| T-20 | Kiểm thử In-App `CategoryPickerModal`, `DatePickerModal`, `CatDetailModal` và sự kiện mở lịch trên `DateInput` | ✅ Pass (42/42 unit tests) |
+| T-21 | Kiểm thử Hệ thống Popup In-App (`AppDialog`: `showAlert`, `showConfirm`, `showPrompt` thay thế 100% hộp thoại trình duyệt), liên kết `"Xem chi tiết"` tại trang Tổng quan (mở Báo cáo Thu nhập ròng & Chi tiết khoản chi), kiểm tra bảo mật `importAll` và xoá sạch toàn bộ tham chiếu `MoneyLover` | ✅ Pass (43/43 unit tests) |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.

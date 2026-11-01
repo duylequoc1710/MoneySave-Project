@@ -17,13 +17,14 @@
 | **INC-06** | iOS Safari / Layout | Thanh điều hướng (Dock Nav) bị lún xuống thanh Safari và xô lệch 2 bên khi cuộn | Dùng `margin: 0 auto` trên fixed element, thiếu GPU compositing và thiếu `translate3d` | Dùng `left: 50%`, `transform: translate3d(-50%, 0, 0)`, `will-change: transform`, đệm `safe-area` |
 | **INC-07** | Data Safety / Startup | Giao dịch người dùng vừa nhập bị mất khi tải lại app sau bản cập nhật | Bật cờ `PURGE_KEY` tự động xóa IndexedDB trong `initApp()` trên `main.tsx` | Xóa bỏ hoàn toàn mã purge tự động trên startup; chỉ cho phép dọn dẹp khi người dùng chủ động bấm trong Cài đặt |
 | **INC-08** | Performance / UI Glitch | Giao diện bị chớp nháy (flicker) sáng/tối khi mở trang và giật định kỳ | FOUC do theme set trễ trong `useEffect` và Polling 12s kích hoạt re-render toàn bộ `App.tsx` | Đưa script set theme đồng bộ vào `<head>` của `index.html`, áp dụng chế độ Silent Sync cho polling |
-| **INC-09** | Mobile UX / In-App Keypad | Bàn phím hệ thống OS bung lên tách rời làm vỡ bố cục; thiếu dấu phân cách số tiền; dock menu choán màn hình khi xem | Dùng `<input>` trần gọi native virtual keyboard; thiếu in-app calculator keypad; fixed dock thiếu logic tự ẩn khi cuộn | Xây dựng Bàn phím số In-App liền khối chuẩn MoneyLover, thêm logic ẩn/hiện thông minh khi cuộn, nâng touch target 48px |
+| **INC-09** | Mobile UX / In-App Keypad | Bàn phím hệ thống OS bung lên tách rời làm vỡ bố cục; thiếu dấu phân cách số tiền; dock menu choán màn hình khi xem | Dùng `<input>` trần gọi native virtual keyboard; thiếu in-app calculator keypad; fixed dock thiếu logic tự ẩn khi cuộn | Xây dựng Bàn phím số In-App liền khối chuẩn MoneySave, thêm logic ẩn/hiện thông minh khi cuộn, nâng touch target 48px |
 | **INC-10** | PWA / Cache | Deploy xong nhưng điện thoại (iOS & Android) vẫn hiện bản cũ (ví dụ ngày `yyyy-mm-dd`) | Service worker mới tải xong nhưng trang đang mở vẫn chạy bản cũ đến khi đóng hẳn app; không chủ động kiểm tra bản mới | `skipWaiting` + `clientsClaim` + `cleanupOutdatedCaches`, `index.html` NetworkFirst, `registerSW` kiểm tra bản mới khi mở/quay lại/30 phút và tự reload (hoãn nếu đang mở form) |
 | **INC-11** | Mobile UX / Modal | Cuộn trong form thêm/sửa giao dịch làm nền phía sau cuộn theo; bàn phím số đẩy dài form | Không khoá cuộn body khi mở `.sheetbg`; bàn phím số nằm trong luồng nội dung | `scrollLock.ts` khoá body khi có sheet, `overscroll-behavior: contain`; bàn phím số dạng panel nổi, ẩn khi chạm ngoài/cuộn |
 | **INC-12** | Form / Input | Ô "Ngày cố định" không xoá hết số 0, phải gõ `020` mới ra 20 | `input type=number` gắn state kiểu number: xoá rỗng → `0` hiện lại, gõ tiếp thành `020` | Ô text numeric, state chuỗi, bỏ số 0 đầu, tối đa 2 chữ số, chuẩn hoá 1–31 khi blur (TxForm & Budgets) |
 | **INC-13** | UI / Định dạng | Nhãn tháng `Tháng 7, 2026` và ngày định kỳ `yyyy-mm-dd` không đồng nhất | `monthLabel` dùng mẫu cũ; Budgets in thẳng chuỗi lưu trữ | `monthLabel` → `MM/yyyy`; `fmtDmy()` cho mọi ngày hiển thị (dữ liệu lưu vẫn `YYYY-MM-DD`) |
 | **INC-14** | Mobile UI & Layering | Nút FAB dính sát dock menu; picker Nhóm và Lịch dùng UI hệ thống khổng lồ lệch theme; sửa nhanh nhóm thiếu an toàn; xem chi tiết giao dịch trong Báo cáo bị che khuất | FAB `bottom` thiếu đệm khoảng cách; dùng thẻ `<select>` & `<input type=date>` gốc; thiếu modal chi tiết nhóm đệm; `PeriodReport` con thiếu `TxDetailModal` và `z-index` sheet (30) thấp hơn report (40) | Nâng FAB `bottom: calc(100px + safe-area)`; thay bằng `CategoryPickerModal` & `DatePickerModal` in-app; tạo `CatDetailModal` xem chi tiết trước khi sửa; nhúng `TxDetailModal` vào `PeriodReport` và nâng `.sheetbg` lên `z-index: 60` |
-| **INC-15** | UI / Modal & Event Delegation | Click vào ô Ngày giao dịch (`DateInput`) trong form không mở lịch chọn ngày trên cả Web và Mobile | Thẻ `<label className="fld">` kích hoạt synthetic click vào nút Huỷ đầu tiên bên trong `DatePickerModal` khiến modal đóng ngay lập tức; modal con không dùng `createPortal` bị giới hạn bởi overflow của sheet cha | Đổi `<label>` sang `<div>`; chặn nổi bọt `e.stopPropagation()`; dùng `createPortal(..., document.body)` với `z-index: 75`; hợp nhất cấu trúc `.date-input-unified` chuẩn MoneyLover; nâng app lên v2.2.1 |
+| **INC-15** | UI / Modal & Event Delegation | Click vào ô Ngày giao dịch (`DateInput`) trong form không mở lịch chọn ngày trên cả Web và Mobile | Thẻ `<label className="fld">` kích hoạt synthetic click vào nút Huỷ đầu tiên bên trong `DatePickerModal` khiến modal đóng ngay lập tức; modal con không dùng `createPortal` bị giới hạn bởi overflow của sheet cha | Đổi `<label>` sang `<div>`; chặn nổi bọt `e.stopPropagation()`; dùng `createPortal(..., document.body)` với `z-index: 75`; hợp nhất cấu trúc `.date-input-unified` chuẩn MoneySave; nâng app lên v2.2.1 |
+| **INC-16** | UI / Native Popups & Navigation & Code Audit | Hộp thoại trình duyệt mặc định (`alert`/`confirm`/`prompt`) hiển thị dòng `"moneysavedl.vercel.app says"` kém thẩm mỹ; liên kết `"Đổi biểu đồ"` thừa và `"Xem chi tiết"` ở Chi tiêu nhiều nhất nhảy nhầm sang Ngân sách; còn sót chữ `"MoneyLover"` | Dùng hàm blocking native `window.prompt/confirm/alert` tại 19 vị trí; `Overview.tsx` gán nhầm handler cho header báo cáo; `new Date(t.date)` trong `PeriodReport` lệch múi giờ UTC; `importAll` thiếu kiểm tra trường giao dịch | Xây dựng hệ thống [`AppDialog.tsx`](../app/src/components/AppDialog.tsx) (`showAlert`, `showConfirm`, `showPrompt`) qua Portal `z-index: 95`; cập nhật liên kết `"Xem chi tiết"` trong `Overview.tsx` mở thẳng `PeriodReport` (`main` & `expense`); dọn sạch 100% chữ `MoneyLover`; gia cố `importAll` & `refreshTokenIfNeeded`; nâng app lên v2.3.0 |
 
 ---
 
@@ -123,7 +124,7 @@
 * **Nguyên nhân gốc rễ (RCA):**
   * Ứng dụng thiếu bước trung gian xem chi tiết (Detail View). Khi bấm vào hàng giao dịch, hàm `onClick` gọi ngay form nhập liệu [`TxForm.tsx`](../app/src/components/TxForm.tsx) với cờ `autoFocus={true}` ở ô nhập số tiền.
 * **Giải pháp khắc phục:**
-  * Bổ sung màn hình Chi tiết giao dịch độc lập ([`TxDetailModal.tsx`](../app/src/components/TxDetailModal.tsx)) theo chuẩn MoneyLover:
+  * Bổ sung màn hình Chi tiết giao dịch độc lập ([`TxDetailModal.tsx`](../app/src/components/TxDetailModal.tsx)) theo chuẩn MoneySave:
     * Hiển thị số tiền lớn, nhóm phân cấp, ngày tiếng Việt đầy đủ, ví thanh toán.
     * Cung cấp các tác vụ rõ ràng: `📄 Sao chép giao dịch`, `🗑️ Xóa giao dịch`, và chỉ khi bấm nút `Sửa` ở góc trên mới mở form chỉnh sửa.
     * Form sửa tắt thuộc tính `autoFocus` khi ở chế độ chỉnh sửa (`autoFocus={!tx}`).
@@ -219,7 +220,7 @@
   3. Thiếu logic lắng nghe hướng cuộn trang (Scroll Direction Delta) để ẩn/hiện thanh điều hướng.
   4. Touch target của các icon trên thanh dock có chiều cao thực tế dưới 40px và thiếu hiệu ứng scale `:active` tức thì khi ngón cái vừa chạm vào.
 * **Giải pháp khắc phục:**
-  1. **Khối Hiển Thị Số Tiền & Bàn Phím Số In-App Chuẩn MoneyLover ([`Keypad.tsx`](../app/src/components/Keypad.tsx), [`TxForm.tsx`](../app/src/components/TxForm.tsx)):**
+  1. **Khối Hiển Thị Số Tiền & Bàn Phím Số In-App Chuẩn MoneySave ([`Keypad.tsx`](../app/src/components/Keypad.tsx), [`TxForm.tsx`](../app/src/components/TxForm.tsx)):**
      * Thay thế `<input>` trần bằng thẻ hiển thị số tiền có định dạng tự động (`formatKeypadDisplay`).
      * Khi mở sửa giao dịch, bàn phím mặc định được ẩn đi và không kích hoạt con trỏ nhấp nháy. Người dùng xem toàn bộ thông tin chi tiết một cách trọn vẹn, chỉ khi chạm vào ô số tiền thì bàn phím in-app mới trượt lên.
      * Tích hợp bàn phím máy tính 4x5 liền khối: hỗ trợ số `0-9`, `000`, dấu thập phân `.`, phép tính `+ − × ÷`, phím `C`, phím xoá `⌫`, phím `XONG` 2 hàng màu xanh và các chip gợi ý số tiền tròn (`50,000`, `100,000`, `200,000`, `500,000`).
@@ -289,6 +290,28 @@
   5. Tăng phiên bản ứng dụng lên **2.2.1** trong `package.json`.
 * **Quy tắc cho kỹ sư:**
   > Không bao giờ bọc các custom component tương tác hoặc các component có khả năng mở Modal/Popup bên trong thẻ `<label>`. Các Modal hoặc Floating Overlay nằm trong form/sheet luôn phải dùng `createPortal(..., document.body)` để tránh hiện tượng bị kẹt trong stacking context hoặc scroll container của phần tử cha.
+
+---
+
+### CASE STUDY 16: Đồng Bộ Hoá Toàn Bộ Popup In-App (`AppDialog`), Điều Hướng Báo Cáo Tổng Quan & Kiểm Toán Bảo Mật Mã Nguồn
+* **Mã sự cố:** `INC-16`
+* **Mức độ:** Trung bình – Cao (Ảnh hưởng thẩm mỹ PWA đa nền tảng, điều hướng báo cáo và chuẩn hoá thương hiệu).
+* **Mô tả hiện tượng:**
+  1. Khi bấm **"Đặt hạn mức"** ở mục Ngân sách tháng hoặc thực hiện xoá/khôi phục trên cả Desktop và Mobile, ứng dụng gọi `window.prompt()`, `window.confirm()`, `window.alert()` của trình duyệt (hiển thị dòng tiêu đề `moneysavedl.vercel.app says...`), lệch hoàn toàn với giao diện tối/sáng của hệ thống.
+  2. Trên trang **Tổng quan** (`Overview.tsx`):
+     * Mục **Báo cáo tháng này**: dòng `"Đổi biểu đồ"` bị thừa vì thanh điều hướng dưới biểu đồ đã hỗ trợ chuyển đổi qua lại giữa *Báo cáo xu hướng* và *Báo cáo chi tiêu*.
+     * Mục **Chi tiêu nhiều nhất**: dòng `"Xem chi tiết"` lại điều hướng sang trang Ngân sách (`/budgets`) thay vì mở trang **Chi tiết khoản chi** của tháng.
+  3. Rà soát mã nguồn phát hiện còn sót các dòng chữ/comment tham chiếu đến `"MoneyLover"`, thông báo đẩy còn ghi `"MoneyGo"`, `new Date(t.date)` trong `PeriodReport.tsx` có nguy cơ lệch ngày theo múi giờ âm, hàm `refreshTokenIfNeeded()` trong `auth.ts` chưa được gọi trong `cloudSync.ts`, và `importAll` trong `db.ts` cần kiểm tra chặt chẽ cấu trúc giao dịch đầu vào.
+* **Nguyên nhân gốc rễ (RCA):**
+  1. Sử dụng 19 lời gọi hàm native dialog (`alert`, `confirm`, `prompt`) rải rác trong `Budgets.tsx`, `Accounts.tsx`, `Settings.tsx`, `TxDetailModal.tsx`, `TxForm.tsx`, `SafetySnapshotsCard.tsx`.
+  2. Chưa nhúng trực tiếp modal `PeriodReport` vào `Overview.tsx` với tham số `initialScreen="main"` và `initialScreen="expense"`.
+* **Giải pháp khắc phục:**
+  1. Xây dựng hệ thống hộp thoại In-App đồng bộ [`AppDialog.tsx`](../app/src/components/AppDialog.tsx) (`showAlert`, `showConfirm`, `showPrompt`, `<AppDialogHost />`) render qua `createPortal(..., document.body)` ở `z-index: 95`, hỗ trợ tự động định dạng dấu phẩy hàng nghìn, gợi ý mệnh giá nhanh (`500k` – `10tr`) và nút xoá nhanh hạn mức. Thay thế toàn bộ 19 điểm gọi popup trình duyệt trong toàn ứng dụng.
+  2. Trong [`Overview.tsx`](../app/src/pages/Overview.tsx): đổi `"Đổi biểu đồ"` thành `"Xem chi tiết"` mở `PeriodReport` (`initialScreen="main"`, xem Thu nhập ròng & Báo cáo theo nhóm); đổi `"Xem chi tiết"` ở mục Chi tiêu nhiều nhất mở trực tiếp `PeriodReport` (`initialScreen="expense"`, xem Chi tiết khoản chi của tháng). Cập nhật nút `‹` trong [`PeriodReport.tsx`](../app/src/components/PeriodReport.tsx) để đóng báo cáo quay về Tổng quan mượt mà khi mở trực tiếp.
+  3. Loại bỏ 100% chữ `"MoneyLover"` khỏi toàn bộ mã nguồn, giao diện và tài liệu dự án.
+  4. Gia cố kiểm tra kiểu dữ liệu giao dịch trong `importAll` ([`db.ts`](../app/src/db.ts)), kết nối `refreshTokenIfNeeded()` vào `syncNowSmart` ([`cloudSync.ts`](../app/src/cloudSync.ts)), và sửa định dạng ngày `fmtDmy(t.date).slice(0, 5)` trong [`PeriodReport.tsx`](../app/src/components/PeriodReport.tsx).
+* **Quy tắc cho kỹ sư:**
+  > Tuyệt đối không sử dụng `window.alert`, `window.confirm`, `window.prompt` trong ứng dụng PWA MoneySave. Mọi thông báo, xác nhận hoặc nhập liệu ngắn phải gọi qua `showAlert`, `showConfirm`, `showPrompt` từ `components/AppDialog.tsx`.
 
 ---
 

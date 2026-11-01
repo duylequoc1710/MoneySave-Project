@@ -1,6 +1,6 @@
 # 04 – Hướng Dẫn Sử Dụng Ứng Dụng MoneySave
 
-Ứng dụng quản lý tài chính cá nhân chuẩn MoneyLover, hoạt động theo mô hình **Local-first / Offline-first** kết hợp **Đồng bộ Realtime tự động đa thiết bị qua Firebase** và **Mã hóa đầu cuối (E2EE AES-GCM 256-bit)**.
+Ứng dụng quản lý tài chính cá nhân hiện đại chuẩn MoneySave, hoạt động theo mô hình **Local-first / Offline-first** kết hợp **Đồng bộ Realtime tự động đa thiết bị qua Firebase** và **Mã hóa đầu cuối (E2EE AES-GCM 256-bit)**.
 
 ---
 
@@ -61,7 +61,7 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
 
 ## 5. Sổ Giao Dịch, Chi Tiết Giao Dịch & Báo Cáo Giai Đoạn Này
 
-* **Màn hình Chi Tiết Giao Dịch (Chuẩn MoneyLover):**
+* **Màn hình Chi Tiết Giao Dịch (Chuẩn MoneySave):**
   * Khi bấm vào bất kỳ khoản chi tiêu/thu nhập/chuyển tiền nào, ứng dụng sẽ mở màn hình **Chi tiết giao dịch** riêng biệt thay vì bật ngay form sửa và bàn phím ảo.
   * Hiển thị trực quan: Icon nhóm, tên nhóm phân cấp, ghi chú, số tiền lớn nổi bật, ngày giao dịch tiếng Việt đầy đủ và ví thanh toán.
   * Thao tác nhanh tiện lợi:
@@ -98,7 +98,7 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
 
 ---
 
-## 8. Bàn Phím Số In-App Chuẩn MoneyLover & Thanh Dock Tự Ẩn Thông Minh
+## 8. Bàn Phím Số In-App Chuẩn MoneySave & Thanh Dock Tự Ẩn Thông Minh
 
 * **Bàn phím số / Máy tính tích hợp (In-App Numeric Keypad):**
   * **Trải nghiệm liền mạch 1 khối chung:** Khi nhập hoặc sửa số tiền, ứng dụng sử dụng bàn phím số tích hợp ngay trong giao diện thay vì mở bàn phím ảo tách rời của hệ điều hành, giúp giao diện không bị giật lún hay co giật khung nhìn (viewport resize).
