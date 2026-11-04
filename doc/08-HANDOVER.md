@@ -8,7 +8,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
-- `npm test`: 47/47 pass. Dexie schema `version(4)` (bảng `funds, categories, txs, budgets, recurrings, savingsGoals`).
+- `npm test`: 50/50 pass. Dexie schema `version(4)` (bảng `funds, categories, txs, budgets, recurrings, savingsGoals`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục
@@ -33,10 +33,10 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 - Bảo mật: không commit `.env*`, file backup JSON/CSV cá nhân (đã có trong `.gitignore`); `app/.env.local` chỉ có ở máy cục bộ. Cấu hình Firebase xem `firebaseConfig.ts` và `06-DEPLOYMENT-GUIDE.md`.
 
 ## 6. Việc còn tồn đọng / gợi ý
-- **Nợ tài liệu:** `01-SRS.md` chưa có FR riêng cho các hạng mục v2.8.0 (bàn phím in-app, báo cáo savings, anti-drag, reload/search); `05-TEST-PLAN.md` chưa có kịch bản v2.8.0; `07-INCIDENT-LOGS` chưa có case study cho anti-drag freeze.
-- **Test:** chưa có unit test cho `syncSavingsGoalHistoryToTxs` và `GlobalSearchModal`.
-- Roadmap: Giai đoạn 2/3 đã thực tế hoàn thành (Firebase + Vercel) nhưng mục lục `06-ROADMAP.md` còn ghi "chờ PO" – nên dọn lại. Backlog: đính kèm ảnh hoá đơn, đa tiền tệ, khoá PIN/WebAuthn, CI tự động.
-- Chưa xác minh thủ công bản live sau v2.8.0 trên iOS/Android thật.
+- Đã hoàn tất (2026-11-04): FR-40…43 trong SRS, T-25/T-26 trong test plan, INC-18 trong sổ sự cố, unit test `syncSavingsGoalHistoryToTxs`, dọn Roadmap.
+- `GlobalSearchModal`: logic tìm kiếm nằm trong `.tsx`, chưa có unit test; gợi ý tách hàm thuần sang `lib.ts` rồi test.
+- Chưa xác minh thủ công v2.8.0 trên iOS/Android thật (T-26).
+- Backlog: đính kèm ảnh hoá đơn, đa tiền tệ, khoá PIN/WebAuthn, CI tự động.
 
 ## 7. Cách làm việc với PO
 PO (duyle) giao tiếp tiếng Việt; trả lời tiếng Việt, ngắn gọn; hoàn tất mỗi yêu cầu theo quy trình mục 4.

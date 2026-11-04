@@ -25,6 +25,7 @@
 | **INC-14** | Mobile UI & Layering | Nút FAB dính sát dock menu; picker Nhóm và Lịch dùng UI hệ thống khổng lồ lệch theme; sửa nhanh nhóm thiếu an toàn; xem chi tiết giao dịch trong Báo cáo bị che khuất | FAB `bottom` thiếu đệm khoảng cách; dùng thẻ `<select>` & `<input type=date>` gốc; thiếu modal chi tiết nhóm đệm; `PeriodReport` con thiếu `TxDetailModal` và `z-index` sheet (30) thấp hơn report (40) | Nâng FAB `bottom: calc(100px + safe-area)`; thay bằng `CategoryPickerModal` & `DatePickerModal` in-app; tạo `CatDetailModal` xem chi tiết trước khi sửa; nhúng `TxDetailModal` vào `PeriodReport` và nâng `.sheetbg` lên `z-index: 60` |
 | **INC-15** | UI / Modal & Event Delegation | Click vào ô Ngày giao dịch (`DateInput`) trong form không mở lịch chọn ngày trên cả Web và Mobile | Thẻ `<label className="fld">` kích hoạt synthetic click vào nút Huỷ đầu tiên bên trong `DatePickerModal` khiến modal đóng ngay lập tức; modal con không dùng `createPortal` bị giới hạn bởi overflow của sheet cha | Đổi `<label>` sang `<div>`; chặn nổi bọt `e.stopPropagation()`; dùng `createPortal(..., document.body)` với `z-index: 75`; hợp nhất cấu trúc `.date-input-unified` chuẩn MoneySave; nâng app lên v2.2.1 |
 | **INC-16** | UI / Native Popups & Navigation & Code Audit | Hộp thoại trình duyệt mặc định (`alert`/`confirm`/`prompt`) hiển thị dòng `"moneysavedl.vercel.app says"` kém thẩm mỹ; liên kết `"Đổi biểu đồ"` thừa và `"Xem chi tiết"` ở Chi tiêu nhiều nhất nhảy nhầm sang Ngân sách; còn sót chữ `"MoneyLover"` | Dùng hàm blocking native `window.prompt/confirm/alert` tại 19 vị trí; `Overview.tsx` gán nhầm handler cho header báo cáo; `new Date(t.date)` trong `PeriodReport` lệch múi giờ UTC; `importAll` thiếu kiểm tra trường giao dịch | Xây dựng hệ thống [`AppDialog.tsx`](../app/src/components/AppDialog.tsx) (`showAlert`, `showConfirm`, `showPrompt`) qua Portal `z-index: 95`; cập nhật liên kết `"Xem chi tiết"` trong `Overview.tsx` mở thẳng `PeriodReport` (`main` & `expense`); dọn sạch 100% chữ `MoneyLover`; gia cố `importAll` & `refreshTokenIfNeeded`; nâng app lên v2.3.0 |
+| **INC-18** | Mobile UX / Touch | Ứng dụng bị đơ, không bấm được sau khi vô tình chạm đè kéo trên màn hình cảm ứng | Trình duyệt kích hoạt quét khối văn bản / drag ảnh-phần tử, nuốt chuỗi sự kiện click | CSS `user-select:none` + `-webkit-touch-callout:none`, chặn `dragstart`/`selectstart` ngoài ô nhập |
 
 ---
 
@@ -328,6 +329,17 @@
   3. Khi `previousStatementDebt === 0` và `debt > 0`, hiển thị thông báo xanh/trung tính giải thích rõ: Kỳ thanh toán `05/11/2026` (sao kê chốt `20/10`) đã hoàn tất (`0 ₫` cần trả), còn khoản chi `500,000 ₫` phát sinh trong kỳ mới (`20/10 → 20/11`) sẽ chốt ngày `20/11` và có hạn thanh toán là **`05/12/2026`**.
 * **Quy tắc cho kỹ sư:**
   > Khi thiết kế cảnh báo hạn thanh toán thẻ tín dụng, luôn phải tách bạch **Dư nợ kỳ sao kê đã chốt (`previousStatementDebt`)** và **Chi tiêu phát sinh trong kỳ sao kê mới (`currentCycleSpend`)** để hiển thị đúng ngày đến hạn tương ứng của từng khoản.
+
+---
+
+### CASE STUDY 18: Ứng Dụng Bị Đơ Do Quét Khối / Kéo Thả Vô Tình Trên Màn Hình Cảm Ứng
+* **Mã sự cố:** `INC-18`
+* **Mức độ:** Trung bình (người dùng tưởng app treo, phải tắt mở lại).
+* **Hiện tượng:** Khi chạm đè rồi kéo trên giao diện, trình duyệt bắt đầu chọn khối văn bản hoặc drag phần tử; sau đó các thao tác bấm không phản hồi.
+* **RCA:** Không có ràng buộc `user-select` toàn cục nên cử chỉ chọn/kéo mặc định của trình duyệt chặn luồng click.
+* **Giải pháp (v2.8.0):** CSS toàn cục `user-select: none` và `-webkit-touch-callout: none`; listener chặn `dragstart` và `selectstart` trừ `input`/`textarea`/`[contenteditable]`.
+* **Quy tắc cho kỹ sư:**
+  > Khi thêm ô nhập văn bản mới, đảm bảo nó nằm trong ngoại lệ cho phép chọn văn bản; nếu không người dùng sẽ không thể bôi đen / dán nội dung.
 
 ---
 

@@ -7,7 +7,7 @@
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/live_demo_(test_only)-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo (Test Only)" /></a>
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.8.0-3b82f6" alt="Version v2.8.0" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-47%2F47%20passing-brightgreen" alt="Tests" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-50%2F50%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
@@ -75,7 +75,7 @@ Không chỉ dừng lại ở việc ghi chép thu chi thông thường, **Money
 | **Biểu đồ & Trực quan hóa** | Recharts v3 (Lazy-loaded chunk), Custom Sparkbars & Milestone Steppers |
 | **Đám mây & Xác thực** | Firebase Authentication (Email/Password), Cloud Firestore / Realtime Database REST API |
 | **Bảo mật & Mã hóa** | Web Crypto API (`crypto.subtle` – `AES-GCM 256-bit`, `PBKDF2-SHA256`, `SHA-256`) |
-| **Chất lượng Mã nguồn** | Node.js Test Runner (`47/47 unit tests`), Oxlint, TypeScript Strict Mode |
+| **Chất lượng Mã nguồn** | Node.js Test Runner (`50/50 unit tests`), Oxlint, TypeScript Strict Mode |
 
 ---
 
@@ -100,7 +100,7 @@ cp .env.example .env.local
 # 4. Khởi chạy máy chủ phát triển để tự do chỉnh sửa / "xào nấu" tính năng
 npm run dev
 
-# 5. Chạy bộ kiểm thử tự động (47 kịch bản Unit Test) & Đóng gói bản Production
+# 5. Chạy bộ kiểm thử tự động (50 kịch bản Unit Test) & Đóng gói bản Production
 npm test
 npm run lint
 npm run build
@@ -135,7 +135,7 @@ Toàn bộ tài liệu thiết kế, kiến trúc và nhật ký kỹ thuật c�
 * 🏗️ [`doc/02-ARCHITECTURE.md`](doc/02-ARCHITECTURE.md): Kiến trúc hệ thống, luồng đồng bộ & bảo mật E2EE.
 * 🗄️ [`doc/03-DATA-MODEL.md`](doc/03-DATA-MODEL.md): Mô hình dữ liệu IndexedDB (Dexie schema v4).
 * 📖 [`doc/04-USER-GUIDE.md`](doc/04-USER-GUIDE.md): Cẩm nang hướng dẫn sử dụng trên iPhone, Android và máy tính.
-* 🧪 [`doc/05-TEST-PLAN.md`](doc/05-TEST-PLAN.md): Kế hoạch và kết quả kiểm thử tự động (`47/47 tests pass`).
+* 🧪 [`doc/05-TEST-PLAN.md`](doc/05-TEST-PLAN.md): Kế hoạch và kết quả kiểm thử tự động (`50/50 tests pass`).
 * 🗺️ [`doc/06-ROADMAP.md`](doc/06-ROADMAP.md) & [`doc/06-DEPLOYMENT-GUIDE.md`](doc/06-DEPLOYMENT-GUIDE.md): Lộ trình phát triển & hướng dẫn triển khai.
 * 🛠️ [`doc/07-INCIDENT-LOGS-AND-CASE-STUDIES.md`](doc/07-INCIDENT-LOGS-AND-CASE-STUDIES.md): Sổ tay phân tích sự cố kỹ thuật (RCA) & các giải pháp thực chiến.
 

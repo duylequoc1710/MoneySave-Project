@@ -26,5 +26,7 @@
 | T-22 | Kiểm thử Hệ thống Phân tích Hành vi Tài chính 4 Trụ cột `Smart Insights` (`computeSmartInsights` & `SmartInsightsModal`): Dự báo dòng tiền làm mượt đầu tháng, Phát hiện rò rỉ vi mô & đột biến, Nhịp sinh học Thứ 2–CN & Payday Effect, Quy đổi giờ làm việc/lãi kép và hành động 1-chạm | ✅ Pass (44/44 unit tests) |
 | T-23 | Kiểm thử Quỹ Tín Dụng nâng cao & Chuyển đổi Trả góp (`3/6/12/24` tháng): Tách bạch dư nợ kỳ sao kê đã chốt (`05/11`) và chi tiêu kỳ sao kê mới (`20/10 -> 20/11`, hạn TT `05/12`) chống cảnh báo giả; tính toán lịch biểu trả góp, số kỳ đã trả, số kỳ còn lại và ngày hoàn tất (`computeInstallmentStatus`) | ✅ Pass (46/46 unit tests) |
 | T-24 | Kiểm thử `Quỹ Tiết Kiệm` (`analyzeSavingsGoal` & `findSavingsFund`), lộ trình 3 giai đoạn (`0%` – `50%` – `100%`), ghi nhận Tháng mục tiêu (`MM/yyyy`), vuốt ngang trên Sổ giao dịch & Báo cáo chi tiết, giao diện Ngân sách tháng lặp lại và hiển thị thanh tiến độ trên Android / iOS | ✅ Pass (47/47 unit tests) |
+| T-25 | Unit test `syncSavingsGoalHistoryToTxs` (`app/src/savingsSync.test.ts`): sinh tx allocate/withdraw từ `history`, log khởi tạo `init-goal-<id>`, idempotent, store rỗng | ✅ Pass (50/50 unit tests) |
+| T-26 | Thủ công v2.8.0: bàn phím in-app + `InAppSelectModal` không bật bàn phím OS; báo cáo Phân bổ/Rút trong `PeriodReport`; anti-drag không gây đơ; nút Reload; `GlobalSearchModal` (logic nằm trong .tsx nên chưa có unit test tự động) | ⏳ Cần xác nhận trên iOS/Android thật |
 
 Dữ liệu mẫu chỉ nạp vào trình duyệt kiểm thử và đã xoá; không nằm trong mã nguồn.
