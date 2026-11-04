@@ -3,13 +3,14 @@
 | File | Nội dung |
 |---|---|
 | ../README.md | **Trang giới thiệu tổng quan dự án (GitHub Landing Page)**, kiến trúc, tính năng & hướng dẫn chạy nhanh |
-| ../CHANGELOG.md | **Nhật ký phát hành phiên bản (`v1.0.0` → `v2.7.2`)** theo chuẩn Keep a Changelog |
+| ../CHANGELOG.md | **Nhật ký phát hành phiên bản (`v1.0.0` → `v2.8.0`)** theo chuẩn Keep a Changelog |
 | 01-SRS.md | Đặc tả yêu cầu (chức năng, phi chức năng, user stories, tiêu chí nghiệm thu) |
 | 02-ARCHITECTURE.md | Kiến trúc, công nghệ, luồng dữ liệu, bảo mật |
 | 03-DATA-MODEL.md | Các bảng dữ liệu, quy tắc tính số dư |
 | 04-USER-GUIDE.md | Cài lên iPhone/Android/Mac, cách dùng, sao lưu |
 | 05-TEST-PLAN.md | Kịch bản & kết quả kiểm thử |
 | 06-ROADMAP.md | Trạng thái tính năng, kế hoạch đồng bộ realtime, deploy |
+| 08-HANDOVER.md | **Tài liệu bàn giao cho AI/kỹ sư tiếp nhận (ĐỌC ĐẦU TIÊN)**: trạng thái, cấu trúc, quy trình, lưu ý |
 | 07-INCIDENT-LOGS-AND-CASE-STUDIES.md | **Sổ tay sự cố kỹ thuật & Case studies (RCA, giải pháp, quy tắc phòng ngừa)** |
 | PLAN-initial.md | Kế hoạch ban đầu (WHY, rủi ro, tiêu chí) |
 | adr/ | Architecture Decision Records |

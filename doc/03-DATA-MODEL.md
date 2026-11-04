@@ -34,3 +34,6 @@ Thêm `this.version(n+1).stores(...)` trong `db.ts`, không sửa version cũ; c
 
 ## CSDL phụ: bản sao an toàn (không thuộc schema chính)
 IndexedDB riêng `moneysave_safety` (bảng `snapshots`: `++id, createdAt`; trường `reason, txCount, fundCount, json`), tối đa 15 bản. Tách biệt hoàn toàn với `MoneyDB` nên **không tăng version Dexie chính** và không bị `importAll`/đồng bộ Cloud ghi đè. Dùng để hoàn tác khi lỡ Khôi phục/Đồng bộ/Xoá sạch.
+
+## Bổ sung v2.8.0 – Trường Quỹ Tiết Kiệm trên `txs`
+Không đổi schema Dexie (vẫn `version(4)`; các trường dưới đây không được đánh index): `savingsGoalId?`, `savingsGoalName?`, `savingsGoalIcon?`, `savingsAction?` (`'allocate'` Ví Tiết Kiệm→Mục tiêu | `'withdraw'` Mục tiêu→Ví Tiết Kiệm/ví khác), `savingsLogId?` (khớp `savingsGoals.history[].id` để đồng bộ hai chiều qua `syncSavingsGoalHistoryToTxs` trong `db.ts`).

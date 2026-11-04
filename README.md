@@ -6,7 +6,7 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/live_demo_(test_only)-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo (Test Only)" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.7.2-3b82f6" alt="Version v2.7.2" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.8.0-3b82f6" alt="Version v2.8.0" /></a>
     <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-47%2F47%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
@@ -117,6 +117,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.8.0` (2026-11-01):** Đồng bộ bàn phím số & bộ chọn in-app (bỏ 100% bàn phím/`<select>` hệ thống), báo cáo Phân bổ/Rút Quỹ Tiết Kiệm, chống kéo thả vô tình, nút Reload nhanh & Tìm kiếm toàn diện.
 * **`v2.7.2` (2026-11-01):** Ra mắt **🐷 Quỹ Tiết Kiệm & Kế hoạch mục tiêu**, phân bổ dòng tiền 2 tầng, lộ trình 3 giai đoạn `0% → 50% → 100%` kèm Tháng mục tiêu và tối ưu luồng tạo kế hoạch.
 * **`v2.6.2` (2026-11-01):** Bổ sung cử chỉ **vuốt ngang chuyển tháng** cho Sổ giao dịch & Báo cáo chi tiết; thiết kế mới **Ngân sách tháng** có tùy chọn lặp lại tháng sau; sửa triệt để lỗi thanh tiến độ trên Android & đè chữ trên Mobile.
 * **`v2.5.1` (2026-11-01):** Nâng cấp toàn diện **💳 Quỹ Tín Dụng**, hỗ trợ **chuyển đổi Trả góp `3/6/12/24` tháng**, tách bạch kỳ sao kê đã chốt vs kỳ đang mở và tinh gọn thanh Dock 4 mục.

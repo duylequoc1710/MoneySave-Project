@@ -21,6 +21,13 @@ Host tĩnh miễn phí (Firebase Hosting / Netlify / GitHub Pages) để cài l�
 ## Cập nhật 2026-10-26
 Định dạng `MM/yyyy`/`dd/MM/yyyy` thống nhất; màn Chi tiết thu nhập ròng theo tuần; khoá cuộn nền khi mở sheet; bàn phím số dạng panel nổi (xem sessions/2026-10-26-01.md).
 
+## Cập nhật 2026-11-01 (`v2.8.0` – HOÀN THÀNH)
+- Bàn phím số in-app (`NumericInputBox`/`Keypad`) và bộ chọn `InAppSelectModal` thay 100% input/select hệ thống; bỏ `autoFocus`.
+- Giao dịch Phân bổ/Rút Quỹ Tiết Kiệm (`Tx.savingsAction`, `savingsGoalId`, `savingsLogId`...) + thẻ báo cáo trong `PeriodReport`/`Ledger`/`TxDetailModal`; đồng bộ ngược `syncSavingsGoalHistoryToTxs`.
+- Chống quét khối/kéo thả (CSS `user-select:none` + chặn `dragstart`/`selectstart`).
+- Nút Reload nhanh (`syncNowSmart`) và `GlobalSearchModal` tại Tổng quan.
+- Xem `08-HANDOVER.md` cho việc còn tồn đọng.
+
 ## Cập nhật 2026-11-01 (`v2.7.2` – HOÀN THÀNH)
 - **Smart Insights 4 Trụ cột:** Dự báo dòng tiền (`Burn Rate`), Phát hiện rò rỉ vi mô (`Micro-leaks`), Nhịp sinh học tài chính (`Payday Effect`) & Quy đổi chi phí cơ hội 1-chạm.
 - **Quỹ Tín Dụng & Trả Góp (`3/6/12/24` tháng):** Tách bạch kỳ sao kê đã chốt vs kỳ đang mở, chuyển đổi giao dịch thẻ sang trả góp và theo dõi tiến độ từng kỳ.
