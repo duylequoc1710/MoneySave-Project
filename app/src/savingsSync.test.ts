@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { syncSavingsGoalHistoryToTxs, type MoneyDB } from './db.ts'
+import { syncSavingsGoalHistoryToTxs } from './db.ts'
+
+type MoneyDB = NonNullable<Parameters<typeof syncSavingsGoalHistoryToTxs>[0]>
 
 type Row = Record<string, unknown> & { id?: number }
 function table(rows: Row[]) {
