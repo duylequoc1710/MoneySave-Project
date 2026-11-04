@@ -34,8 +34,9 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 
 ## 6. Việc còn tồn đọng / gợi ý
 - Đã hoàn tất (2026-11-04): FR-40…43 trong SRS, T-25/T-26 trong test plan, INC-18 trong sổ sự cố, unit test `syncSavingsGoalHistoryToTxs`, dọn Roadmap.
-- `GlobalSearchModal`: logic tìm kiếm nằm trong `.tsx`, chưa có unit test; gợi ý tách hàm thuần sang `lib.ts` rồi test.
-- Chưa xác minh thủ công v2.8.0 trên iOS/Android thật (T-26).
+- **[TODO-1] Unit test cho `GlobalSearchModal`** (`app/src/components/GlobalSearchModal.tsx`): logic tìm kiếm nằm inline trong `.tsx` nên `node --test` không import được. Việc cần làm: tách các hàm thuần (tìm chức năng, tìm giao dịch đa tiêu chí, tìm kế hoạch/định kỳ/ghi chú) sang `lib.ts` (hoặc `search.ts`), để component chỉ gọi hàm; viết test trong `app/src/*.test.ts`; chạy `npm test && npm run build`; đổi T-26 và số test trong README/INDEX/TEST-PLAN.
+- **[TODO-2] Xác minh thủ công v2.8.0 trên iOS Safari & Android Chrome thật** (T-26 trong `05-TEST-PLAN.md`): bàn phím in-app/`InAppSelectModal` không bật bàn phím OS, báo cáo Phân bổ/Rút, anti-drag không đơ, nút Reload cập nhật SW, tìm kiếm. AI không có thiết bị thật → cần PO xác nhận; kết quả ghi vào T-26 (đổi ⏳ thành ✅/❌) và INC mới nếu có lỗi.
+- **[TODO-3] Kiểm tra Vercel deploy** của commit mới nhất thành công (commit `9f53f54` từng push khi build lỗi TS, đã sửa ở `28a25d2`); bài học: luôn chờ `npm run build` thành công TRƯỚC khi push (file `*.test.ts` cũng bị `tsc -b` kiểm tra).
 - Backlog: đính kèm ảnh hoá đơn, đa tiền tệ, khoá PIN/WebAuthn, CI tự động.
 
 ## 7. Cách làm việc với PO

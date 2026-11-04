@@ -344,6 +344,7 @@
 ---
 
 ## 🛡️ Hướng Dẫn Kỹ Sư Kế Tiếp Khi Triển Khai Tính Năng Mới
+0. **Chỉ push khi `npm test && npm run build` đều thành công** (từng push nhầm lúc build lỗi TS do file test – xem `08-HANDOVER.md` TODO-3).
 1. **Dữ liệu người dùng là số 1:** Không bao giờ đặt lệnh xóa cơ sở dữ liệu tự động trong `main.tsx` hoặc các hook khởi động.
 2. **Trước khi thêm CSS toàn cục:** Luôn kiểm tra hành vi cuộn trên cả 3 môi trường: iPhone Safari, Android Chrome và macOS Trackpad.
 3. **Trước khi sửa đổi logic cơ sở dữ liệu:** Kiểm tra xem thay đổi có ảnh hưởng đến hàm `exportAll`, `importAll` và engine `syncNowSmart` không.

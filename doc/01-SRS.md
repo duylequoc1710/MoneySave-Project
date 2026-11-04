@@ -51,7 +51,7 @@ Ghi chép thu chi nhanh, xem tổng quan tài chính, quản lý theo quỹ; dù
 | FR-40 | **Bàn phím số & bộ chọn in-app (2026-11-01, v2.8.0)**: mọi ô nhập số dùng `NumericInputBox`/`Keypad`; mọi `<select>` thay bằng `InAppSelectModal`; không `autoFocus`/`.focus()` khi mở form để không bật bàn phím hệ điều hành. |
 | FR-41 | **Giao dịch & báo cáo Phân bổ/Rút Quỹ Tiết Kiệm (v2.8.0)**: `Tx.savingsAction` (`allocate`/`withdraw`), `savingsGoalId/Name/Icon`, `savingsLogId`; thẻ báo cáo trong `PeriodReport`, chi tiết ở `Ledger`/`TxDetailModal`; `syncSavingsGoalHistoryToTxs` đồng bộ dữ liệu lịch sử, idempotent (không tạo trùng). |
 | FR-42 | **Chống quét khối/kéo thả vô tình (v2.8.0)**: CSS `user-select:none`, `-webkit-touch-callout:none`, chặn `dragstart`/`selectstart` ngoài ô nhập văn bản. |
-| FR-43 | **Nút Reload nhanh & Tìm kiếm toàn diện (v2.8.0)**: nút 🔄 tại Tổng quan gọi `syncNowSmart`, kiểm tra Service Worker; `GlobalSearchModal` tìm chức năng, giao dịch, kế hoạch/định kỳ/ghi chú. |
+| FR-43 *(TODO: chưa có unit test cho phần tìm kiếm – xem `08-HANDOVER.md`)* | **Nút Reload nhanh & Tìm kiếm toàn diện (v2.8.0)**: nút 🔄 tại Tổng quan gọi `syncNowSmart`, kiểm tra Service Worker; `GlobalSearchModal` tìm chức năng, giao dịch, kế hoạch/định kỳ/ghi chú. |
 
 ## 3. Yêu cầu phi chức năng (NFR)
 - NFR-01 Đa nền tảng: PWA cài được trên iOS (Safari → Thêm vào MH chính), Android (Chrome), macOS (Safari/Chrome).
