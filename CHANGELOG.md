@@ -4,6 +4,16 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.13.0] – 2026-11-16
+### 👆 Dễ bấm, dễ đọc & bộ icon thống nhất (U1 + U2 trong `doc/11-UI-PLAN.md`)
+- **U1:** nút icon (🔍 🔄 📅 ‹ ›, ẩn/hiện số dư) có vùng bấm ≥ 44×44px; link chữ ("Xem tất cả", "Quản lý thẻ", "+ Thêm thẻ"…) và nút nhỏ ở đầu trang được nới vùng bấm vô hình (không đổi bố cục); "+ Thêm thẻ" không còn xuống dòng.
+- Thêm nhãn đọc màn hình (`aria-label`) cho 9 nút chỉ có icon; mọi chữ phụ < 12px nâng lên 12px.
+- Nút nổi "＋ Thêm giao dịch" không che nội dung cuối trang (chừa thêm khoảng dưới); nút nhỏ "Chi ngay/Đang bật", "Chi tiết/Cài đặt", "Khôi phục/Tải" to hơn, cách nhau 8px.
+- **U2:** thay emoji của khung giao diện bằng icon SVG `lucide-react` (bản 1.66.0, chỉ nạp icon dùng tới): thanh điều hướng, nút đầu trang, mũi tên, tiêu đề mục, Cài đặt, thanh nhắc sao lưu. Icon đổi màu theo theme, mục đang chọn ở thanh điều hướng có icon màu xanh.
+- **Giữ nguyên** emoji danh mục/ví do người dùng chọn. Không đổi dữ liệu/schema Dexie. 72/72 test.
+
+---
+
 ## [v2.12.0] – 2026-11-16
 ### 🧹 Dọn gọn trang Cài đặt
 - **Tài khoản & đồng bộ:** gộp thành 1 khối (email + "Đã đồng bộ lúc …" + 2 nút); bỏ UID, mã thiết bị, chữ "Admin" và câu "thời gian thực/E2EE" gây hiểu nhầm.

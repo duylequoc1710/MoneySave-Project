@@ -9,7 +9,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
 - PO đã đổi rule Firebase (két `moneysave_users`), xác nhận 2 thiết bị đồng bộ khớp (2026-11-16). Giai đoạn 2 khoá két cũ: từ ~2026-11-23 (09 §6.3), cần nhắc PO.
-- `npm test`: 72/72 pass. `main` = v2.12.0. Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
+- `npm test`: 72/72 pass. `main` = v2.12.0; nhánh `claude/ui-u1-u2` = v2.13.0 (U1 + U2 giao diện, chờ PO "merge"). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục
@@ -37,7 +37,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 - Đã hoàn tất (2026-11-04): FR-40…43 trong SRS, T-25/T-26 trong test plan, INC-18 trong sổ sự cố, unit test `syncSavingsGoalHistoryToTxs`, dọn Roadmap.
 - ✅ [TODO-1] Đã xong v2.10.1: logic tìm kiếm ở `app/src/search.ts`, test `search.test.ts` (T-29).
 - **[S4a] Google Drive:** code xong v2.11.0 (Client ID PO đã tạo, xem `10-…` §6). Còn: PO thử đăng nhập Google thật trên iPhone PWA/Android/máy tính (T-30). Origin chỉ có `moneysavedl.vercel.app` + localhost → bản Preview nhánh KHÔNG đăng nhập Google được trừ khi PO thêm origin của Preview. D3 = không mã hoá file sao lưu.
-- **[UI] Cải tiến giao diện:** kế hoạch `11-UI-PLAN.md` (lát U1…U5, khuyến nghị U1 → U2 → U4 → U3 → U5); chờ PO chọn lát. Skill `ui-ux-pro-max`, `ponytail` có sẵn trong `.claude/skills/`.
+- **[UI] Cải tiến giao diện:** kế hoạch `11-UI-PLAN.md`. U1 + U2 xong v2.13.0 trên nhánh `claude/ui-u1-u2` (nhật ký `sessions/2026-11-16-03.md`), chờ PO xem điện thoại + "merge". Tiếp theo đề xuất U4 → U3 → U5 (U3 gồm nút chữ 30–35px và icon trong modal). Lưu ý: skill viết tiếng Anh nhưng luôn trả lời PO bằng tiếng Việt. Skill `ui-ux-pro-max`, `ponytail` có sẵn trong `.claude/skills/`.
 - **[S4b] Định hướng PO (09 §7):** riêng tư + chi phí 0 → đề xuất chuyển đồng bộ sang Drive từng người; chờ PO chốt sau khi S4a ổn.
 - **[TODO-2] Xác minh thủ công v2.8.0 trên iOS Safari & Android Chrome thật** (T-26 trong `05-TEST-PLAN.md`): bàn phím in-app/`InAppSelectModal` không bật bàn phím OS, báo cáo Phân bổ/Rút, anti-drag không đơ, nút Reload cập nhật SW, tìm kiếm. AI không có thiết bị thật → cần PO xác nhận; kết quả ghi vào T-26 (đổi ⏳ thành ✅/❌) và INC mới nếu có lỗi.
 - **[TODO-3] Kiểm tra Vercel deploy** của commit mới nhất thành công (commit `9f53f54` từng push khi build lỗi TS, đã sửa ở `28a25d2`); bài học: luôn chờ `npm run build` thành công TRƯỚC khi push (file `*.test.ts` cũng bị `tsc -b` kiểm tra).

@@ -229,6 +229,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
                 fontSize: 13,
                 cursor: 'pointer',
                 color: 'var(--mut)',
+                whiteSpace: 'normal',
               }}
             >
               Tiếp tục dùng thử ngoại tuyến (Không cần tài khoản) ›
