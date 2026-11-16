@@ -9,10 +9,12 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 - Chữ gốc 16px (trước 14.5px); mọi cỡ chữ theo một thang thống nhất 12–34px (bỏ cỡ lẻ 12.5/13.5/14.5…); số tiền dùng chữ số đều rộng (`tabular-nums`) → các cột tiền thẳng hàng.
 - Màu thành token ngữ nghĩa: thêm `--warn` (cảnh báo) và `--info` (thông tin); chữ màu cứng trong các màn hình chuyển sang token.
 - Giao diện **Sáng** đạt tương phản ≥ 4.5:1: chữ phụ, xanh thu, đỏ chi, cam cảnh báo, xanh dương thông tin đậm hơn; chữ trắng trên nút xanh 5.0:1 (trước 3.3:1).
+- Giao diện **Tối**: chữ trên nút xanh (Thêm giao dịch, Sao lưu, Xong, ngày đang chọn, dấu tích) đổi sang xanh rất đậm `--on-acc` → 7.7:1 (trước chữ trắng 2.2:1). Sáng vẫn chữ trắng.
+- Màu biểu đồ đạt ≥ 3:1 cả hai giao diện: đường thu nhập #0891b2, cột thu #0284c7, cột cuối tuần dùng `--warn`.
 - Nút chữ (tab Tối/Sáng/Theo máy, "+ Cài đặt mới", tab tháng, chọn ví, Đóng, Đăng ký/Đăng nhập) cao tối thiểu 44px.
 - Ký tự "‹ Đóng", "›", "⌄" trong cửa sổ đổi sang icon SVG, có nhãn đọc màn hình.
 - Sửa nhỏ: viền/nền nhãn "tốc độ chi" và nhãn trạng thái mục tiêu hiển thị đúng màu (trước là chuỗi màu không hợp lệ).
-- +2 test chặn cỡ chữ lệch thang và màu Sáng dưới 4.5:1 → 75/75. Không đổi dữ liệu/schema.
+- +2 test chặn cỡ chữ lệch thang và màu Sáng dưới 4.5:1 → 76/76. Không đổi dữ liệu/schema.
 
 ---
 

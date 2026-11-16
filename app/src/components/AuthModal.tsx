@@ -110,7 +110,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               fontWeight: 600,
               cursor: 'pointer',
               background: mode === 'login' ? 'var(--acc, #2bc255)' : 'transparent',
-              color: mode === 'login' ? '#ffffff' : 'var(--mut, #8e8e93)',
+              color: mode === 'login' ? 'var(--on-acc)' : 'var(--mut, #8e8e93)',
               transition: 'all 0.2s',
             }}
           >
@@ -131,7 +131,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               fontWeight: 600,
               cursor: 'pointer',
               background: mode === 'register' ? 'var(--acc, #2bc255)' : 'transparent',
-              color: mode === 'register' ? '#ffffff' : 'var(--mut, #8e8e93)',
+              color: mode === 'register' ? 'var(--on-acc)' : 'var(--mut, #8e8e93)',
               transition: 'all 0.2s',
             }}
           >
@@ -213,7 +213,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               borderRadius: 12,
               border: 0,
               background: 'var(--acc, #2bc255)',
-              color: '#ffffff',
+              color: 'var(--on-acc)',
               fontSize: 15,
               fontWeight: 700,
               cursor: loading ? 'not-allowed' : 'pointer',

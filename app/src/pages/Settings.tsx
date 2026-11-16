@@ -120,7 +120,7 @@ export default function Settings() {
                   height: 40,
                   borderRadius: '50%',
                   background: 'var(--acc)',
-                  color: '#fff',
+                  color: 'var(--on-acc)',
                   fontWeight: 700,
                   fontSize: 18,
                   display: 'flex',

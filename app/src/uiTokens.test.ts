@@ -47,7 +47,13 @@ describe('U3 chữ & màu', () => {
     for (const name of ['fg', 'mut', 'acc', 'inc', 'exp', 'warn', 'info'])
       for (const bg of ['card', 'bg'])
         assert.ok(contrast(tok(name), tok(bg)) >= 4.5, `--${name} trên --${bg}: ${contrast(tok(name), tok(bg)).toFixed(2)}`)
-    // Chữ trắng trên nút chính (nền --acc)
-    assert.ok(contrast('#ffffff', tok('acc')) >= 4.5)
+    // Chữ trên nút chính (nền --acc)
+    assert.ok(contrast(tok('on-acc'), tok('acc')) >= 4.5)
+  })
+
+  it('giao diện Tối: chữ trên nút xanh ≥ 4.5:1', () => {
+    const dark = css.slice(css.indexOf(':root[data-theme="dark"]'))
+    const tok = (name: string) => dark.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))![1]
+    assert.ok(contrast(tok('on-acc'), tok('acc')) >= 4.5, `--on-acc trên --acc: ${contrast(tok('on-acc'), tok('acc')).toFixed(2)}`)
   })
 })

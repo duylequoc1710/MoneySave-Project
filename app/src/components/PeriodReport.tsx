@@ -554,7 +554,7 @@ export default function PeriodReport({
                     <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
                     <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 12 }} width={72} />
                     <ReferenceLine y={0} stroke="#8e98a4" />
-                    <Bar dataKey="income" name="Khoản thu" stackId="n" fill="#1d9bf0" barSize={44} />
+                    <Bar dataKey="income" name="Khoản thu" stackId="n" fill="#0284c7" barSize={44} />
                     <Bar dataKey="negExpense" name="Khoản chi" stackId="n" fill="#f0534f" barSize={44} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -850,7 +850,7 @@ export default function PeriodReport({
                         <Bar
                           dataKey="amount"
                           name={isExp ? 'Khoản chi' : 'Khoản thu'}
-                          fill={isExp ? '#f0534f' : '#1d9bf0'}
+                          fill={isExp ? '#f0534f' : '#0284c7'}
                           radius={[4, 4, 0, 0]}
                           barSize={52}
                         />
@@ -1040,7 +1040,7 @@ export default function PeriodReport({
                   className="net-bar-fill"
                   style={{
                     width: `${Math.max(18, Math.round((totalIncome / maxBar) * 100))}%`,
-                    background: '#1d9bf0',
+                    background: '#0284c7',
                   }}
                 >
                   Khoản thu

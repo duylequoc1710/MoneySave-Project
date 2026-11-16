@@ -228,7 +228,7 @@ export default function App() {
             transform: 'translateX(-50%)',
             zIndex: 100,
             background: 'var(--acc)',
-            color: '#fff',
+            color: 'var(--on-acc)',
             padding: '10px 16px',
             borderRadius: 99,
             fontSize: 13,

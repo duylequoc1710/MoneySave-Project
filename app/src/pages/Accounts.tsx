@@ -564,7 +564,7 @@ export default function Accounts() {
                   <div className="grow">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <b style={{ fontSize: 16 }}>{grp.parent.name}</b>
-                      <span className="pill-tag" style={{ fontSize: 12, background: 'var(--acc)', color: '#fff' }}>
+                      <span className="pill-tag" style={{ fontSize: 12, background: 'var(--acc)', color: 'var(--on-acc)' }}>
                         {grp.children.length} nhóm con
                       </span>
                     </div>

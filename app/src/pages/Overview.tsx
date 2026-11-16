@@ -1011,8 +1011,8 @@ export default function Overview() {
                 <AreaChart data={trendData} margin={{ left: -12, right: 8, top: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorCur" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={trendTab === 'expense' ? '#ef4444' : '#06b6d4'} stopOpacity={0.45} />
-                      <stop offset="95%" stopColor={trendTab === 'expense' ? '#ef4444' : '#06b6d4'} stopOpacity={0} />
+                      <stop offset="5%" stopColor={trendTab === 'expense' ? '#ef4444' : '#0891b2'} stopOpacity={0.45} />
+                      <stop offset="95%" stopColor={trendTab === 'expense' ? '#ef4444' : '#0891b2'} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#8883" />
@@ -1049,7 +1049,7 @@ export default function Overview() {
                     type="monotone"
                     dataKey="thisMonth"
                     name="Tháng này"
-                    stroke={trendTab === 'expense' ? '#ef4444' : '#06b6d4'}
+                    stroke={trendTab === 'expense' ? '#ef4444' : '#0891b2'}
                     strokeWidth={2.5}
                     fillOpacity={1}
                     fill="url(#colorCur)"
@@ -1067,7 +1067,7 @@ export default function Overview() {
                     width: 10,
                     height: 10,
                     borderRadius: '50%',
-                    background: trendTab === 'expense' ? '#ef4444' : '#06b6d4',
+                    background: trendTab === 'expense' ? '#ef4444' : '#0891b2',
                     marginRight: 6,
                   }}
                 />

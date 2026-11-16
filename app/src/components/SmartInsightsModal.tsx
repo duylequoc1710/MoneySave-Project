@@ -371,7 +371,7 @@ export default function SmartInsightsModal({
                 8,
                 Math.round((st.avgAmount / maxWeekdayAvg) * 100),
               )
-              const barColor = st.isWeekend ? '#f59e0b' : 'var(--acc)'
+              const barColor = st.isWeekend ? 'var(--warn)' : 'var(--acc)'
               return (
                 <div
                   key={st.shortLabel}

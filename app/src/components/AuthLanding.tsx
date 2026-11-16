@@ -100,7 +100,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
               fontWeight: 600,
               cursor: 'pointer',
               background: mode === 'register' ? 'var(--acc, #28c76f)' : 'transparent',
-              color: mode === 'register' ? '#ffffff' : 'var(--mut)',
+              color: mode === 'register' ? 'var(--on-acc)' : 'var(--mut)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -122,7 +122,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
               fontWeight: 600,
               cursor: 'pointer',
               background: mode === 'login' ? 'var(--acc, #28c76f)' : 'transparent',
-              color: mode === 'login' ? '#ffffff' : 'var(--mut)',
+              color: mode === 'login' ? 'var(--on-acc)' : 'var(--mut)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -206,7 +206,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
               fontWeight: 700,
               borderRadius: 12,
               background: 'var(--acc, #28c76f)',
-              color: '#fff',
+              color: 'var(--on-acc)',
               border: 0,
               cursor: loading ? 'not-allowed' : 'pointer',
               boxShadow: '0 4px 14px rgba(40,199,111,0.3)',

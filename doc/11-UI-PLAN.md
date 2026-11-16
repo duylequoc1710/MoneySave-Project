@@ -35,7 +35,7 @@ Quan sát thêm (ảnh chụp):
 
 Khuyến nghị thứ tự: **U1 → U2 → U4 → U3 → U5**. (U1 + U2 xong ở v2.13.0, phiên 2026-11-16-03 – còn lại: nút chữ 30–35px như "+ Cài đặt mới", tab Tối/Sáng chưa đạt 44px → gộp vào U3; modal (‹ Đóng, ›) vẫn dùng ký tự/emoji → làm cùng U3/U4.) U1 + U2 mang lại khác biệt nhìn thấy rõ nhất với rủi ro thấp.
 
-**U3 xong (v2.16.0, phiên 2026-11-16-04):** chữ 16px + thang thống nhất, `tabular-nums`, token `--warn/--info`, màu Sáng ≥ 4.5:1, nút chữ ≥ 44px, mũi tên modal → icon SVG. Còn lại (chờ PO quyết): chữ trắng trên nút xanh ở giao diện **Tối** chỉ 2.2:1 (đổi sẽ thay diện mạo thương hiệu); màu biểu đồ (không phải chữ) ở giao diện Sáng chưa chỉnh.
+**U3 xong (v2.16.0, phiên 2026-11-16-04):** chữ 16px + thang thống nhất, `tabular-nums`, token `--warn/--info`, màu Sáng ≥ 4.5:1, nút chữ ≥ 44px, mũi tên modal → icon SVG. PO đồng ý khuyến nghị: Tối dùng chữ xanh đậm `--on-acc` trên nút xanh (7.7:1); màu biểu đồ chỉnh ≥ 3:1. Kế hoạch U1–U5 hoàn tất.
 
 ## §4. Quy trình mỗi lát
 1. Chạy `search.py` của skill cho đúng vấn đề (`--domain ux` / `icons` / `typography`), đối chiếu quy tắc dự án.

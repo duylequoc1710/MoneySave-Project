@@ -276,7 +276,7 @@ export function InAppSelect<T extends string | number>({
                             borderRadius: '50%',
                             background: isSel ? 'var(--acc)' : 'transparent',
                             border: isSel ? 'none' : '1.5px solid var(--bd)',
-                            color: '#fff',
+                            color: 'var(--on-acc)',
                             display: 'grid',
                             placeItems: 'center',
                             fontSize: 13,
