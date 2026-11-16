@@ -27,7 +27,7 @@ export default function SmartInsightsModal({
     burnRate.paceStatus === 'overpace'
       ? 'var(--exp)'
       : burnRate.paceStatus === 'watch'
-        ? '#f59e0b'
+        ? 'var(--warn)'
         : 'var(--inc)'
 
   return createPortal(
@@ -51,7 +51,7 @@ export default function SmartInsightsModal({
               onClose()
               onOpenExpenseReport()
             }}
-            style={{ fontSize: 12.5, padding: '6px 12px' }}
+            style={{ fontSize: 13, padding: '6px 12px' }}
           >
             Báo cáo chi
           </button>
@@ -61,7 +61,7 @@ export default function SmartInsightsModal({
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 19 }}>
+              <span style={{ fontSize: 20 }}>
                 {burnRate.paceStatus === 'overpace'
                   ? '🔥'
                   : burnRate.paceStatus === 'watch'
@@ -74,8 +74,8 @@ export default function SmartInsightsModal({
               className="pill-tag"
               style={{
                 color: paceColor,
-                borderColor: `${paceColor}44`,
-                background: `${paceColor}18`,
+                borderColor: `color-mix(in srgb, ${paceColor} 27%, transparent)`,
+                background: `color-mix(in srgb, ${paceColor} 9%, transparent)`,
                 fontWeight: 700,
               }}
             >
@@ -187,7 +187,7 @@ export default function SmartInsightsModal({
             </div>
           </div>
 
-          <p style={{ fontSize: 13.5, lineHeight: 1.5, marginBottom: 10 }}>
+          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 10 }}>
             {burnRate.copy}
           </p>
 
@@ -207,7 +207,7 @@ export default function SmartInsightsModal({
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 19 }}>🔍</span>
+              <span style={{ fontSize: 20 }}>🔍</span>
               <b>2. Phát hiện bất thường & Rò rỉ vi mô</b>
             </div>
           </div>
@@ -258,7 +258,7 @@ export default function SmartInsightsModal({
                   justifyContent: 'center',
                   borderColor: 'var(--exp)',
                   color: 'var(--exp)',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   padding: '8px 12px',
                   borderRadius: 10,
                 }}
@@ -291,7 +291,7 @@ export default function SmartInsightsModal({
                 <b>
                   {ml.categoryIcon} {ml.headline}
                 </b>
-                <span className="pill-tag" style={{ color: '#f59e0b' }}>
+                <span className="pill-tag" style={{ color: 'var(--warn)' }}>
                   ~{ml.workHoursEquivalent}h làm việc
                 </span>
               </div>
@@ -307,7 +307,7 @@ export default function SmartInsightsModal({
                 style={{
                   width: '100%',
                   justifyContent: 'center',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   padding: '8px 12px',
                   borderRadius: 10,
                 }}
@@ -327,7 +327,7 @@ export default function SmartInsightsModal({
                 borderRadius: 12,
                 background: 'rgba(40, 199, 111, 0.08)',
                 color: 'var(--inc)',
-                fontSize: 13.5,
+                fontSize: 14,
                 fontWeight: 500,
               }}
             >
@@ -340,7 +340,7 @@ export default function SmartInsightsModal({
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 19 }}>🌴</span>
+              <span style={{ fontSize: 20 }}>🌴</span>
               <b>3. Nhịp sinh học tài chính theo chu kỳ</b>
             </div>
             <span className="pill-tag">
@@ -348,7 +348,7 @@ export default function SmartInsightsModal({
             </span>
           </div>
 
-          <p style={{ fontSize: 13.5, lineHeight: 1.5, marginBottom: 12 }}>
+          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 12 }}>
             {temporal.weekendCopy}
           </p>
 
@@ -399,7 +399,7 @@ export default function SmartInsightsModal({
                     style={{
                       fontSize: 12,
                       fontWeight: st.isWeekend ? 700 : 500,
-                      color: st.isWeekend ? '#f59e0b' : 'var(--mut)',
+                      color: st.isWeekend ? 'var(--warn)' : 'var(--mut)',
                       marginTop: 5,
                     }}
                   >
@@ -428,7 +428,7 @@ export default function SmartInsightsModal({
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 19 }}>🌱</span>
+              <span style={{ fontSize: 20 }}>🌱</span>
               <b>4. Chi phí cơ hội & Tích lũy lãi kép</b>
             </div>
             <span className="pill-tag" style={{ color: 'var(--acc)' }}>
@@ -436,7 +436,7 @@ export default function SmartInsightsModal({
             </span>
           </div>
 
-          <p style={{ fontSize: 13.5, lineHeight: 1.5, marginBottom: 12 }}>
+          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 12 }}>
             {opportunityCost.copy}
           </p>
 
@@ -453,7 +453,7 @@ export default function SmartInsightsModal({
                 <div className="mut" style={{ fontSize: 12 }}>
                   Tích lũy sau 1 năm (6.5%/năm)
                 </div>
-                <b className="inc" style={{ fontSize: 16.5 }}>
+                <b className="inc" style={{ fontSize: 17 }}>
                   {money(opportunityCost.compound1YearValue)}
                 </b>
               </div>
@@ -463,7 +463,7 @@ export default function SmartInsightsModal({
                 <div className="mut" style={{ fontSize: 12 }}>
                   Tích lũy sau 3 năm (6.5%/năm)
                 </div>
-                <b className="inc" style={{ fontSize: 16.5 }}>
+                <b className="inc" style={{ fontSize: 17 }}>
                   {money(opportunityCost.compound3YearValue)}
                 </b>
               </div>

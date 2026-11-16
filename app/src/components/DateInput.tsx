@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -74,7 +75,7 @@ export default function DateInput({
           <span className="date-input-value">{formattedDate}</span>
           {dayOfWeek && <span className="date-input-dow">({dayOfWeek})</span>}
         </div>
-        <span className="date-input-arrow">›</span>
+        <span className="date-input-arrow"><ChevronRight size="1em" aria-hidden /></span>
       </div>
 
       {showModal && (

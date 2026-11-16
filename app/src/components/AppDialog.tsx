@@ -305,7 +305,7 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
               id="app-dialog-title"
               style={{
                 fontWeight: 700,
-                fontSize: 16.5,
+                fontSize: 17,
                 lineHeight: 1.3,
                 color: 'var(--fg)',
               }}
@@ -454,7 +454,7 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
                   border: '1px dashed rgba(255, 90, 95, 0.45)',
                   background: 'rgba(255, 90, 95, 0.08)',
                   color: 'var(--exp)',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}

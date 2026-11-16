@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import type { Category, Fund, Tx } from '../db'
 import { money } from '../lib'
 
@@ -43,7 +44,7 @@ export default function CatDetailModal({
         {/* Header */}
         <div className="ml-tx-header" style={{ marginBottom: 16 }}>
           <button type="button" className="ml-tx-cancel-btn" onClick={onClose}>
-            ‹ Đóng
+            <ChevronLeft size="1.1em" aria-hidden /> Đóng
           </button>
           <div className="ml-tx-title">Chi Tiết Nhóm</div>
           <button
@@ -106,7 +107,7 @@ export default function CatDetailModal({
         {/* Thông tin cấu hình nhóm */}
         <div className="card" style={{ padding: '4px 14px', marginBottom: 16 }}>
           <div className="row" style={{ padding: '10px 0' }}>
-            <span className="mut" style={{ fontSize: 13.5 }}>Cấp bậc nhóm</span>
+            <span className="mut" style={{ fontSize: 14 }}>Cấp bậc nhóm</span>
             <b>{parent ? `↳ Con của: ${parent.icon} ${parent.name}` : children.length > 0 ? `Nhóm cha (${children.length} nhóm con)` : 'Nhóm độc lập'}</b>
           </div>
 
@@ -135,17 +136,17 @@ export default function CatDetailModal({
           )}
 
           <div className="row" style={{ padding: '10px 0', borderTop: '1px solid var(--bd)' }}>
-            <span className="mut" style={{ fontSize: 13.5 }}>Quỹ chi mặc định</span>
+            <span className="mut" style={{ fontSize: 14 }}>Quỹ chi mặc định</span>
             <b>{fund ? `${fund.icon} ${fund.name}` : 'Mặc định theo ví'}</b>
           </div>
 
           <div className="row" style={{ padding: '10px 0', borderTop: '1px solid var(--bd)' }}>
-            <span className="mut" style={{ fontSize: 13.5 }}>Số giao dịch đã ghi</span>
+            <span className="mut" style={{ fontSize: 14 }}>Số giao dịch đã ghi</span>
             <b>{catTxs.length} giao dịch</b>
           </div>
 
           <div className="row" style={{ padding: '10px 0', borderTop: '1px solid var(--bd)', borderBottom: 0 }}>
-            <span className="mut" style={{ fontSize: 13.5 }}>Tổng tiền phát sinh</span>
+            <span className="mut" style={{ fontSize: 14 }}>Tổng tiền phát sinh</span>
             <b style={{ color: isExp ? 'var(--exp)' : 'var(--inc)', fontSize: 15 }}>
               {money(totalAmount)}
             </b>

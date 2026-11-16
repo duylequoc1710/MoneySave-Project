@@ -264,7 +264,7 @@ export default function Accounts() {
           <button
             type="button"
             className="btn"
-            style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+            style={{ padding: '6px 10px', fontSize: 13, whiteSpace: 'nowrap' }}
             onClick={() => setSavingsModalState({ open: true })}
           >
             Quản lý ({savingsGoals.length})
@@ -272,7 +272,7 @@ export default function Accounts() {
           <button
             type="button"
             className="btn pri"
-            style={{ padding: '6px 11px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+            style={{ padding: '6px 11px', fontSize: 13, whiteSpace: 'nowrap' }}
             onClick={() => setSavingsModalState({ open: true, openCreate: true })}
           >
             + Kế hoạch
@@ -308,7 +308,7 @@ export default function Accounts() {
               <b style={{ fontSize: 15 }}>
                 {defaultSavingsFund ? defaultSavingsFund.name : 'Quỹ Tiết Kiệm'}
               </b>
-              <b className="inc" style={{ fontSize: 14.5 }}>
+              <b className="inc" style={{ fontSize: 15 }}>
                 {money(totalSavingsAllocated)}
                 {totalSavingsTarget > 0 ? ` / ${money(totalSavingsTarget)}` : ''}
               </b>
@@ -351,7 +351,7 @@ export default function Accounts() {
             style={{
               padding: '10px 0 12px',
               borderTop: '1px solid var(--bd)',
-              fontSize: 12.5,
+              fontSize: 13,
             }}
           >
             <span className="mut">
@@ -389,7 +389,7 @@ export default function Accounts() {
                     }}
                   >
                     <b style={{ fontSize: 15 }}>{g.name}</b>
-                    <span style={{ fontSize: 13.5 }}>
+                    <span style={{ fontSize: 14 }}>
                       <b className="inc">{money(info.allocatedAmount)}</b>{' '}
                       <span className="mut">/ {money(info.targetAmount)}</span>
                     </span>
@@ -506,7 +506,7 @@ export default function Accounts() {
                   Sao kê ngày {info.statementDay} · Hạn TT ngày {info.dueDay} · Hạn mức{' '}
                   {money(info.creditLimit)}
                 </small>
-                <div style={{ fontSize: 13.5, marginTop: 4 }} className={info.debt > 0 ? 'exp' : 'mut'}>
+                <div style={{ fontSize: 14, marginTop: 4 }} className={info.debt > 0 ? 'exp' : 'mut'}>
                   Dư nợ: <b>{info.debt > 0 ? `-${money(info.debt)}` : '0 ₫'}</b> (Kỳ mới:{' '}
                   {money(info.currentCycleSpend)} · TT {fmtDmy(info.nextCycleDueDate)})
                 </div>
@@ -590,7 +590,7 @@ export default function Accounts() {
                         {ch.icon}
                       </div>
                       <div className="grow">
-                        <div style={{ fontWeight: 600, fontSize: 14.5 }}>{ch.name}</div>
+                        <div style={{ fontWeight: 600, fontSize: 15 }}>{ch.name}</div>
                         <small className="mut">
                           ↳ Nhóm con của <b>{grp.parent.name}</b>{' '}
                           {ch.fundId ? '· Quỹ: ' + funds.find(f => f.id === ch.fundId)?.name : ''}

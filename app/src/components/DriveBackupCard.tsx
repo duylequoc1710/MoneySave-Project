@@ -74,7 +74,7 @@ export default function DriveBackupRows() {
     <>
       <div className="row">
         <div className="ico round" style={{ background: '#f59e0b24' }}>
-          <Cloud size={22} color="#f59e0b" />
+          <Cloud size={22} style={{ color: 'var(--warn)' }} />
         </div>
         <div className="grow">
           <b>Sao lưu lên Google Drive</b>
@@ -95,7 +95,7 @@ export default function DriveBackupRows() {
 
       <div className="row">
         <div className="ico round" style={{ background: '#f59e0b24' }}>
-          <LifeBuoy size={22} color="#f59e0b" />
+          <LifeBuoy size={22} style={{ color: 'var(--warn)' }} />
         </div>
         <div className="grow">
           <b>Khôi phục từ Google Drive</b>
@@ -137,10 +137,10 @@ export default function DriveBackupRows() {
                         }}
                       >
                         <div className="ico round" style={{ background: '#f59e0b24', width: 38, height: 38, flexShrink: 0 }}>
-                          <FileText size={22} color="#f59e0b" />
+                          <FileText size={22} style={{ color: 'var(--warn)' }} />
                         </div>
                         <div className="grow" style={{ minWidth: 0 }}>
-                          <b style={{ fontSize: 14.5, display: 'block' }}>Ngày {d ? fmtDmy(d) : f.name}</b>
+                          <b style={{ fontSize: 15, display: 'block' }}>Ngày {d ? fmtDmy(d) : f.name}</b>
                           <small className="mut" style={{ fontSize: 12 }}>
                             {f.modifiedTime ? `Cập nhật ${new Date(f.modifiedTime).toLocaleString('vi-VN')}` : f.name}
                             {kb ? ` · ${kb} KB` : ''}

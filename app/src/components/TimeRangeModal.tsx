@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { endOfMonth, startOfMonth } from 'date-fns'
 import { type TimeFilter, type TimeRangeMode, ymd } from '../lib'
@@ -112,11 +113,11 @@ export default function TimeRangeModal({ filter, onChange, onClose }: Props) {
             }}
           >
             <button type="button" className="btn" onClick={() => setYear(y => y - 1)}>
-              ‹ {year - 1}
+              <ChevronLeft size="1.1em" aria-hidden /> {year - 1}
             </button>
             <b style={{ fontSize: 16 }}>Năm {year}</b>
             <button type="button" className="btn" onClick={() => setYear(y => y + 1)}>
-              {year + 1} ›
+              {year + 1} <ChevronRight size="1em" aria-hidden />
             </button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>

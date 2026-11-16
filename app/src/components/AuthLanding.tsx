@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { signInWithEmail, signUpWithEmail, type AuthUser } from '../auth.ts'
 
@@ -66,7 +67,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
           <h1 style={{ fontSize: 20, margin: '0 0 6px 0', fontWeight: 800, letterSpacing: -0.3 }}>
             {mode === 'register' ? 'Tạo Tài Khoản MoneySave' : 'Đăng Nhập Tài Khoản'}
           </h1>
-          <p className="mut" style={{ fontSize: 13.5, margin: 0, lineHeight: 1.5 }}>
+          <p className="mut" style={{ fontSize: 14, margin: 0, lineHeight: 1.5 }}>
             {mode === 'register'
               ? 'Tạo tài khoản cá nhân / gia đình để bắt đầu ghi chép & đồng bộ tức thì'
               : 'Đăng nhập để tự động khôi phục và đồng bộ toàn bộ sổ chi tiêu của bạn'}
@@ -92,6 +93,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
             style={{
               flex: 1,
               padding: '9px 12px',
+              minHeight: 44,
               border: 0,
               borderRadius: 10,
               fontSize: 14,
@@ -113,6 +115,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
             style={{
               flex: 1,
               padding: '9px 12px',
+              minHeight: 44,
               border: 0,
               borderRadius: 10,
               fontSize: 14,
@@ -163,7 +166,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
                 border: '1px solid var(--bd)',
                 background: 'var(--bg)',
                 color: 'var(--fg)',
-                fontSize: 14.5,
+                fontSize: 15,
               }}
             />
           </label>
@@ -187,7 +190,7 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
                 border: '1px solid var(--bd)',
                 background: 'var(--bg)',
                 color: 'var(--fg)',
-                fontSize: 14.5,
+                fontSize: 15,
               }}
             />
           </label>
@@ -230,9 +233,10 @@ export default function AuthLanding({ onSuccess, onSkip }: AuthLandingProps) {
                 cursor: 'pointer',
                 color: 'var(--mut)',
                 whiteSpace: 'normal',
+                minHeight: 44,
               }}
             >
-              Tiếp tục dùng thử ngoại tuyến (Không cần tài khoản) ›
+              Tiếp tục dùng thử ngoại tuyến (Không cần tài khoản) <ChevronRight size="1em" aria-hidden />
             </button>
           </div>
         )}

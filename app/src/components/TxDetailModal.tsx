@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { format } from 'date-fns'
@@ -128,8 +129,8 @@ export default function TxDetailModal({
             onClick={onClose}
             aria-label="Quay lại"
             style={{
-              width: 38,
-              height: 38,
+              width: 44,
+              height: 44,
               borderRadius: '50%',
               background: 'color-mix(in srgb, var(--fg) 8%, transparent)',
               border: '1px solid var(--bd)',
@@ -142,7 +143,7 @@ export default function TxDetailModal({
               fontWeight: 600,
             }}
           >
-            ‹
+            <ChevronLeft size="1em" aria-hidden />
           </button>
           <span style={{ fontSize: 16, fontWeight: 700 }}>Chi tiết giao dịch</span>
           <button
@@ -247,7 +248,7 @@ export default function TxDetailModal({
               alignItems: 'center',
               gap: 12,
               padding: '6px 0',
-              fontSize: 14.5,
+              fontSize: 15,
             }}
           >
             <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>📅</span>
@@ -261,7 +262,7 @@ export default function TxDetailModal({
               alignItems: 'center',
               gap: 12,
               padding: '6px 0',
-              fontSize: 14.5,
+              fontSize: 15,
             }}
           >
             <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>👛</span>

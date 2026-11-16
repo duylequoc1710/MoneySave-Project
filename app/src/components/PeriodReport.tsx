@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   Bar,
@@ -434,8 +435,8 @@ export default function PeriodReport({
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
       >
-        <button className="m-arrow" onClick={() => updateMonth(tabLeft, 'prev')} title="Tháng trước">
-          ‹
+        <button className="m-arrow" onClick={() => updateMonth(tabLeft, 'prev')} title="Tháng trước" aria-label="Tháng trước">
+          <ChevronLeft size="1em" aria-hidden />
         </button>
         <button
           className="m-tab"
@@ -473,8 +474,8 @@ export default function PeriodReport({
         >
           {getMonthTabLabel(tabRight, nowMonth)}
         </button>
-        <button className="m-arrow" onClick={() => updateMonth(tabRight, 'next')} title="Tháng kế tiếp">
-          ›
+        <button className="m-arrow" onClick={() => updateMonth(tabRight, 'next')} title="Tháng kế tiếp" aria-label="Tháng kế tiếp">
+          <ChevronRight size="1em" aria-hidden />
         </button>
       </div>
     ) : (
@@ -513,7 +514,7 @@ export default function PeriodReport({
       <div className="period-report-overlay">
         <div className="period-report-shell">
           <div className="ledger-topbar">
-            <button
+            <button aria-label="Quay lại"
               className="circle-pill-btn"
               onClick={() => {
                 setExpandedKey(null)
@@ -521,7 +522,7 @@ export default function PeriodReport({
                 else setScreen('main')
               }}
             >
-              ‹
+              <ChevronLeft size="1em" aria-hidden />
             </button>
             <b style={{ fontSize: 17 }}>Chi tiết thu nhập ròng</b>
             <button className="circle-pill-btn" onClick={() => setShowTimeModal(true)} title="Chọn khoảng thời gian">
@@ -542,7 +543,7 @@ export default function PeriodReport({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 4px 14px' }}>
               <b style={{ fontSize: 20 }}>Tổng cộng</b>
-              <b style={{ fontSize: 20, color: netIncome >= 0 ? '#1d9bf0' : '#f0534f' }}>{money(netIncome)}</b>
+              <b style={{ fontSize: 20, color: netIncome >= 0 ? 'var(--info)' : 'var(--exp)' }}>{money(netIncome)}</b>
             </div>
 
             <div className="card" style={{ paddingTop: 18 }}>
@@ -577,15 +578,15 @@ export default function PeriodReport({
                         <span style={{ fontSize: 16, color: 'var(--mut)' }}>{b.label}</span>
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <b style={{ color: '#1d9bf0' }}>{money(b.income)}</b>
-                        <b style={{ color: '#f0534f' }}>{money(b.expense)}</b>
+                        <b style={{ color: 'var(--info)' }}>{money(b.income)}</b>
+                        <b style={{ color: 'var(--exp)' }}>{money(b.expense)}</b>
                         <b>
                           {b.net > 0 ? '+' : ''}
                           {money(b.net)}
                         </b>
                       </div>
                       <span className="mut" style={{ fontSize: 18, marginLeft: 6, alignSelf: 'center' }}>
-                        {isOpen ? '⌄' : '›'}
+                        {isOpen ? <ChevronDown size="1em" aria-hidden /> : <ChevronRight size="1em" aria-hidden />}
                       </span>
                     </div>
                     {isOpen && b.txs.length > 0 && (
@@ -605,7 +606,7 @@ export default function PeriodReport({
                                 <span>
                                   {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'} {t.note ? `(${t.note})` : ''}
                                 </span>
-                                <b style={{ color: t.type === 'income' ? '#1d9bf0' : '#f0534f' }}>{money(t.amount)}</b>
+                                <b style={{ color: t.type === 'income' ? 'var(--info)' : 'var(--exp)' }}>{money(t.amount)}</b>
                               </div>
                             ))}
                           </div>
@@ -655,13 +656,13 @@ export default function PeriodReport({
     const avg3M = isExp ? avg3Expense : avg3Income
     const catList = isExp ? expenseCats : incomeCats
     const weekBuckets = buildCalendarWeekBuckets(cur, today, monthTxs, screen)
-    const accentColor = isExp ? '#f0534f' : '#1d9bf0'
+    const accentColor = isExp ? 'var(--exp)' : 'var(--info)'
 
     return (
       <div className="period-report-overlay">
         <div className="period-report-shell">
           <div className="ledger-topbar">
-            <button
+            <button aria-label="Quay lại"
               className="circle-pill-btn"
               onClick={() => {
                 setExpandedKey(null)
@@ -669,7 +670,7 @@ export default function PeriodReport({
                 else setScreen('main')
               }}
             >
-              ‹
+              <ChevronLeft size="1em" aria-hidden />
             </button>
             <b style={{ fontSize: 17 }}>{isExp ? 'Chi tiết khoản chi' : 'Chi tiết khoản thu'}</b>
             <button
@@ -776,7 +777,7 @@ export default function PeriodReport({
                           </div>
                           <b style={{ fontSize: 16, color: accentColor }}>{money(c.amount)}</b>
                           <span className="mut" style={{ fontSize: 18, marginLeft: 4 }}>
-                            {isOpen ? '⌄' : '›'}
+                            {isOpen ? <ChevronDown size="1em" aria-hidden /> : <ChevronRight size="1em" aria-hidden />}
                           </span>
                         </div>
                         {isOpen && (
@@ -803,7 +804,7 @@ export default function PeriodReport({
                                   </div>
                                   <div className="report-subtx-money">
                                     <b style={{ color: accentColor }}>{money(t.amount)}</b>
-                                    <span className="report-subtx-chevron">›</span>
+                                    <span className="report-subtx-chevron"><ChevronRight size="1em" aria-hidden /></span>
                                   </div>
                                 </div>
                               ))}
@@ -849,7 +850,7 @@ export default function PeriodReport({
                         <Bar
                           dataKey="amount"
                           name={isExp ? 'Khoản chi' : 'Khoản thu'}
-                          fill={accentColor}
+                          fill={isExp ? '#f0534f' : '#1d9bf0'}
                           radius={[4, 4, 0, 0]}
                           barSize={52}
                         />
@@ -874,7 +875,7 @@ export default function PeriodReport({
                           </div>
                           <b style={{ fontSize: 16, color: accentColor }}>{money(b.amount)}</b>
                           <span className="mut" style={{ fontSize: 18, marginLeft: 6 }}>
-                            {isOpen ? '⌄' : '›'}
+                            {isOpen ? <ChevronDown size="1em" aria-hidden /> : <ChevronRight size="1em" aria-hidden />}
                           </span>
                         </div>
                         {isOpen && b.txs.length > 0 && (
@@ -900,7 +901,7 @@ export default function PeriodReport({
                                   </div>
                                   <div className="report-subtx-money">
                                     <b style={{ color: accentColor }}>{money(t.amount)}</b>
-                                    <span className="report-subtx-chevron">›</span>
+                                    <span className="report-subtx-chevron"><ChevronRight size="1em" aria-hidden /></span>
                                   </div>
                                 </div>
                               ))}
@@ -1031,7 +1032,7 @@ export default function PeriodReport({
 
             {/* Thanh Khoản thu */}
             <div style={{ marginBottom: 14, cursor: 'pointer' }} onClick={() => setScreen('income')}>
-              <div style={{ color: '#1d9bf0', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
+              <div style={{ color: 'var(--info)', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
                 {money(totalIncome)}
               </div>
               <div className="net-bar-track">
@@ -1049,7 +1050,7 @@ export default function PeriodReport({
 
             {/* Thanh Khoản chi */}
             <div style={{ cursor: 'pointer' }} onClick={() => setScreen('expense')}>
-              <div style={{ color: '#f0534f', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
+              <div style={{ color: 'var(--exp)', fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
                 {money(totalExpense)}
               </div>
               <div className="net-bar-track">
@@ -1075,10 +1076,10 @@ export default function PeriodReport({
                   <div className="mut" style={{ fontSize: 14 }}>
                     Khoản thu
                   </div>
-                  <b style={{ color: '#1d9bf0', fontSize: 16 }}>{money(totalIncome)}</b>
+                  <b style={{ color: 'var(--info)', fontSize: 16 }}>{money(totalIncome)}</b>
                 </div>
                 <span className="mut" style={{ fontSize: 18 }}>
-                  ›
+                  <ChevronRight size="1em" aria-hidden />
                 </span>
               </div>
 
@@ -1087,10 +1088,10 @@ export default function PeriodReport({
                   <div className="mut" style={{ fontSize: 14 }}>
                     Khoản chi
                   </div>
-                  <b style={{ color: '#f0534f', fontSize: 16 }}>{money(totalExpense)}</b>
+                  <b style={{ color: 'var(--exp)', fontSize: 16 }}>{money(totalExpense)}</b>
                 </div>
                 <span className="mut" style={{ fontSize: 18 }}>
-                  ›
+                  <ChevronRight size="1em" aria-hidden />
                 </span>
               </div>
             </div>
@@ -1130,7 +1131,7 @@ export default function PeriodReport({
                     <div className="mut" style={{ fontSize: 13 }}>
                       Đã rút bớt
                     </div>
-                    <b style={{ color: '#f59e0b', fontSize: 16 }}>-{money(totalSavingsWithdrawn)}</b>
+                    <b style={{ color: 'var(--warn)', fontSize: 16 }}>-{money(totalSavingsWithdrawn)}</b>
                   </div>
                 </div>
               </div>
@@ -1177,7 +1178,7 @@ export default function PeriodReport({
                           </small>
                         </div>
                       </div>
-                      <b style={{ fontSize: 14, color: isAlloc ? 'var(--acc)' : '#f59e0b', flexShrink: 0, marginLeft: 8 }}>
+                      <b style={{ fontSize: 14, color: isAlloc ? 'var(--acc)' : 'var(--warn)', flexShrink: 0, marginLeft: 8 }}>
                         {isAlloc ? '+' : '-'}{money(t.amount)}
                       </b>
                     </div>

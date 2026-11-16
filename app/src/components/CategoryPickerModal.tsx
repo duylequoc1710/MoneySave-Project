@@ -129,7 +129,7 @@ export default function CategoryPickerModal({
                       {ch.icon || '🏷️'}
                     </div>
                     <div className="grow">
-                      <span style={{ fontSize: 14.5 }}>{ch.name}</span>
+                      <span style={{ fontSize: 15 }}>{ch.name}</span>
                     </div>
                     {selectedId === ch.id && <span className="cat-check">✓</span>}
                   </div>

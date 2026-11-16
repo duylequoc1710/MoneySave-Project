@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
@@ -308,10 +309,10 @@ export default function GlobalSearchModal({
                       {f.icon}
                     </div>
                     <div className="grow" style={{ minWidth: 0 }}>
-                      <b style={{ fontSize: 14.5, display: 'block' }}>{f.title}</b>
+                      <b style={{ fontSize: 15, display: 'block' }}>{f.title}</b>
                       <small className="mut" style={{ fontSize: 12 }}>{f.subtitle}</small>
                     </div>
-                    <span className="mut" style={{ fontSize: 17 }}>›</span>
+                    <span className="mut" style={{ fontSize: 17 }}><ChevronRight size="1em" aria-hidden /></span>
                   </div>
                 ))}
               </div>
@@ -345,10 +346,10 @@ export default function GlobalSearchModal({
                       {n.icon}
                     </div>
                     <div className="grow" style={{ minWidth: 0 }}>
-                      <b style={{ fontSize: 14.5, display: 'block' }}>{n.title}</b>
+                      <b style={{ fontSize: 15, display: 'block' }}>{n.title}</b>
                       <small className="mut" style={{ fontSize: 12 }}>{n.subtitle}</small>
                     </div>
-                    <span className="mut" style={{ fontSize: 17 }}>›</span>
+                    <span className="mut" style={{ fontSize: 17 }}><ChevronRight size="1em" aria-hidden /></span>
                   </div>
                 ))}
               </div>
@@ -400,7 +401,7 @@ export default function GlobalSearchModal({
                           </div>
                           <div className="grow" style={{ minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                              <b style={{ fontSize: 14.5 }}>
+                              <b style={{ fontSize: 15 }}>
                                 {isSavings
                                   ? (t.savingsAction === 'allocate' ? `Phân bổ: ${t.savingsGoalName}` : `Rút: ${t.savingsGoalName}`)
                                   : isT
@@ -415,7 +416,7 @@ export default function GlobalSearchModal({
                           </div>
                           <b
                             className={t.type === 'income' || t.savingsAction === 'allocate' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}
-                            style={{ fontSize: 14.5, flexShrink: 0 }}
+                            style={{ fontSize: 15, flexShrink: 0 }}
                           >
                             {money(t.amount)}
                           </b>
@@ -427,7 +428,7 @@ export default function GlobalSearchModal({
               ) : (
                 <div className="card" style={{ padding: '16px', textAlign: 'center' }}>
                   <span style={{ fontSize: 28, display: 'block', marginBottom: 6 }}>🔎</span>
-                  <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 4 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
                     Nhập từ khoá để tìm kiếm giao dịch
                   </div>
                   <small className="mut">

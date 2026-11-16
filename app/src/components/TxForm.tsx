@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
@@ -258,7 +259,7 @@ export default function TxForm({
               <div className="grow" style={{ marginLeft: 8 }}>
                 <b style={{ fontSize: 15, display: 'block' }}>{selCat?.name || 'Chọn nhóm'}</b>
               </div>
-              <span className="mut" style={{ fontSize: 18 }}>›</span>
+              <span className="mut" style={{ fontSize: 18 }}><ChevronRight size="1em" aria-hidden /></span>
             </div>
           </div>
         )}

@@ -156,7 +156,7 @@ export function CatForm({
                       borderRadius: 8,
                       background: isChecked ? 'rgba(43, 194, 85, 0.15)' : 'transparent',
                       border: isChecked ? '1px solid var(--acc)' : '1px solid var(--bd)',
-                      fontSize: 12.5,
+                      fontSize: 13,
                       cursor: 'pointer',
                     }}
                   >

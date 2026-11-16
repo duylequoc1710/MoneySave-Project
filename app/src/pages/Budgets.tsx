@@ -308,7 +308,7 @@ export default function Budgets() {
                     flexWrap: 'wrap',
                     gap: 6,
                     marginTop: 6,
-                    fontSize: 12.5,
+                    fontSize: 13,
                   }}
                   className="mut"
                 >

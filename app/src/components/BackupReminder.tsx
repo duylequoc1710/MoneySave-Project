@@ -51,7 +51,7 @@ export default function BackupReminder() {
         <button
           type="button"
           className="btn pri"
-          style={{ padding: '6px 12px', fontSize: 12 }}
+          style={{ padding: '6px 12px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}
           onClick={() => {
             // gọi ngay trong sự kiện chạm để popup Google không bị chặn
             runDriveBackup({ silentSuccess: true }).then(ok => {
@@ -67,7 +67,7 @@ export default function BackupReminder() {
         <button
           type="button"
           className="btn"
-          style={{ padding: '6px 10px', fontSize: 12 }}
+          style={{ padding: '6px 10px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}
           onClick={() => {
             try {
               localStorage.setItem(DRIVE_SNOOZE_KEY, String(Date.now() + DRIVE_EVERY_MS))
@@ -97,13 +97,13 @@ export default function BackupReminder() {
           ? 'Bạn chưa tải file sao lưu dữ liệu lần nào.'
           : `Đã ${state.daysSince} ngày (quá ${BACKUP_REMIND_DAYS} ngày) chưa sao lưu dữ liệu.`}
       </div>
-      <button type="button" className="btn pri" style={{ padding: '6px 12px', fontSize: 12 }} onClick={backupNow}>
+      <button type="button" className="btn pri" style={{ padding: '6px 12px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }} onClick={backupNow}>
         Sao lưu
       </button>
       <button
         type="button"
         className="btn"
-        style={{ padding: '6px 10px', fontSize: 12 }}
+        style={{ padding: '6px 10px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}
         onClick={() => {
           snoozeBackupReminder(3)
           setState(undefined)

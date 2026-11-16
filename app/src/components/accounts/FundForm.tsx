@@ -112,7 +112,7 @@ export function FundForm({
           </div>
         </div>
         {kind === 'credit' && evaluateKeypadExpression(initialBalance) > 0 && (
-          <p className="exp" style={{ margin: '-4px 0 10px', fontSize: 12.5, lineHeight: 1.4 }}>
+          <p className="exp" style={{ margin: '-4px 0 10px', fontSize: 13, lineHeight: 1.4 }}>
             ⚠️ Số dư đầu đang là số dương. Thẻ tín dụng nên để <b>0</b> (chưa nợ) hoặc <b>số âm</b> (đang nợ sẵn); số dương sẽ làm Dư nợ luôn hiển thị 0 ₫.
           </p>
         )}

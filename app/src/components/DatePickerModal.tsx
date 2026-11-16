@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -130,7 +131,7 @@ export default function DatePickerModal({
             onClick={handlePrevMonth}
             aria-label="Tháng trước"
           >
-            ‹
+            <ChevronLeft size="1em" aria-hidden />
           </button>
           <span className="date-month-title">
             {format(viewMonth, "'Tháng' M, yyyy", { locale: vi })}
@@ -141,7 +142,7 @@ export default function DatePickerModal({
             onClick={handleNextMonth}
             aria-label="Tháng sau"
           >
-            ›
+            <ChevronRight size="1em" aria-hidden />
           </button>
         </div>
 

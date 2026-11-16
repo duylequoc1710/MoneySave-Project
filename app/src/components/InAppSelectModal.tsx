@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import type { Fund, Tx } from '../db'
@@ -136,7 +137,7 @@ export function InAppSelect<T extends string | number>({
               <small style={{ color: 'var(--mut)', display: 'block', marginTop: 2 }}>{selected.subLabel}</small>
             )}
           </div>
-          <span className="ml-select-chevron">›</span>
+          <span className="ml-select-chevron"><ChevronRight size="1em" aria-hidden /></span>
         </button>
       )
     }
@@ -246,7 +247,7 @@ export function InAppSelect<T extends string | number>({
                             background: (opt.color || '#3b82f6') + '28',
                             width: 40,
                             height: 40,
-                            fontSize: 19,
+                            fontSize: 20,
                             flexShrink: 0,
                           }}
                         >

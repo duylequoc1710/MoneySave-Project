@@ -591,7 +591,7 @@ export default function Overview() {
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   gap: 8,
-                  fontSize: 12.5,
+                  fontSize: 13,
                 }}
               >
                 <span className="mut" style={{ minWidth: 0 }}>
@@ -677,7 +677,7 @@ export default function Overview() {
                         flexWrap: 'wrap',
                       }}
                     >
-                      <b style={{ fontSize: 14.5 }}>{g.name}</b>
+                      <b style={{ fontSize: 15 }}>{g.name}</b>
                       <span style={{ fontSize: 13 }}>
                         <b className="inc">
                           {hideBalance ? '•••••• ₫' : money(info.allocatedAmount)}
@@ -752,11 +752,11 @@ export default function Overview() {
               <span className="mut" style={{ fontSize: 13 }}>
                 Tổng đã chi{' '}
               </span>
-              <b className="exp" style={{ fontSize: 19 }}>
+              <b className="exp" style={{ fontSize: 20 }}>
                 {money(smartInsights.topCat.amount)}
               </b>
             </div>
-            <div className="mut" style={{ fontSize: 12.5, marginTop: 4 }}>
+            <div className="mut" style={{ fontSize: 13, marginTop: 4 }}>
               Dự báo chốt tháng {smartInsights.monthStr}:{' '}
               <b style={{ color: 'var(--fg)' }}>
                 ~{money(smartInsights.burnRate.projectedMonthExpense)}
@@ -808,7 +808,7 @@ export default function Overview() {
                     smartInsights.burnRate.paceStatus === 'overpace'
                       ? 'var(--exp)'
                       : smartInsights.burnRate.paceStatus === 'watch'
-                        ? '#f59e0b'
+                        ? 'var(--warn)'
                         : 'var(--inc)',
                 }}
               >
@@ -879,10 +879,10 @@ export default function Overview() {
                     activeHeroCard.tone === 'danger'
                       ? 'var(--exp)'
                       : activeHeroCard.tone === 'warn'
-                        ? '#f59e0b'
+                        ? 'var(--warn)'
                         : activeHeroCard.tone === 'good'
                           ? 'var(--inc)'
-                          : '#06b6d4',
+                          : 'var(--info)',
                 }}
               >
                 {activeHeroCard.icon} {activeHeroCard.badge.toUpperCase()}
@@ -897,7 +897,7 @@ export default function Overview() {
             </div>
             <div
               className="mut"
-              style={{ fontSize: 12.8, lineHeight: 1.45, marginBottom: 10 }}
+              style={{ fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}
             >
               {activeHeroCard.body}
             </div>
@@ -915,7 +915,7 @@ export default function Overview() {
                 className="btn primary"
                 style={{
                   padding: '7px 12px',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   borderRadius: 10,
                   fontWeight: 600,
                 }}
@@ -990,7 +990,7 @@ export default function Overview() {
                 onClick={() => setTrendTab('income')}
               >
                 <small className="mut">Tổng thu</small>
-                <b style={{ color: '#06b6d4' }}>{money(thisMonthIncome)}</b>
+                <b style={{ color: 'var(--info)' }}>{money(thisMonthIncome)}</b>
               </div>
             </div>
 

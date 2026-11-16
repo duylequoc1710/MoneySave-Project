@@ -135,7 +135,7 @@ export default function Settings() {
                 <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis' }}>{authUser.email}</div>
                 <div
                   className={syncSnap.status === 'error' ? 'exp' : syncSnap.status === 'synced' ? 'inc' : 'mut'}
-                  style={{ fontSize: 12.5, marginTop: 2 }}
+                  style={{ fontSize: 13, marginTop: 2 }}
                 >
                   {syncSnap.status === 'syncing'
                     ? '🔄 Đang đồng bộ...'
@@ -151,13 +151,13 @@ export default function Settings() {
               Tự động đồng bộ giữa các thiết bị đăng nhập tài khoản này (dữ liệu được mã hoá trước khi gửi lên Cloud).
             </small>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className="btn on" style={{ fontSize: 12.5, padding: '6px 12px' }} onClick={handleSyncNow}>
+              <button type="button" className="btn on" style={{ fontSize: 13, padding: '6px 12px' }} onClick={handleSyncNow}>
                 <RefreshCw size="1.1em" /> Đồng bộ ngay
               </button>
               <button
                 type="button"
                 className="btn"
-                style={{ fontSize: 12.5, padding: '6px 12px' }}
+                style={{ fontSize: 13, padding: '6px 12px' }}
                 onClick={() => {
                   signOutUser()
                   setSyncMsg('Đã đăng xuất. Dữ liệu vẫn nằm trên máy này (chế độ chỉ lưu trên máy).')
@@ -177,7 +177,7 @@ export default function Settings() {
             <button
               type="button"
               className="btn on"
-              style={{ width: '100%', padding: '11px', fontSize: 14.5, fontWeight: 700, borderRadius: 12 }}
+              style={{ width: '100%', padding: '11px', fontSize: 15, fontWeight: 700, borderRadius: 12 }}
               onClick={() => setShowAuthModal(true)}
             >
               <KeyRound size="1.1em" /> Đăng nhập hoặc Đăng ký
@@ -215,7 +215,7 @@ export default function Settings() {
 
         <div className="row">
           <div className="ico round" style={{ background: '#3b82f624' }}>
-            <FileDown size={22} color="#3b82f6" />
+            <FileDown size={22} style={{ color: 'var(--info)' }} />
           </div>
           <div className="grow">
             <b>Sao lưu ra file</b>
@@ -260,7 +260,7 @@ export default function Settings() {
 
         <div className="row">
           <div className="ico round" style={{ background: '#22c55e24' }}>
-            <FileSpreadsheet size={22} color="#22c55e" />
+            <FileSpreadsheet size={22} style={{ color: 'var(--inc)' }} />
           </div>
           <div className="grow">
             <b>Xuất báo cáo Excel</b>
@@ -331,7 +331,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
-        <p className="mut" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+        <p className="mut" style={{ fontSize: 13, lineHeight: 1.5 }}>
           <Lock size="1em" /> Dữ liệu lưu ngay trên thiết bị này. Khi đăng nhập đồng bộ, dữ liệu được mã hoá (AES-256) trước khi gửi lên Cloud.
         </p>
         <a
@@ -342,7 +342,7 @@ export default function Settings() {
           style={{ textDecoration: 'none', color: 'inherit', borderBottom: 0, padding: '8px 0 0' }}
         >
           <div className="ico round" style={{ background: '#64748b24' }}>
-            <ScrollText size={22} color="#64748b" />
+            <ScrollText size={22} style={{ color: 'var(--mut)' }} />
           </div>
           <div className="grow">
             <b>Chính sách quyền riêng tư</b>
@@ -361,10 +361,10 @@ export default function Settings() {
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--fg)' }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
           MoneySave · Quản Lý Tài Chính Cá Nhân & Gia Đình
         </div>
-        <div className="mut" style={{ fontSize: 12.5, marginTop: 4 }}>
+        <div className="mut" style={{ fontSize: 13, marginTop: 4 }}>
           Tác giả: <b>Duylequoc1710</b>
         </div>
         <div className="mut" style={{ fontSize: 12, marginTop: 2 }}>

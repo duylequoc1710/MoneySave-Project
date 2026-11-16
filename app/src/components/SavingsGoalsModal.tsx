@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -254,7 +255,7 @@ export default function SavingsGoalsModal({
             style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             onClick={onClose}
           >
-            ‹ Đóng
+            <ChevronLeft size="1.1em" aria-hidden /> Đóng
           </button>
           <b
             style={{
@@ -269,7 +270,7 @@ export default function SavingsGoalsModal({
           <button
             type="button"
             className="btn pri"
-            style={{ padding: '6px 11px', fontSize: 12.5, whiteSpace: 'nowrap', flexShrink: 0 }}
+            style={{ padding: '6px 11px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 }}
             onClick={openNewGoalModal}
           >
             + Kế hoạch
@@ -297,7 +298,7 @@ export default function SavingsGoalsModal({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12.5 }} className="mut">
+              <span style={{ fontSize: 13 }} className="mut">
                 Ví nguồn tiết kiệm:
               </span>
               {cashFunds.length > 0 ? (
@@ -355,7 +356,7 @@ export default function SavingsGoalsModal({
               </small>
               <b
                 style={{
-                  fontSize: 13.5,
+                  fontSize: 14,
                   display: 'block',
                   marginTop: 2,
                   whiteSpace: 'nowrap',
@@ -380,7 +381,7 @@ export default function SavingsGoalsModal({
               <b
                 className="inc"
                 style={{
-                  fontSize: 13.5,
+                  fontSize: 14,
                   display: 'block',
                   marginTop: 2,
                   whiteSpace: 'nowrap',
@@ -397,7 +398,7 @@ export default function SavingsGoalsModal({
               </small>
               <b
                 style={{
-                  fontSize: 13.5,
+                  fontSize: 14,
                   display: 'block',
                   marginTop: 2,
                   color: unallocatedBalance > 0 ? '#eab308' : 'var(--mut)',
@@ -478,7 +479,7 @@ export default function SavingsGoalsModal({
           <div className="card" style={{ textAlign: 'center', padding: '22px 16px' }}>
             <div style={{ fontSize: 34, marginBottom: 6 }}>🎯</div>
             <b style={{ fontSize: 15 }}>Chưa có kế hoạch tiết kiệm nào</b>
-            <p className="mut" style={{ fontSize: 12.5, margin: '6px 0 12px', lineHeight: 1.45 }}>
+            <p className="mut" style={{ fontSize: 13, margin: '6px 0 12px', lineHeight: 1.45 }}>
               Bấm nút <b>"+ Kế hoạch"</b> ở góc trên hoặc chạm nhanh vào một mẫu mục tiêu bên dưới:
             </p>
             <div
@@ -494,7 +495,7 @@ export default function SavingsGoalsModal({
                   key={p.name}
                   type="button"
                   className="btn"
-                  style={{ padding: '6px 11px', fontSize: 12.5, borderRadius: 99 }}
+                  style={{ padding: '6px 11px', fontSize: 13, borderRadius: 99 }}
                   onClick={() => {
                     const today = new Date()
                     setEditingGoal({
@@ -522,12 +523,12 @@ export default function SavingsGoalsModal({
             const isExpanded = expandedGoalId === g.id
             const badgeColor =
               info.status === 'completed'
-                ? '#10b981'
+                ? 'var(--inc)'
                 : info.status === 'overdue'
-                  ? '#ef4444'
+                  ? 'var(--exp)'
                   : info.status === 'behind'
-                    ? '#f59e0b'
-                    : '#3b82f6'
+                    ? 'var(--warn)'
+                    : 'var(--info)'
 
             return (
               <div
@@ -570,9 +571,9 @@ export default function SavingsGoalsModal({
                       <span
                         className="pill-tag"
                         style={{
-                          background: badgeColor + '22',
+                          background: `color-mix(in srgb, ${badgeColor} 13%, transparent)`,
                           color: badgeColor,
-                          border: `1px solid ${badgeColor}44`,
+                          border: `1px solid color-mix(in srgb, ${badgeColor} 27%, transparent)`,
                           fontSize: 12,
                           whiteSpace: 'nowrap',
                         }}
@@ -693,7 +694,7 @@ export default function SavingsGoalsModal({
                   <button
                     type="button"
                     className="btn pri"
-                    style={{ padding: '6px 11px', fontSize: 12.5, flex: 1, whiteSpace: 'nowrap' }}
+                    style={{ padding: '6px 11px', fontSize: 13, flex: 1, whiteSpace: 'nowrap' }}
                     onClick={() => setAllocateModal({ goal: g, mode: 'add' })}
                   >
                     ➕ Phân bổ tiền
@@ -702,7 +703,7 @@ export default function SavingsGoalsModal({
                     <button
                       type="button"
                       className="btn"
-                      style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+                      style={{ padding: '6px 10px', fontSize: 13, whiteSpace: 'nowrap' }}
                       onClick={() => setAllocateModal({ goal: g, mode: 'withdraw' })}
                     >
                       ➖ Rút bớt
@@ -711,7 +712,7 @@ export default function SavingsGoalsModal({
                   <button
                     type="button"
                     className="btn"
-                    style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+                    style={{ padding: '6px 10px', fontSize: 13, whiteSpace: 'nowrap' }}
                     onClick={() => setExpandedGoalId(isExpanded ? null : g.id!)}
                   >
                     🎯 {isExpanded ? 'Ẩn lộ trình' : 'Lộ trình 0–50–100%'}
@@ -719,7 +720,7 @@ export default function SavingsGoalsModal({
                   <button
                     type="button"
                     className="btn"
-                    style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+                    style={{ padding: '6px 10px', fontSize: 13, whiteSpace: 'nowrap' }}
                     onClick={() => setEditingGoal(g)}
                     title="Chỉnh sửa kế hoạch"
                   >
@@ -728,7 +729,7 @@ export default function SavingsGoalsModal({
                   <button
                     type="button"
                     className="btn dng"
-                    style={{ padding: '6px 10px', fontSize: 12.5, whiteSpace: 'nowrap' }}
+                    style={{ padding: '6px 10px', fontSize: 13, whiteSpace: 'nowrap' }}
                     onClick={() => handleDeleteGoal(g)}
                     title="Xoá kế hoạch"
                   >
@@ -828,7 +829,7 @@ export default function SavingsGoalsModal({
                             border: st.isCurrentStage
                               ? '1px solid rgba(59, 130, 246, 0.45)'
                               : '1px solid var(--bd)',
-                            fontSize: 12.5,
+                            fontSize: 13,
                           }}
                         >
                           <div
@@ -846,7 +847,7 @@ export default function SavingsGoalsModal({
                                 className="pill-tag"
                                 style={{
                                   fontSize: 12,
-                                  color: st.isAchieved ? '#10b981' : '#3b82f6',
+                                  color: st.isAchieved ? 'var(--inc)' : 'var(--info)',
                                   background: st.isAchieved
                                     ? 'rgba(16,185,129,0.16)'
                                     : 'rgba(59,130,246,0.16)',
@@ -913,7 +914,7 @@ export default function SavingsGoalsModal({
                     {/* Lịch sử phân bổ / rút tiền của kế hoạch */}
                     {g.history && g.history.length > 0 && (
                       <div style={{ marginTop: 12 }}>
-                        <b style={{ fontSize: 12.5, display: 'block', marginBottom: 6 }}>
+                        <b style={{ fontSize: 13, display: 'block', marginBottom: 6 }}>
                           🕒 Lịch sử phân bổ ({g.history.length} lần)
                         </b>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -1217,7 +1218,7 @@ function SavingsGoalFormModal({
                   className="btn"
                   style={{
                     padding: '6px 10px',
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 99,
                     borderColor: name === p.name ? 'var(--acc)' : undefined,
                     background:
@@ -1365,7 +1366,7 @@ function SavingsGoalFormModal({
               borderRadius: 12,
               background: 'rgba(16, 185, 129, 0.09)',
               border: '1px solid rgba(16, 185, 129, 0.3)',
-              fontSize: 12.5,
+              fontSize: 13,
               lineHeight: 1.5,
             }}
           >
@@ -1697,7 +1698,7 @@ function AllocateToGoalModal({
             borderRadius: 10,
             background: 'var(--bg)',
             border: '1px solid var(--bd)',
-            fontSize: 12.5,
+            fontSize: 13,
             marginBottom: 12,
           }}
         >
@@ -2010,7 +2011,7 @@ function DepositToSavingsModal({
           )}
         </div>
 
-        <p className="mut" style={{ fontSize: 12.5, marginBottom: 12 }}>
+        <p className="mut" style={{ fontSize: 13, marginBottom: 12 }}>
           Trích tiền từ các quỹ ví khác chuyển vào <b>{activeSavingsFund?.name ?? 'Ví Tiết Kiệm'}</b> và phân bổ cho kế hoạch.
         </p>
 

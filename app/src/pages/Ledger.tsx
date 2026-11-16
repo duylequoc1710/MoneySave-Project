@@ -426,7 +426,7 @@ export default function Ledger() {
                             className="pill-tag"
                             style={{
                               background: isSavingsAlloc ? 'rgba(16, 185, 129, 0.16)' : 'rgba(245, 158, 11, 0.16)',
-                              color: isSavingsAlloc ? '#10b981' : '#f59e0b',
+                              color: isSavingsAlloc ? 'var(--inc)' : 'var(--warn)',
                             }}
                           >
                             {isSavingsAlloc ? 'Ví TK → Mục tiêu' : 'Mục tiêu → Ví TK'}
@@ -439,7 +439,7 @@ export default function Ledger() {
                         </small>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <b className={isSavingsAlloc ? 'inc' : ''} style={!isSavingsAlloc ? { color: '#f59e0b' } : undefined}>
+                        <b className={isSavingsAlloc ? 'inc' : ''} style={!isSavingsAlloc ? { color: 'var(--warn)' } : undefined}>
                           {isSavingsAlloc ? '+' : '-'}{money(t.amount)}
                         </b>
                         <small style={{ display: 'block', fontSize: 12, color: 'var(--mut)' }}>

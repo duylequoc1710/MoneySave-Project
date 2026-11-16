@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   db,
@@ -378,7 +379,7 @@ export function InstallmentConvertModal({
               >
                 － 1 kỳ
               </button>
-              <b style={{ fontSize: 14.5, whiteSpace: 'nowrap' }}>
+              <b style={{ fontSize: 15, whiteSpace: 'nowrap' }}>
                 Đã trả {manualPaidCycles} / {termMonths} kỳ
               </b>
               <button
@@ -403,7 +404,7 @@ export function InstallmentConvertModal({
               background: 'color-mix(in srgb, var(--acc) 7%, var(--card))',
             }}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 12.5 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
               <div>
                 <span className="mut">Đóng mỗi kỳ:</span>
                 <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--fg)', whiteSpace: 'nowrap' }}>
@@ -434,7 +435,7 @@ export function InstallmentConvertModal({
                 marginTop: 10,
                 paddingTop: 8,
                 borderTop: '1px dashed var(--bd)',
-                fontSize: 12.5,
+                fontSize: 13,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -551,9 +552,9 @@ function SelectTxForInstallmentModal({
             style={{ whiteSpace: 'nowrap' }}
             onClick={onClose}
           >
-            ‹ Đóng
+            <ChevronLeft size="1.1em" aria-hidden /> Đóng
           </button>
-          <b style={{ fontSize: 15.5, whiteSpace: 'nowrap' }}>Chọn giao dịch chuyển trả góp</b>
+          <b style={{ fontSize: 16, whiteSpace: 'nowrap' }}>Chọn giao dịch chuyển trả góp</b>
           <span style={{ width: 52 }} />
         </div>
 
@@ -619,7 +620,7 @@ function SelectTxForInstallmentModal({
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <b
                       style={{
-                        fontSize: 14.5,
+                        fontSize: 15,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -651,7 +652,7 @@ function SelectTxForInstallmentModal({
                     -{money(t.amount)}
                   </b>
                   <div style={{ fontSize: 12, color: 'var(--acc)', marginTop: 2 }}>
-                    Chọn ›
+                    Chọn <ChevronRight size="1em" aria-hidden />
                   </div>
                 </div>
               </div>
@@ -804,7 +805,7 @@ export default function CreditCardDetailModal({
             style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             onClick={onClose}
           >
-            ‹ Đóng
+            <ChevronLeft size="1.1em" aria-hidden /> Đóng
           </button>
           <b
             style={{
@@ -852,7 +853,7 @@ export default function CreditCardDetailModal({
                   </span>
                 )}
               </div>
-              <div className="mut" style={{ fontSize: 12.5, marginTop: 6, whiteSpace: 'nowrap' }}>
+              <div className="mut" style={{ fontSize: 13, marginTop: 6, whiteSpace: 'nowrap' }}>
                 Sao kê: <b>ngày {info.statementDay}</b> · Hạn TT: <b>ngày {info.dueDay}</b>
               </div>
             </div>
@@ -1122,7 +1123,7 @@ export default function CreditCardDetailModal({
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                fontSize: 12.5,
+                fontSize: 13,
                 padding: '4px 4px 10px',
                 gap: 8,
               }}
@@ -1180,7 +1181,7 @@ export default function CreditCardDetailModal({
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <b
                           style={{
-                            fontSize: 14.5,
+                            fontSize: 15,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -1257,7 +1258,7 @@ export default function CreditCardDetailModal({
                 <div
                   style={{
                     fontWeight: 800,
-                    fontSize: 14.5,
+                    fontSize: 15,
                     marginTop: 2,
                     color: 'var(--exp)',
                     whiteSpace: 'nowrap',
@@ -1270,7 +1271,7 @@ export default function CreditCardDetailModal({
                 <small className="mut" style={{ whiteSpace: 'nowrap' }}>
                   Còn lại
                 </small>
-                <div style={{ fontWeight: 800, fontSize: 14.5, marginTop: 2, whiteSpace: 'nowrap' }}>
+                <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2, whiteSpace: 'nowrap' }}>
                   {money(info.remainingInstallmentBalance)}
                 </div>
               </div>
@@ -1280,7 +1281,7 @@ export default function CreditCardDetailModal({
               <button
                 type="button"
                 className="btn pri"
-                style={{ width: '100%', padding: '10px 14px', fontSize: 13.5 }}
+                style={{ width: '100%', padding: '10px 14px', fontSize: 14 }}
                 onClick={() => setShowPickTxModal(true)}
               >
                 + Chọn giao dịch trong tháng để chuyển trả góp
@@ -1362,7 +1363,7 @@ export default function CreditCardDetailModal({
                         <div className="exp" style={{ fontWeight: 800, fontSize: 15 }}>
                           {money(st.monthlyAmount)}/kỳ
                         </div>
-                        <small className="mut">Chi tiết ›</small>
+                        <small className="mut">Chi tiết <ChevronRight size="1em" aria-hidden /></small>
                       </div>
                     </div>
 

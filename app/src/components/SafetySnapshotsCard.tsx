@@ -61,7 +61,7 @@ export default function SafetySnapshotsCard() {
     <div className="card" style={{ padding: '4px 16px' }}>
       <div className="row" style={{ borderBottom: items.length ? undefined : 0 }}>
         <div className="ico round" style={{ background: '#f59e0b24' }}>
-          <LifeBuoy size={22} color="#f59e0b" />
+          <LifeBuoy size={22} style={{ color: 'var(--warn)' }} />
         </div>
         <div className="grow">
           <b>Bản sao an toàn tự động</b>
@@ -93,7 +93,7 @@ export default function SafetySnapshotsCard() {
         <button
           type="button"
           className="btn"
-          style={{ width: '100%', margin: '8px 0 12px', fontSize: 12.5 }}
+          style={{ width: '100%', margin: '8px 0 12px', fontSize: 13 }}
           onClick={() => setShowAll(v => !v)}
         >
           {showAll ? 'Thu gọn' : `Xem thêm ${items.length - SHOW_FIRST} bản cũ hơn`}
