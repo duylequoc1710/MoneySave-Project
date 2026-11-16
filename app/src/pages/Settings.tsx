@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 import { db, type Category, type Fund, type Tx } from '../db'
 import {
   applyTheme,
-  buildCsvContent,
   buildExcelXml,
   getStoredTheme,
   type ThemeMode,
@@ -14,16 +13,13 @@ import { canPickSaveFile, downloadFile, getRememberedFileName } from '../backupF
 import { runBackup, runRestoreFromFile } from '../components/backupActions'
 import DriveBackupRows from '../components/DriveBackupCard'
 import { auditData, type DataIssue } from '../dataAudit'
-import { clearAllToCleanState, seedDemoData3Months } from '../demoData'
 import {
-  getDeviceId,
   subscribeSyncState,
   syncNowSmart,
   type SyncStateSnapshot,
 } from '../cloudSync'
 import { getAuthUser, signOutUser, subscribeAuth, type AuthUser } from '../auth.ts'
 import AuthModal from '../components/AuthModal.tsx'
-import { showAlert, showConfirm } from '../components/AppDialog'
 
 const NO_FUNDS: Fund[] = []
 const NO_CATS: Category[] = []
@@ -91,12 +87,6 @@ export default function Settings() {
     download(`MoneySave-BaoCao-${dateStr}.xls`, xml, 'application/vnd.ms-excel;charset=utf-8')
   }
 
-  function handleExportCsv() {
-    const csv = buildCsvContent(funds, cats, txs)
-    const dateStr = new Date().toISOString().slice(0, 10)
-    download(`MoneySave-GiaoDich-${dateStr}.csv`, csv, 'text/csv;charset=utf-8')
-  }
-
   // Máy tính (Chrome/Edge): hiện tên file sao lưu đang được ghi đè
   const [backupFileName, setBackupFileName] = useState<string | null>(null)
   useEffect(() => {
@@ -117,331 +107,117 @@ export default function Settings() {
         <h1 style={{ margin: 0 }}>⚙️ Cài đặt</h1>
       </div>
 
-      {/* 1. ĐỒNG BỘ ĐA THIẾT BỊ (FIREBASE AUTH & REALTIME E2EE) */}
+      {/* 1. TÀI KHOẢN & ĐỒNG BỘ NHIỀU THIẾT BỊ */}
       <h2>☁️ TÀI KHOẢN & ĐỒNG BỘ</h2>
       <div className="card">
         {authUser ? (
-          <div
-            style={{
-              padding: 14,
-              borderRadius: 14,
-              background: 'rgba(43, 194, 85, 0.12)',
-              border: '1px solid var(--acc)',
-              marginBottom: 14,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 10,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'var(--acc)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {authUser.email.slice(0, 1).toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis' }}>{authUser.email}</div>
                 <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: 'var(--acc)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 10px rgba(43,194,85,0.3)',
-                  }}
+                  className={syncSnap.status === 'error' ? 'exp' : syncSnap.status === 'synced' ? 'inc' : 'mut'}
+                  style={{ fontSize: 12.5, marginTop: 2 }}
                 >
-                  {authUser.email.slice(0, 1).toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{authUser.email}</div>
-                  <div className="mut" style={{ fontSize: 12, marginTop: 2 }}>
-                    👑 Tài khoản Cá nhân / Admin · UID: <code>{authUser.uid.slice(0, 8)}…</code>
-                  </div>
+                  {syncSnap.status === 'syncing'
+                    ? '🔄 Đang đồng bộ...'
+                    : syncSnap.status === 'error'
+                      ? '⚠️ Đồng bộ lỗi'
+                      : syncSnap.lastSyncedAt
+                        ? `✅ Đã đồng bộ lúc ${format(new Date(syncSnap.lastSyncedAt), 'HH:mm dd/MM/yyyy')}`
+                        : '⏳ Sẵn sàng đồng bộ'}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn on"
-                  style={{ fontSize: 12.5, padding: '6px 12px' }}
-                  onClick={handleSyncNow}
-                >
-                  🔄 Đồng Bộ Ngay
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ fontSize: 12.5, padding: '6px 12px' }}
-                  onClick={() => {
-                    signOutUser()
-                    setSyncMsg('Đã đăng xuất tài khoản. Ứng dụng chuyển về chế độ lưu trữ cục bộ (Offline).')
-                  }}
-                >
-                  Đăng Xuất
-                </button>
-              </div>
             </div>
-            <div
-              style={{
-                marginTop: 10,
-                fontSize: 12.5,
-                color: 'var(--acc)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <span>✅</span>
-              <span>
-                Toàn bộ ví và giao dịch đang được tự động mã hóa AES-256 và đồng bộ thời gian thực theo tài khoản này.
-              </span>
+            <small className="mut" style={{ display: 'block', margin: '10px 0', lineHeight: 1.45 }}>
+              Tự động đồng bộ giữa các thiết bị đăng nhập tài khoản này (dữ liệu được mã hoá trước khi gửi lên Cloud).
+            </small>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn on" style={{ fontSize: 12.5, padding: '6px 12px' }} onClick={handleSyncNow}>
+                🔄 Đồng bộ ngay
+              </button>
+              <button
+                type="button"
+                className="btn"
+                style={{ fontSize: 12.5, padding: '6px 12px' }}
+                onClick={() => {
+                  signOutUser()
+                  setSyncMsg('Đã đăng xuất. Dữ liệu vẫn nằm trên máy này (chế độ chỉ lưu trên máy).')
+                }}
+              >
+                Đăng xuất
+              </button>
             </div>
-          </div>
+          </>
         ) : (
-          <div
-            className="trend-callout"
-            style={{
-              padding: 16,
-              borderRadius: 14,
-              marginBottom: 14,
-              textAlign: 'center',
-              border: '1px solid var(--bd)',
-            }}
-          >
-            <div style={{ fontSize: 28, marginBottom: 6 }}>🔐</div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: 16, fontWeight: 700 }}>
-              Đăng Nhập Tài Khoản Cá Nhân / Gia Đình
-            </h3>
-            <p className="mut" style={{ fontSize: 13, margin: '0 0 14px 0', lineHeight: 1.4 }}>
-              Đăng nhập bằng Email & Mật khẩu để tự động đồng bộ tức thì giữa Điện thoại & Máy tính mà không cần cấu hình thủ công.
+          <div style={{ textAlign: 'center', padding: '4px 0' }}>
+            <div style={{ fontSize: 26, marginBottom: 4 }}>🔐</div>
+            <b style={{ fontSize: 15 }}>Chưa đăng nhập – dữ liệu chỉ lưu trên máy này</b>
+            <p className="mut" style={{ fontSize: 13, margin: '4px 0 12px', lineHeight: 1.4 }}>
+              Đăng nhập bằng Email & Mật khẩu để tự động đồng bộ giữa điện thoại và máy tính.
             </p>
             <button
               type="button"
               className="btn on"
-              style={{
-                width: '100%',
-                padding: '11px',
-                fontSize: 14.5,
-                fontWeight: 700,
-                borderRadius: 12,
-              }}
+              style={{ width: '100%', padding: '11px', fontSize: 14.5, fontWeight: 700, borderRadius: 12 }}
               onClick={() => setShowAuthModal(true)}
             >
-              🔑 Đăng Nhập hoặc Đăng Ký Tài Khoản
+              🔑 Đăng nhập hoặc Đăng ký
             </button>
           </div>
         )}
 
-        {/* Trạng thái đồng bộ hiện tại */}
-        <div
-          className="trend-callout"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-        >
-          <div>
-            <div>
-              Trạng thái:{' '}
-              <b
-                className={
-                  syncSnap.status === 'error'
-                    ? 'exp'
-                    : syncSnap.status === 'synced'
-                      ? 'inc'
-                      : ''
-                }
-              >
-                {syncSnap.status === 'syncing'
-                  ? '🔄 Đang mã hóa & đồng bộ...'
-                  : syncSnap.status === 'synced'
-                    ? '✅ Đã đồng bộ an toàn (E2EE)'
-                    : syncSnap.status === 'error'
-                      ? '⚠️ Lỗi kết nối / giải mã'
-                      : authUser
-                        ? '⏳ Sẵn sàng đồng bộ'
-                        : '🔒 Chưa đăng nhập (Chỉ lưu trên máy này)'}
-              </b>
-            </div>
-            {syncSnap.lastSyncedAt && (
-              <div className="mut" style={{ fontSize: 12, marginTop: 2 }}>
-                Lần đồng bộ cuối: {format(new Date(syncSnap.lastSyncedAt), 'HH:mm:ss dd/MM/yyyy')} · Thiết bị:{' '}
-                <code>{getDeviceId()}</code>
-              </div>
-            )}
-          </div>
-        </div>
-
         {(syncMsg || syncSnap.lastError) && (
-          <div
-            className={`credit-advice ${syncSnap.lastError ? 'due-soon' : 'optimal'}`}
-            style={{ marginBottom: 12 }}
-          >
+          <div className={`credit-advice ${syncSnap.lastError ? 'due-soon' : 'optimal'}`} style={{ marginTop: 12 }}>
             {syncMsg || syncSnap.lastError}
           </div>
         )}
       </div>
 
-      {/* 2. GIAO DIỆN (DARK THEME / LIGHT THEME) */}
-      <h2>🎨 GIAO DIỆN HIỂN THỊ (THEME)</h2>
+      {/* 2. GIAO DIỆN */}
+      <h2>🎨 GIAO DIỆN</h2>
       <div className="card">
-        <div className="seg" style={{ marginBottom: 12 }}>
-          <button
-            type="button"
-            className={theme === 'dark' ? 'on' : ''}
-            onClick={() => handleThemeChange('dark')}
-          >
-            🌙 Tối (Dark)
+        <div className="seg">
+          <button type="button" className={theme === 'dark' ? 'on' : ''} onClick={() => handleThemeChange('dark')}>
+            🌙 Tối
           </button>
-          <button
-            type="button"
-            className={theme === 'light' ? 'on' : ''}
-            onClick={() => handleThemeChange('light')}
-          >
-            ☀️ Sáng (Light)
+          <button type="button" className={theme === 'light' ? 'on' : ''} onClick={() => handleThemeChange('light')}>
+            ☀️ Sáng
           </button>
-          <button
-            type="button"
-            className={theme === 'system' ? 'on' : ''}
-            onClick={() => handleThemeChange('system')}
-          >
-            📱 Hệ thống
+          <button type="button" className={theme === 'system' ? 'on' : ''} onClick={() => handleThemeChange('system')}>
+            📱 Theo máy
           </button>
-        </div>
-
-        <div
-          className="row"
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleThemeChange('dark')}
-        >
-          <div className="ico round" style={{ background: '#6366f124' }}>
-            🌙
-          </div>
-          <div className="grow">
-            <b>Giao diện Tối (Dark Theme)</b>
-            <small>Nền đen OLED hiện đại, dịu mắt và tiết kiệm pin</small>
-          </div>
-          <span
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              background: theme === 'dark' ? 'var(--acc)' : 'transparent',
-              border: theme === 'dark' ? 'none' : '1.5px solid var(--bd)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {theme === 'dark' ? '✓' : ''}
-          </span>
-        </div>
-
-        <div
-          className="row"
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleThemeChange('light')}
-        >
-          <div className="ico round" style={{ background: '#eab30824' }}>
-            ☀️
-          </div>
-          <div className="grow">
-            <b>Giao diện Sáng (Light Theme)</b>
-            <small>Nền sáng thanh lịch, độ tương phản cao khi dùng ngoài trời</small>
-          </div>
-          <span
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              background: theme === 'light' ? 'var(--acc)' : 'transparent',
-              border: theme === 'light' ? 'none' : '1.5px solid var(--bd)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {theme === 'light' ? '✓' : ''}
-          </span>
-        </div>
-
-        <div
-          className="row"
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleThemeChange('system')}
-        >
-          <div className="ico round" style={{ background: '#14b8a624' }}>
-            📱
-          </div>
-          <div className="grow">
-            <b>Tự động theo thiết bị (System)</b>
-            <small>Tự động chuyển Sáng / Tối theo cài đặt của iOS, Android hoặc macOS</small>
-          </div>
-          <span
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              background: theme === 'system' ? 'var(--acc)' : 'transparent',
-              border: theme === 'system' ? 'none' : '1.5px solid var(--bd)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {theme === 'system' ? '✓' : ''}
-          </span>
         </div>
       </div>
 
       {/* 3. DỮ LIỆU CÁ NHÂN (OFFLINE-FIRST) */}
-      <h2>🔒 DỮ LIỆU CÁ NHÂN & XUẤT BÁO CÁO (OFFLINE-FIRST)</h2>
+      <h2>💾 SAO LƯU & KHÔI PHỤC</h2>
       <div className="card" style={{ padding: '4px 16px' }}>
-        <div className="row">
-          <div className="ico round" style={{ background: '#22c55e24' }}>
-            📊
-          </div>
-          <div className="grow">
-            <b>Xuất file Excel (.xls)</b>
-            <small>Xuất báo cáo 2 Sheet (Sổ giao dịch & Danh sách ví) mở trực tiếp bằng Excel</small>
-          </div>
-          <button type="button" className="btn pri" onClick={handleExportExcel}>
-            Xuất Excel
-          </button>
-        </div>
-
-        <div className="row">
-          <div className="ico round" style={{ background: '#06b6d424' }}>
-            📄
-          </div>
-          <div className="grow">
-            <b>Xuất file CSV (.csv)</b>
-            <small>Định dạng bảng phẳng UTF-8 dùng cho Google Sheets / phân tích dữ liệu</small>
-          </div>
-          <button type="button" className="btn" onClick={handleExportCsv}>
-            Xuất CSV
-          </button>
-        </div>
+        <DriveBackupRows />
 
         <div className="row">
           <div className="ico round" style={{ background: '#3b82f624' }}>
             💾
           </div>
           <div className="grow">
-            <b>Sao lưu toàn bộ (1 file duy nhất)</b>
+            <b>Sao lưu ra file</b>
             <small>
               {backupFileName
                 ? `Ghi đè vào file "${backupFileName}" đã chọn trên máy`
@@ -463,7 +239,7 @@ export default function Settings() {
             ⬆️
           </div>
           <div className="grow">
-            <b>Khôi phục từ file sao lưu</b>
+            <b>Khôi phục từ file</b>
             <small>Chọn file từ Tệp / iCloud / Google Drive – xem trước số giao dịch & ngày sao lưu trước khi ghi đè</small>
           </div>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
@@ -481,7 +257,18 @@ export default function Settings() {
           />
         </div>
 
-        <DriveBackupRows />
+        <div className="row">
+          <div className="ico round" style={{ background: '#22c55e24' }}>
+            📊
+          </div>
+          <div className="grow">
+            <b>Xuất báo cáo Excel</b>
+            <small>Xuất báo cáo 2 Sheet (Sổ giao dịch & Danh sách ví) mở trực tiếp bằng Excel</small>
+          </div>
+          <button type="button" className="btn pri" onClick={handleExportExcel}>
+            Xuất Excel
+          </button>
+        </div>
 
         <div className="row" style={{ borderBottom: auditIssues ? undefined : 0 }}>
           <div className="ico round" style={{ background: '#14b8a624' }}>
@@ -512,79 +299,8 @@ export default function Settings() {
 
       <SafetySnapshotsCard />
 
-      {/* 4. QUẢN LÝ DỮ LIỆU KIỂM THỬ (DEMO) */}
-      <h2>🧪 CÔNG CỤ DỮ LIỆU KIỂM THỬ (TEST DATA)</h2>
-      <div className="card" style={{ padding: '4px 16px' }}>
-        <div className="row">
-          <div className="ico round" style={{ background: '#10b98124' }}>
-            🧪
-          </div>
-          <div className="grow">
-            <b>Nạp lại dữ liệu mẫu (3 tháng)</b>
-            <small>Khôi phục bộ dữ liệu mẫu đầy đủ (Tháng 7–11/2026) để kiểm thử tính năng</small>
-          </div>
-          <button
-            type="button"
-            className="btn"
-            onClick={async () => {
-              const ok = await showConfirm({
-                title: 'Nạp dữ liệu mẫu 3 tháng?',
-                message:
-                  'Thao tác này GHI ĐÈ toàn bộ dữ liệu hiện tại bằng dữ liệu mẫu (một bản sao an toàn sẽ được lưu tự động trước đó). Tiếp tục?',
-                icon: '🧪',
-                tone: 'warning',
-                confirmText: 'Nạp dữ liệu mẫu',
-              })
-              if (ok) {
-                await seedDemoData3Months(true)
-                await showAlert({
-                  title: 'Đã nạp dữ liệu mẫu',
-                  message: 'Đã nạp đầy đủ dữ liệu mẫu 3 tháng!',
-                  tone: 'success',
-                })
-              }
-            }}
-          >
-            Nạp mẫu
-          </button>
-        </div>
-
-        <div className="row">
-          <div className="ico round" style={{ background: '#ef444424' }}>
-            🗑️
-          </div>
-          <div className="grow">
-            <b className="exp">Xoá sạch dữ liệu test (Về 0 ₫)</b>
-            <small>Xoá toàn bộ giao dịch mẫu để bắt đầu ghi chép chi tiêu thực tế từ đầu</small>
-          </div>
-          <button
-            type="button"
-            className="btn dng"
-            onClick={async () => {
-              const ok = await showConfirm({
-                title: 'Xoá sạch toàn bộ dữ liệu?',
-                message:
-                  'Thao tác này XOÁ SẠCH toàn bộ dữ liệu hiện tại (kể cả dữ liệu thật). Một bản sao an toàn sẽ được lưu tự động trước đó. Tiếp tục?',
-                danger: true,
-                confirmText: 'Xoá sạch',
-              })
-              if (ok) {
-                await clearAllToCleanState()
-                await showAlert({
-                  title: 'Đã xoá sạch dữ liệu',
-                  message: 'Đã xoá sạch dữ liệu test về 0 ₫.',
-                  tone: 'success',
-                })
-              }
-            }}
-          >
-            Xoá sạch
-          </button>
-        </div>
-      </div>
-
       {/* 5. THÔNG TIN LƯU TRỮ TRÊN THIẾT BỊ */}
-      <h2>🛡️ TRẠNG THÁI LƯU TRỮ CỤC BỘ</h2>
+      <h2>🛡️ DỮ LIỆU TRÊN MÁY NÀY</h2>
       <div className="card">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 10 }}>
           <div className="group-stat-box" style={{ cursor: 'default' }}>
@@ -615,7 +331,7 @@ export default function Settings() {
           </div>
         </div>
         <p className="mut" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
-          🔒 <b>100% dữ liệu lưu cục bộ (IndexedDB)</b> ngay trên trình duyệt thiết bị của bạn; khi bật Đồng bộ Đám mây, dữ liệu luôn được mã hóa đầu cuối <code>AES-256</code> trước khi rời khỏi thiết bị.
+          🔒 Dữ liệu lưu ngay trên thiết bị này. Khi đăng nhập đồng bộ, dữ liệu được mã hoá (AES-256) trước khi gửi lên Cloud.
         </p>
         <a
           className="row"

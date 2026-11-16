@@ -6,7 +6,7 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/live_demo_(test_only)-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo (Test Only)" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.11.1-3b82f6" alt="Version v2.11.1" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.12.0-3b82f6" alt="Version v2.12.0" /></a>
     <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-72%2F72%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
@@ -117,6 +117,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.12.0` (2026-11-16):** Dọn gọn Cài đặt: gộp khối đồng bộ, Drive lên đầu, bỏ CSV và mục dữ liệu kiểm thử, bản sao an toàn thu gọn.
 * **`v2.11.0` (2026-11-16):** Sao lưu/khôi phục thẳng lên Google Drive của chính người dùng (quyền `drive.file`, mỗi ngày 1 bản, giữ 30 bản).
 * **`v2.10.1` (2026-11-16):** Tìm kiếm không dấu, nhiều từ, số tiền có dấu chấm; logic tìm kiếm tách module có unit test.
 * **`v2.10.0` (2026-11-16):** Két đồng bộ bảo mật theo tài khoản (chỉ chủ tài khoản đọc/ghi), tự chuyển két cũ không mất dữ liệu, kiểm tra Cloud nhẹ hơn, sửa nguy cơ đẩy dữ liệu cũ đè Cloud.

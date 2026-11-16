@@ -2,15 +2,19 @@ import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { importAll } from '../db'
 import { downloadFile } from '../backupFile'
-import { deleteSafetySnapshot, listSafetySnapshots, type SafetySnapshot } from '../safetyBackup'
+import { listSafetySnapshots, type SafetySnapshot } from '../safetyBackup'
 import { showAlert, showConfirm } from './AppDialog'
 
 /**
  * Danh sách bản sao an toàn tự động (lưu trên thiết bị, CSDL riêng) – cho phép khôi phục
  * hoặc tải về nếu lỡ khôi phục/đồng bộ/xoá nhầm.
  */
+const SHOW_FIRST = 3
+
 export default function SafetySnapshotsCard() {
   const [items, setItems] = useState<SafetySnapshot[]>([])
+  const [showAll, setShowAll] = useState(false)
+  const visible = showAll ? items : items.slice(0, SHOW_FIRST)
 
   const reload = useCallback(async () => setItems(await listSafetySnapshots()), [])
   useEffect(() => {
@@ -61,12 +65,12 @@ export default function SafetySnapshotsCard() {
         <div className="grow">
           <b>Bản sao an toàn tự động</b>
           <small>
-            Tự lưu trên máy trước khi Khôi phục / Xoá sạch. Bản trước Đồng bộ ghi đè và bản hằng ngày tự gộp còn 1 bản/ngày (tối đa 15 bản, không ảnh hưởng dữ liệu chính)
+            Lưới an toàn tự động trên máy: lưu mỗi ngày và trước khi khôi phục / đồng bộ ghi đè. Tự xoay vòng tối đa 15 bản – không cần dọn tay
           </small>
         </div>
       </div>
       {items.length === 0 && <small className="mut" style={{ display: 'block', padding: '0 0 12px' }}>Chưa có bản sao nào.</small>}
-      {items.map(s => (
+      {visible.map(s => (
         <div className="row" key={s.id}>
           <div className="grow">
             <b style={{ fontSize: 14 }}>{format(new Date(s.createdAt), 'dd/MM/yyyy HH:mm')}</b>
@@ -81,29 +85,19 @@ export default function SafetySnapshotsCard() {
             <button type="button" className="btn" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => download(s)}>
               Tải
             </button>
-            <button
-              type="button"
-              className="btn dng"
-              style={{ padding: '4px 10px', fontSize: 12 }}
-              onClick={async () => {
-                if (s.id == null) return
-                const ok = await showConfirm({
-                  title: 'Xoá bản sao an toàn?',
-                  message: 'Bạn có chắc muốn xoá bản sao này khỏi thiết bị không?',
-                  danger: true,
-                  confirmText: 'Xoá bản sao',
-                })
-                if (ok) {
-                  await deleteSafetySnapshot(s.id)
-                  await reload()
-                }
-              }}
-            >
-              Xoá
-            </button>
           </div>
         </div>
       ))}
+      {items.length > SHOW_FIRST && (
+        <button
+          type="button"
+          className="btn"
+          style={{ width: '100%', margin: '8px 0 12px', fontSize: 12.5 }}
+          onClick={() => setShowAll(v => !v)}
+        >
+          {showAll ? 'Thu gọn' : `Xem thêm ${items.length - SHOW_FIRST} bản cũ hơn`}
+        </button>
+      )}
     </div>
   )
 }

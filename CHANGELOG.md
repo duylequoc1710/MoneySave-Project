@@ -4,6 +4,17 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.12.0] – 2026-11-16
+### 🧹 Dọn gọn trang Cài đặt
+- **Tài khoản & đồng bộ:** gộp thành 1 khối (email + "Đã đồng bộ lúc …" + 2 nút); bỏ UID, mã thiết bị, chữ "Admin" và câu "thời gian thực/E2EE" gây hiểu nhầm.
+- **Giao diện:** chỉ giữ thanh chọn Tối / Sáng / Theo máy (bỏ 3 dòng lặp lại).
+- **Sao lưu & khôi phục:** Google Drive lên đầu, rồi file, rồi Excel, Kiểm tra toàn vẹn; **bỏ Xuất CSV** (Excel đã đủ, Google Sheets mở được .xls).
+- **Bản sao an toàn tự động:** chỉ hiện 3 bản mới nhất + "Xem thêm"; bỏ nút Xoá từng bản (tự xoay vòng tối đa 15 bản). Không xoá bản nào hiện có.
+- **Bỏ mục "Dữ liệu kiểm thử"** (Nạp mẫu / Xoá sạch) – tránh bấm nhầm ghi đè dữ liệu thật.
+- Thẻ "Dữ liệu trên máy này": giữ thống kê + link Chính sách quyền riêng tư; sửa câu mô tả mã hoá cho đúng thực tế.
+
+---
+
 ## [v2.11.1] – 2026-11-16
 - Trang tĩnh **Chính sách quyền riêng tư** `/privacy.html` (vi/en – Google yêu cầu khi Publish OAuth); Service Worker không chiếm link này.
 - Cài đặt: thêm mục "📜 Chính sách quyền riêng tư" mở trang trên.
