@@ -232,7 +232,7 @@ export function computeSmartInsights(params: {
   const rises: CategoryRise[] = []
   if (hasHistory && elapsedDays >= 5) {
     const curByCat = new Map<number, number>()
-    for (const t of thisExp) if (!isLarge(t)) curByCat.set(t.categoryId ?? 0, (curByCat.get(t.categoryId ?? 0) ?? 0) + t.amount)
+    for (const t of thisExp) if (!isLarge(t) && t.categoryId != null) curByCat.set(t.categoryId ?? 0, (curByCat.get(t.categoryId ?? 0) ?? 0) + t.amount)
     curByCat.forEach((cur, cid) => {
       const usual =
         prevMonths.reduce(
