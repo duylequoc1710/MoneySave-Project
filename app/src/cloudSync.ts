@@ -292,10 +292,139 @@ function buildFirestoreDocUrl(cfg: CloudSyncConfig, docId: string): string {
   return base
 }
 
+// ================= KÉT BẢO MẬT THEO TÀI KHOẢN (v2.10 – S3) =================
+// Đường dẫn mới: `moneysave_users/{uid}` = { vault: EncryptedVaultPayload, meta: { updatedAt, deviceId } }
+// Rule Firebase: chỉ `auth.uid === $uid` được đọc/ghi (gửi kèm idToken qua `?auth=`).
+// An toàn chuyển đổi:
+// - Nếu rule mới CHƯA được bật (401/403) → tiếp tục dùng két cũ `moneysave_vaults/{docId}` như trước.
+// - Lần đầu két mới trống → SAO CHÉP nguyên két cũ (đã mã hoá) sang. Két cũ KHÔNG bị xoá.
+// - `meta` nhỏ (~80 byte) giúp kiểm tra định kỳ không phải tải cả két (§3.1).
+
+export interface VaultMeta {
+  updatedAt: number
+  deviceId: string
+}
+
+type AccountMode = 'secure' | 'legacy'
+let accountModeCache: { uid: string; mode: AccountMode; at: number } | null = null
+const LEGACY_RECHECK_MS = 10 * 60 * 1000
+
+function accountUidFor(cfg: CloudSyncConfig): string | null {
+  const u = getAuthUser()
+  return u && cfg.syncId === `usr_${u.uid}` ? u.uid : null
+}
+
+async function secureUrl(uid: string, sub = ''): Promise<string | null> {
+  const base = (DEFAULT_FIREBASE_CONFIG.databaseURL || '').trim().replace(/\/$/, '')
+  if (!base) return null
+  const token = await refreshTokenIfNeeded()
+  if (!token) return null
+  return `${base}/moneysave_users/${encodeURIComponent(uid)}${sub}.json?auth=${encodeURIComponent(token)}`
+}
+
+async function secureGet<T>(uid: string, sub: string): Promise<{ denied: true } | { denied: false; data: T | null }> {
+  const url = await secureUrl(uid, sub)
+  if (!url) return { denied: true }
+  const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+  if (res.status === 401 || res.status === 403) return { denied: true }
+  if (!res.ok) throw new Error(`Realtime Database lỗi (${res.status})`)
+  return { denied: false, data: (await res.json()) as T | null }
+}
+
+async function secureWrite(uid: string, payload: EncryptedVaultPayload): Promise<void> {
+  const url = await secureUrl(uid)
+  if (!url) throw new Error('Chưa đăng nhập hoặc thiếu cấu hình Realtime Database.')
+  // PATCH nhiều nhánh cùng lúc = ghi nguyên tử (vault + meta luôn khớp nhau)
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vault: payload, meta: { updatedAt: payload.updatedAt, deviceId: payload.deviceId } }),
+  })
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`Không thể đẩy lên két bảo mật (${res.status}): ${errText.slice(0, 160) || res.statusText}`)
+  }
+}
+
+/** Xác định két đang dùng cho tài khoản; tự sao chép két cũ sang két bảo mật lần đầu. */
+async function resolveAccountMode(cfg: CloudSyncConfig, uid: string): Promise<AccountMode> {
+  const c = accountModeCache
+  if (c && c.uid === uid && (c.mode === 'secure' || Date.now() - c.at < LEGACY_RECHECK_MS)) return c.mode
+  const r = await secureGet<VaultMeta>(uid, '/meta')
+  const SECURE_SEEN_KEY = 'moneysave_secure_vault_uid_v1'
+  if (r.denied) {
+    // Máy này từng dùng két bảo mật → bị từ chối là do phiên đăng nhập/mạng, KHÔNG quay về két cũ (tránh 2 két lệch nhau)
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(SECURE_SEEN_KEY) === uid) {
+      throw new Error('Két bảo mật từ chối truy cập – vui lòng đăng nhập lại.')
+    }
+    accountModeCache = { uid, mode: 'legacy', at: Date.now() }
+    return 'legacy'
+  }
+  if (typeof localStorage !== 'undefined') localStorage.setItem(SECURE_SEEN_KEY, uid)
+  if (!r.data) {
+    const legacy = await fetchLegacyVault(cfg)
+    if (legacy) await secureWrite(uid, legacy) // sao chép nguyên văn bản mã hoá, không giải mã/không xoá két cũ
+  }
+  accountModeCache = { uid, mode: 'secure', at: Date.now() }
+  return 'secure'
+}
+
+/** Chỉ dùng cho kiểm thử / chẩn đoán. */
+export function getAccountVaultMode(): AccountMode | null {
+  return accountModeCache?.mode ?? null
+}
+export function resetAccountVaultModeCache() {
+  accountModeCache = null
+}
+
 /**
- * Đọc gói dữ liệu mã hóa từ Cloud (tự động nhận diện Realtime Database hoặc Firestore)
+ * Đọc metadata bản trên Cloud (nhẹ). Két bảo mật: chỉ tải `meta`; két cũ: buộc tải cả két (kèm `vault`).
+ */
+export async function fetchRemoteMeta(
+  cfg: CloudSyncConfig,
+  opts: { checkLegacyNewer?: boolean } = {},
+): Promise<(VaultMeta & { vault?: EncryptedVaultPayload }) | null> {
+  const uid = accountUidFor(cfg)
+  if (uid && (await resolveAccountMode(cfg, uid)) === 'secure') {
+    const r = await secureGet<VaultMeta>(uid, '/meta')
+    if (r.denied) {
+      accountModeCache = null
+      throw new Error('Két bảo mật từ chối truy cập – thử lại sau.')
+    }
+    // Giai đoạn chuyển tiếp: thiết bị còn chạy bản cũ có thể vừa ghi vào két cũ → lấy bản mới hơn
+    if (opts.checkLegacyNewer) {
+      const legacy = await fetchLegacyVault(cfg).catch(() => null)
+      if (legacy && legacy.updatedAt > (r.data?.updatedAt ?? 0)) {
+        await secureWrite(uid, legacy)
+        return { updatedAt: legacy.updatedAt, deviceId: legacy.deviceId, vault: legacy }
+      }
+    }
+    return r.data ? { updatedAt: Number(r.data.updatedAt) || 0, deviceId: String(r.data.deviceId ?? '') } : null
+  }
+  const v = await fetchLegacyVault(cfg)
+  return v ? { updatedAt: v.updatedAt, deviceId: v.deviceId, vault: v } : null
+}
+
+/**
+ * Đọc gói dữ liệu mã hóa từ Cloud (két bảo mật theo tài khoản nếu đã bật, ngược lại két cũ)
  */
 export async function fetchRemoteVault(cfg: CloudSyncConfig): Promise<EncryptedVaultPayload | null> {
+  const uid = accountUidFor(cfg)
+  if (uid && (await resolveAccountMode(cfg, uid)) === 'secure') {
+    const r = await secureGet<EncryptedVaultPayload>(uid, '/vault')
+    if (r.denied) {
+      accountModeCache = null
+      throw new Error('Két bảo mật từ chối truy cập – thử lại sau.')
+    }
+    return r.data && r.data.ciphertext ? r.data : null
+  }
+  return fetchLegacyVault(cfg)
+}
+
+/**
+ * Két cũ (tự động nhận diện Realtime Database hoặc Firestore)
+ */
+async function fetchLegacyVault(cfg: CloudSyncConfig): Promise<EncryptedVaultPayload | null> {
   const docId = await deriveVaultDocId(cfg.syncId, cfg.passphrase)
   const rtdbUrl = getEffectiveRtdbUrl(cfg)
 
@@ -343,6 +472,11 @@ export async function pushEncryptedVaultToRemote(
   cfg: CloudSyncConfig,
   payload: EncryptedVaultPayload,
 ): Promise<void> {
+  const uid = accountUidFor(cfg)
+  if (uid && (await resolveAccountMode(cfg, uid)) === 'secure') {
+    await secureWrite(uid, payload)
+    return
+  }
   const docId = await deriveVaultDocId(cfg.syncId, cfg.passphrase)
   const rtdbUrl = getEffectiveRtdbUrl(cfg)
 
@@ -494,7 +628,18 @@ export async function pullCloudToLocal(customCfg?: CloudSyncConfig): Promise<boo
  * - Nếu máy hiện tại có thay đổi mới hơn bản trên Cloud -> tự động mã hóa và đẩy lên Cloud.
  * - Hỗ trợ cờ silent: khi chạy ngầm định kỳ (polling) hoặc chuyển tab, kiểm tra im lặng không gây giật / nháy lại toàn bộ giao diện nếu không có thay đổi.
  */
-export async function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' | 'noop'> {
+let syncInFlight: Promise<'pushed' | 'pulled' | 'noop'> | null = null
+
+/** Chạy một lượt đồng bộ; nếu đang có lượt khác chạy (focus + visibility + polling cùng lúc) thì dùng chung lượt đó. */
+export function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' | 'noop'> {
+  if (syncInFlight) return syncInFlight
+  syncInFlight = syncNowSmartInner(silent).finally(() => {
+    syncInFlight = null
+  })
+  return syncInFlight
+}
+
+async function syncNowSmartInner(silent: boolean): Promise<'pushed' | 'pulled' | 'noop'> {
   const cfg = getActiveCloudSyncConfig()
   if (!cfg.enabled || !cfg.projectId || !cfg.syncId || !cfg.passphrase) return 'noop'
   if (syncState.status === 'syncing') return 'noop'
@@ -506,17 +651,20 @@ export async function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' 
 
   try {
     await refreshTokenIfNeeded()
-    const remote = await fetchRemoteVault(cfg)
+    // Kiểm tra nhẹ bằng meta; chỉ tải cả két khi thực sự cần kéo về
+    const meta = await fetchRemoteMeta(cfg, { checkLegacyNewer: !silent })
     const lastSync = getLastSyncedAt() ?? 0
     const localMut = getLocalMutatedAt()
 
-    if (!remote) {
+    if (!meta) {
       await pushLocalToCloud(cfg)
       return 'pushed'
     }
 
     // Nếu bản trên Cloud được cập nhật từ thiết bị khác và mới hơn lần đồng bộ cuối của máy này
-    if (remote.updatedAt > lastSync && remote.deviceId !== getDeviceId() && remote.updatedAt >= localMut) {
+    if (meta.updatedAt > lastSync && meta.deviceId !== getDeviceId() && meta.updatedAt >= localMut) {
+      const remote = meta.vault ?? (await fetchRemoteVault(cfg))
+      if (!remote) throw new Error('Không đọc được két dữ liệu trên Cloud.')
       const decryptedJson = await decryptVault(remote, cfg.passphrase)
       isApplyingRemoteImport = true
       try {
@@ -547,9 +695,9 @@ export async function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' 
     if (!silent) {
       syncState = {
         status: 'synced',
-        lastSyncedAt: lastSync || remote.updatedAt,
+        lastSyncedAt: lastSync || meta.updatedAt,
         lastError: null,
-        remoteUpdatedAt: remote.updatedAt,
+        remoteUpdatedAt: meta.updatedAt,
       }
       notifySyncListeners()
     }

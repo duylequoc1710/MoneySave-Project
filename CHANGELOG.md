@@ -4,6 +4,16 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.10.0] – 2026-11-16
+### 🔐 Bảo mật đồng bộ Cloud (S3)
+- **Két bảo mật theo tài khoản** `moneysave_users/{uid}`: mọi request kèm `idToken` (`?auth=`); rule Firebase chỉ cho chủ tài khoản đọc/ghi (trước đây két `moneysave_vaults` mở công khai và khoá suy ra từ uid+email).
+- **Chuyển đổi không mất dữ liệu:** rule chưa bật → tự dùng két cũ; két mới trống → sao chép nguyên văn két cũ (đã mã hoá); két cũ không bị xoá; bản ghi từ thiết bị còn chạy bản cũ được nhận ở lượt đồng bộ đầy đủ.
+- **Nhẹ hơn:** kiểm tra định kỳ 30 s chỉ tải `meta` (~80 byte) thay vì cả két; chỉ tải két khi thật sự cần kéo về.
+- **Sửa nguy cơ đẩy dữ liệu cũ đè Cloud:** khi quay lại app, kéo bản mới nhất trước rồi mới sinh giao dịch định kỳ; các lượt đồng bộ chồng nhau (focus/visibility/polling) dùng chung 1 lượt.
+- +5 unit test (`secureVault.test.ts`) → 60/60.
+
+---
+
 ## [v2.9.0] – 2026-11-16
 ### 💾 Sao lưu / Khôi phục tối ưu cho điện thoại
 - **1 file sao lưu duy nhất `MoneySave-SaoLuu.json`** (`backupFile.ts`): iPhone/Android mở bảng chia sẻ hệ điều hành → "Lưu vào Tệp" (iCloud/Trên iPhone), Google Drive…; lưu cùng thư mục và chọn "Thay thế" để bản mới ghi đè bản cũ. Máy tính Chrome/Edge: lần đầu chọn nơi lưu, các lần sau **tự ghi đè** vào đúng file đó (nút "Đổi nơi lưu").

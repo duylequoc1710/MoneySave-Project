@@ -71,6 +71,25 @@
 |---|---|---|---|
 | S1 ✅ | §2.2 persist storage, §3.3 JSON gọn (§3.2 huỷ – xem §2.4) | Opus | v2.9.0 |
 | S2 ✅ | Sao lưu GĐ1: 1 file duy nhất (ghi đè), Web Share, xem trước khi khôi phục, gộp snapshot theo ngày, sửa §2.3. A+ (mật khẩu file) chưa làm – chờ D3 | Opus | v2.9.0 |
-| S3 | Bảo mật đồng bộ §2.1(a) + §2.4 + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu | Opus | D1, PO đổi rule Firebase |
+| S3 ✅ code | Bảo mật đồng bộ §2.1(a) + §2.4 + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu (chi tiết §6) | Opus | v2.10.0 · chờ PO đổi rule Firebase |
 | S4 | Google Drive GĐ2 | Sonnet, Opus review | S2 xác nhận, PO tạo OAuth Client ID |
 | S5 | TODO-1 tách logic tìm kiếm + test; hook dữ liệu dùng chung §3.4 | Sonnet | – |
+
+## §6. S3 – Két bảo mật theo tài khoản (v2.10.0)
+### §6.1 Cách hoạt động
+- Đường dẫn mới `moneysave_users/{uid}` = `{ vault, meta }`, mọi request gửi `?auth=idToken`. Khoá mã hoá giữ nguyên (không bắt người dùng nhập thêm gì) – lớp bảo vệ chính giờ là Firebase Auth + rule.
+- `resolveAccountMode` (`cloudSync.ts`): đọc `meta` → 401/403 = rule chưa bật → dùng két cũ (kiểm tra lại mỗi 10 phút); trống → sao chép két cũ sang; có dữ liệu → dùng két mới.
+- Polling/focus chỉ đọc `meta`; lượt đồng bộ đầy đủ (mở app, bấm 🔄) còn kiểm tra két cũ để nhận bản do thiết bị chạy bản cũ ghi.
+- Chế độ đồng bộ thủ công (không đăng nhập, passphrase tự đặt) giữ nguyên két cũ.
+- Máy đã từng dùng két mới (`localStorage moneysave_secure_vault_uid_v1`) mà bị từ chối (hết phiên) → báo lỗi "đăng nhập lại", KHÔNG quay về ghi két cũ.
+
+### §6.2 Việc PO cần làm (theo thứ tự)
+1. Duyệt merge v2.10.0 lên `main` (an toàn kể cả khi chưa đổi rule – app tự dùng két cũ).
+2. Mở mọi thiết bị đang dùng app để chúng tự cập nhật lên v2.10.0 (xem số phiên bản ở Cài đặt).
+3. Firebase Console → Realtime Database → Rules → dán cấu hình trong `06-DEPLOYMENT-GUIDE.md` mục 5 → Publish.
+4. Mở app → bấm 🔄 → kiểm tra Data trên Firebase có nhánh `moneysave_users/<uid>` (app tự sao chép).
+
+### §6.3 Giai đoạn 2 (≥7 ngày sau, khi PO xác nhận dữ liệu đầy đủ trên mọi thiết bị)
+- Xoá khối `moneysave_vaults` khỏi rule (khoá két cũ – không ai đọc/ghi được nữa). Lưu ý: chế độ đồng bộ thủ công không đăng nhập sẽ ngừng hoạt động – PO hiện dùng đăng nhập nên không ảnh hưởng.
+- Tuỳ chọn sau đó: xoá dữ liệu nhánh `moneysave_vaults` trên Console (sau khi đã có file sao lưu mới nhất).
+- Tuỳ chọn tương lai: "mật khẩu két" riêng để đúng nghĩa zero-knowledge (§2.1b).

@@ -97,7 +97,29 @@ Trong dự án đã tích hợp sẵn workflow GitHub Actions tại [`.github/wo
        }
      }
      ```
-     *(Dữ liệu đã được mã hóa AES-GCM 256-bit E2EE trước khi gửi lên máy chủ nên bản ghi được bảo vệ an toàn tuyệt đối)*.
+     *(Cấu hình cũ – chỉ còn dùng cho chế độ đồng bộ thủ công không đăng nhập. Từ v2.10 nên dùng cấu hình bên dưới.)*
+
+   * **Từ v2.10 (S3 – két bảo mật theo tài khoản), dán cấu hình này thay thế:**
+     ```json
+     {
+       "rules": {
+         "moneysave_vaults": {
+           "$vaultId": {
+             ".read": true,
+             ".write": true
+           }
+         },
+         "moneysave_users": {
+           "$uid": {
+             ".read": "auth != null && auth.uid === $uid",
+             ".write": "auth != null && auth.uid === $uid"
+           }
+         }
+       }
+     }
+     ```
+     - `moneysave_users/{uid}`: chỉ chủ tài khoản đã đăng nhập mới đọc/ghi được. App tự sao chép két cũ sang lần đầu (không xoá két cũ).
+     - Giữ khối `moneysave_vaults` trong giai đoạn chuyển tiếp (thiết bị chưa cập nhật app vẫn đồng bộ được). **Giai đoạn 2** (sau khi mọi thiết bị đã lên v2.10 ≥ 7 ngày và PO xác nhận dữ liệu đủ): xem `09-REVIEW-AND-PLAN-2026-11.md` §6.
 4. **Lấy Cấu hình Web App:**
    * Vào **Project settings (⚙️)** → cuộn xuống mục **Your apps** → bấm biểu tượng Web **`</>`** → đăng ký app và copy các thông số vào file `app/.env.local`.
 

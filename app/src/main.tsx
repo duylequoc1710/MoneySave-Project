@@ -5,6 +5,7 @@ import { HashRouter } from 'react-router-dom'
 import App from './App'
 import { exportAll, processRecurringTransactions, seedIfEmpty } from './db'
 import { ensureDailySnapshot } from './safetyBackup'
+import { syncNowSmart } from './cloudSync'
 import './index.css'
 import { installSheetScrollLock } from './scrollLock'
 
@@ -59,9 +60,14 @@ const updateSW = registerSW({
   },
 })
 
+// §2.4 (S3): khi quay lại app, KÉO bản mới nhất từ Cloud TRƯỚC rồi mới sinh giao dịch định kỳ.
+// Nếu sinh trước, máy bị coi là "vừa chỉnh sửa" → có thể đẩy dữ liệu cũ đè bản mới hơn của thiết bị khác.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    processRecurringTransactions().catch(() => {})
+    syncNowSmart(true)
+      .catch(() => 'noop' as const)
+      .then(() => processRecurringTransactions())
+      .catch(() => {})
   }
 })
 
