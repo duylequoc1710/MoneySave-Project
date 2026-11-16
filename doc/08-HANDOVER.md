@@ -37,6 +37,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 - Đã hoàn tất (2026-11-04): FR-40…43 trong SRS, T-25/T-26 trong test plan, INC-18 trong sổ sự cố, unit test `syncSavingsGoalHistoryToTxs`, dọn Roadmap.
 - ✅ [TODO-1] Đã xong v2.10.1: logic tìm kiếm ở `app/src/search.ts`, test `search.test.ts` (T-29).
 - **[S4a] Google Drive:** code xong v2.11.0 (Client ID PO đã tạo, xem `10-…` §6). Còn: PO thử đăng nhập Google thật trên iPhone PWA/Android/máy tính (T-30). Origin chỉ có `moneysavedl.vercel.app` + localhost → bản Preview nhánh KHÔNG đăng nhập Google được trừ khi PO thêm origin của Preview. D3 = không mã hoá file sao lưu.
+- **[UI] Cải tiến giao diện:** kế hoạch `11-UI-PLAN.md` (lát U1…U5, khuyến nghị U1 → U2 → U4 → U3 → U5); chờ PO chọn lát. Skill `ui-ux-pro-max`, `ponytail` có sẵn trong `.claude/skills/`.
 - **[S4b] Định hướng PO (09 §7):** riêng tư + chi phí 0 → đề xuất chuyển đồng bộ sang Drive từng người; chờ PO chốt sau khi S4a ổn.
 - **[TODO-2] Xác minh thủ công v2.8.0 trên iOS Safari & Android Chrome thật** (T-26 trong `05-TEST-PLAN.md`): bàn phím in-app/`InAppSelectModal` không bật bàn phím OS, báo cáo Phân bổ/Rút, anti-drag không đơ, nút Reload cập nhật SW, tìm kiếm. AI không có thiết bị thật → cần PO xác nhận; kết quả ghi vào T-26 (đổi ⏳ thành ✅/❌) và INC mới nếu có lỗi.
 - **[TODO-3] Kiểm tra Vercel deploy** của commit mới nhất thành công (commit `9f53f54` từng push khi build lỗi TS, đã sửa ở `28a25d2`); bài học: luôn chờ `npm run build` thành công TRƯỚC khi push (file `*.test.ts` cũng bị `tsc -b` kiểm tra).

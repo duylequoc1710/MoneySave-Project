@@ -12,6 +12,7 @@
 | 06-ROADMAP.md | Trạng thái tính năng, kế hoạch đồng bộ realtime, deploy |
 | 08-HANDOVER.md | **Tài liệu bàn giao cho AI/kỹ sư tiếp nhận (ĐỌC ĐẦU TIÊN)**: trạng thái, cấu trúc, quy trình, lưu ý |
 | 09-REVIEW-AND-PLAN-2026-11.md | **Review độc lập 2026-11 + kế hoạch lát S1…S5 + nghiên cứu sao lưu điện thoại/Google Drive** (chia mục §n) |
+| 11-UI-PLAN.md | **Kế hoạch cải tiến giao diện (skill ui-ux-pro-max): hiện trạng đo được + lát U1…U5** |
 | 10-S4-GOOGLE-DRIVE-SETUP.md | **S4: hướng dẫn PO tạo OAuth Client ID (Google Drive, quyền `drive.file`)** + ghi chú kỹ thuật |
 | 07-INCIDENT-LOGS-AND-CASE-STUDIES.md | **Sổ tay sự cố kỹ thuật & Case studies (RCA, giải pháp, quy tắc phòng ngừa)** |
 | PLAN-initial.md | Kế hoạch ban đầu (WHY, rủi ro, tiêu chí) |
