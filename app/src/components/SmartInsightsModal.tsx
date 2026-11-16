@@ -10,6 +10,21 @@ interface SmartInsightsModalProps {
   onOpenExpenseReport: () => void
 }
 
+const statBox = (label: string, value: string, cls?: string, color?: string) => (
+  <div className="group-stat-box" style={{ cursor: 'default' }}>
+    <div>
+      <div className="mut" style={{ fontSize: 12 }}>
+        {label}
+      </div>
+      <b className={cls} style={{ fontSize: 17, color }}>
+        {value}
+      </b>
+    </div>
+  </div>
+)
+
+const softBox = { padding: '12px 14px', borderRadius: 12, background: 'color-mix(in srgb, var(--fg) 5%, transparent)', fontSize: 14 }
+
 export default function SmartInsightsModal({
   insights,
   onClose,
@@ -17,23 +32,14 @@ export default function SmartInsightsModal({
   onQuickTransferSaving,
   onOpenExpenseReport,
 }: SmartInsightsModalProps) {
-  const { burnRate, anomalies, temporal, opportunityCost, topCat } = insights
-  const maxWeekdayAvg = Math.max(
-    ...temporal.weekdayStats.map(s => s.avgAmount),
-    1,
-  )
-
+  const { forecast, rises, net, weekly, topCat, hasHistory } = insights
+  const maxWeekdayAvg = Math.max(...weekly.weekdayStats.map(s => s.avgAmount), 1)
   const paceColor =
-    burnRate.paceStatus === 'overpace'
-      ? 'var(--exp)'
-      : burnRate.paceStatus === 'watch'
-        ? 'var(--warn)'
-        : 'var(--inc)'
+    !hasHistory ? 'var(--info)' : forecast.paceStatus === 'overpace' ? 'var(--exp)' : forecast.paceStatus === 'watch' ? 'var(--warn)' : 'var(--inc)'
 
   return createPortal(
     <div className="period-report-overlay" style={{ zIndex: 55 }}>
       <div className="period-report-shell">
-        {/* Topbar */}
         <div className="ledger-topbar" style={{ marginBottom: 14 }}>
           <button type="button" className="close-pill-btn" onClick={onClose}>
             Đóng
@@ -41,7 +47,7 @@ export default function SmartInsightsModal({
           <div style={{ textAlign: 'center' }}>
             <b style={{ fontSize: 17 }}>🧠 Smart Insights</b>
             <div className="mut" style={{ fontSize: 12 }}>
-              Kỳ phân tích: {insights.monthStr} · Hôm nay {insights.todayStr}
+              Tháng {insights.monthStr} · Hôm nay {insights.todayStr}
             </div>
           </div>
           <button
@@ -57,140 +63,62 @@ export default function SmartInsightsModal({
           </button>
         </div>
 
-        {/* TRỤ CỘT 1: DỰ BÁO DÒNG TIỀN & TỐC ĐỘ ĐỐT TIỀN */}
+        {/* 1. Dự báo cuối tháng */}
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>
-                {burnRate.paceStatus === 'overpace'
-                  ? '🔥'
-                  : burnRate.paceStatus === 'watch'
-                    ? '⏳'
-                    : '🧭'}
-              </span>
-              <b>1. Dự báo dòng tiền & Tốc độ chi</b>
-            </div>
-            <span
-              className="pill-tag"
-              style={{
-                color: paceColor,
-                borderColor: `color-mix(in srgb, ${paceColor} 27%, transparent)`,
-                background: `color-mix(in srgb, ${paceColor} 9%, transparent)`,
-                fontWeight: 700,
-              }}
-            >
-              {burnRate.paceStatus === 'overpace'
-                ? 'Nhanh hơn nhịp'
-                : burnRate.paceStatus === 'watch'
-                  ? 'Sát ngưỡng'
-                  : ' Nhịp an toàn'}
+            <b>🧭 1. Dự báo cuối tháng</b>
+            <span className="pill-tag" style={{ color: paceColor, fontWeight: 700 }}>
+              {!hasHistory ? 'Chưa đủ dữ liệu' : forecast.paceStatus === 'overpace' ? 'Cao hơn thường lệ' : forecast.paceStatus === 'watch' ? 'Hơi cao' : 'Bình thường'}
             </span>
           </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 10,
-              marginBottom: 12,
-            }}
-          >
-            <div className="group-stat-box" style={{ cursor: 'default' }}>
-              <div>
-                <div className="mut" style={{ fontSize: 12 }}>
-                  Đã chi ({burnRate.elapsedDays}/{burnRate.daysInMonth} ngày)
-                </div>
-                <b className="exp" style={{ fontSize: 17 }}>
-                  {money(burnRate.thisMonthExpense)}
-                </b>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+            {statBox(`Đã chi (${forecast.elapsedDays}/${forecast.daysInMonth} ngày)`, money(forecast.thisMonthExpense), 'exp')}
+            {statBox('Dự kiến cả tháng', `~${money(forecast.projectedMonthExpense)}`, undefined, paceColor)}
+          </div>
+          {hasHistory && (
+            <div style={{ ...softBox, marginBottom: 10 }}>
+              <div className="mut" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6, gap: 8 }}>
+                <span>
+                  Đã chi: <b style={{ color: paceColor }}>{forecast.spendProgressPct}%</b> mức TB tháng
+                </span>
+                <span>
+                  Cùng kỳ thường lệ: <b>{forecast.usualProgressPct}%</b>
+                </span>
+              </div>
+              <div className="sparkbar-track" style={{ height: 10 }}>
+                <div
+                  className="sparkbar-fill"
+                  style={{ width: `${forecast.spendProgressPct > 0 ? Math.min(100, Math.max(4, forecast.spendProgressPct)) : 0}%`, background: paceColor }}
+                />
+                <div
+                  title={`Thường lệ đến hôm nay: ${forecast.usualProgressPct}%`}
+                  style={{
+                    position: 'absolute',
+                    left: `${Math.min(98, Math.max(2, forecast.usualProgressPct))}%`,
+                    top: -3,
+                    bottom: -3,
+                    width: 3,
+                    borderRadius: 2,
+                    background: 'var(--fg)',
+                  }}
+                />
+              </div>
+              <div className="mut" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 6, gap: 8 }}>
+                <span>
+                  Chi hằng ngày: <b>{money(forecast.dailyRate)}/ngày</b>
+                </span>
+                <span>
+                  TB 3 tháng trước: <b>{money(forecast.baselineExpense)}</b>
+                </span>
               </div>
             </div>
-            <div className="group-stat-box" style={{ cursor: 'default' }}>
-              <div>
-                <div className="mut" style={{ fontSize: 12 }}>
-                  Dự báo chốt tháng {insights.monthStr}
-                </div>
-                <b style={{ fontSize: 17, color: paceColor }}>
-                  ~{money(burnRate.projectedMonthExpense)}
-                </b>
-              </div>
-            </div>
-          </div>
-
-          {/* Dual-Pace Sparkbar */}
-          <div
-            style={{
-              background: 'color-mix(in srgb, var(--fg) 5%, transparent)',
-              borderRadius: 12,
-              padding: '10px 12px',
-              marginBottom: 10,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: 12,
-                marginBottom: 6,
-              }}
-            >
-              <span className="mut">
-                Tốc độ chi: <b style={{ color: paceColor }}>{burnRate.spendProgressPct}%</b>
-              </span>
-              <span className="mut">
-                Thời gian trôi qua: <b>{burnRate.timeProgressPct}%</b> (Ngày{' '}
-                {burnRate.elapsedDays}/{burnRate.daysInMonth})
-              </span>
-            </div>
-            <div className="sparkbar-track" style={{ height: 10 }}>
-              <div
-                className="sparkbar-fill"
-                style={{
-                  width: `${
-                    burnRate.spendProgressPct > 0
-                      ? Math.min(100, Math.max(4, burnRate.spendProgressPct))
-                      : 0
-                  }%`,
-                  background: paceColor,
-                }}
-              />
-              {/* Vạch đánh dấu tiến độ thời gian */}
-              <div
-                title={`Tiến độ thời gian: ${burnRate.timeProgressPct}%`}
-                style={{
-                  position: 'absolute',
-                  left: `${Math.min(98, Math.max(2, burnRate.timeProgressPct))}%`,
-                  top: -3,
-                  bottom: -3,
-                  width: 3,
-                  borderRadius: 2,
-                  background: 'var(--fg)',
-                  boxShadow: '0 0 4px #0008',
-                }}
-              />
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: 12,
-                marginTop: 6,
-              }}
-              className="mut"
-            >
-              <span>
-                Nhịp đốt tiền điều chỉnh: <b>{money(burnRate.weightedDailyBurn)}/ngày</b>
-              </span>
-              <span>
-                TB 3 tháng trước: <b>{money(burnRate.baselineExpense)}</b>
-              </span>
-            </div>
-          </div>
-
-          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 10 }}>
-            {burnRate.copy}
-          </p>
-
+          )}
+          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 6 }}>{forecast.copy}</p>
+          {forecast.expectedLargeRemaining > 0 && (
+            <p className="mut" style={{ fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}>
+              Dự kiến đã tính thêm {money(forecast.expectedLargeRemaining)} khoản lớn thường có mỗi tháng nhưng tháng này chưa phát sinh.
+            </p>
+          )}
           {topCat.id > 0 && (
             <button
               type="button"
@@ -198,161 +126,87 @@ export default function SmartInsightsModal({
               style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }}
               onClick={() => onQuickBudget(topCat.id, topCat.suggestedLimit)}
             >
-              🎯 Đặt trần kiểm soát "{topCat.name}" ({money(topCat.suggestedLimit)})
+              🎯 {topCat.currentLimit ? 'Sửa' : 'Đặt'} hạn mức "{topCat.name}" – nhóm chi nhiều nhất ({money(topCat.amount)})
             </button>
           )}
         </div>
 
-        {/* TRỤ CỘT 2: PHÁT HIỆN BẤT THƯỜNG & RÒ RỈ VI MÔ */}
+        {/* 2. Nhóm chi tăng so với cùng kỳ */}
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🔍</span>
-              <b>2. Phát hiện bất thường & Rò rỉ vi mô</b>
-            </div>
+            <b>📈 2. Nhóm chi tăng so với cùng kỳ</b>
           </div>
-
-          <p className="mut" style={{ fontSize: 13, marginBottom: 12 }}>
-            {anomalies.summaryCopy}
+          <p className="mut" style={{ fontSize: 13, marginBottom: 12, lineHeight: 1.45 }}>
+            So chi hằng ngày (không tính khoản từ {money(forecast.largeThreshold)}) từ đầu tháng đến hôm nay với cùng kỳ các tháng trước.
           </p>
-
-          {anomalies.spikes.map(sp => (
-            <div
-              key={`sp-${sp.categoryId}`}
-              style={{
-                border: '1px solid rgba(242, 85, 81, 0.35)',
-                background: 'rgba(242, 85, 81, 0.08)',
-                borderRadius: 14,
-                padding: '12px 14px',
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 4,
-                }}
-              >
+          {rises.map(r => (
+            <div key={r.categoryId} style={{ border: '1px solid var(--bd)', borderRadius: 14, padding: '12px 14px', marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <b>
-                  {sp.categoryIcon} {sp.headline}
+                  {r.categoryIcon} {r.categoryName}
                 </b>
-                <span
-                  className="pill-tag"
-                  style={{ color: 'var(--exp)', fontWeight: 700 }}
-                >
-                  Đột biến {sp.multiplier}x
+                <span className="pill-tag" style={{ color: 'var(--warn)', fontWeight: 700 }}>
+                  +{r.risePct}%
                 </span>
               </div>
-              <div
-                style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}
-              >
-                {sp.detailCopy}
+              <div className="mut" style={{ fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}>
+                Đã chi {money(r.currentAmount)} · cùng kỳ thường lệ {money(r.usualAmount)} · cao hơn {money(r.extraAmount)}
               </div>
               <button
                 type="button"
-                className="btn ghost"
-                style={{
-                  width: '100%',
-                  justifyContent: 'center',
-                  borderColor: 'var(--exp)',
-                  color: 'var(--exp)',
-                  fontSize: 13,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                }}
-                onClick={() => onQuickBudget(sp.categoryId, sp.suggestedLimit)}
+                className="btn"
+                style={{ width: '100%', justifyContent: 'center', fontSize: 14, borderRadius: 10 }}
+                onClick={() => onQuickBudget(r.categoryId, r.suggestedLimit)}
               >
-                🔒 Khóa hạn mức tháng cho {sp.categoryName} ({money(sp.suggestedLimit)})
+                🎯 Hạn mức tháng cho {r.categoryName}
               </button>
             </div>
           ))}
-
-          {anomalies.microLeaks.slice(0, 3).map(ml => (
-            <div
-              key={`ml-${ml.categoryId}`}
-              style={{
-                border: '1px solid var(--bd)',
-                background: 'color-mix(in srgb, var(--fg) 4%, transparent)',
-                borderRadius: 14,
-                padding: '12px 14px',
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 4,
-                }}
-              >
-                <b>
-                  {ml.categoryIcon} {ml.headline}
-                </b>
-                <span className="pill-tag" style={{ color: 'var(--warn)' }}>
-                  ~{ml.workHoursEquivalent}h làm việc
-                </span>
-              </div>
-              <div
-                className="mut"
-                style={{ fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}
-              >
-                {ml.detailCopy}
-              </div>
-              <button
-                type="button"
-                className="btn ghost"
-                style={{
-                  width: '100%',
-                  justifyContent: 'center',
-                  fontSize: 13,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                }}
-                onClick={() => onQuickBudget(ml.categoryId, ml.suggestedLimit)}
-              >
-                {ml.currentLimit
-                  ? `🎯 Điều chỉnh trần ${ml.categoryName} (Đang đặt: ${money(ml.currentLimit)})`
-                  : `🔒 Đặt trần hạn mức ${money(ml.suggestedLimit)} cho ${ml.categoryName}`}
-              </button>
-            </div>
-          ))}
-
-          {anomalies.spikes.length === 0 && anomalies.microLeaks.length === 0 && (
-            <div
-              style={{
-                padding: '14px',
-                borderRadius: 12,
-                background: 'rgba(40, 199, 111, 0.08)',
-                color: 'var(--inc)',
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-            >
-              ✅ Dòng tiền rất gọn gàng! Không phát hiện khoản chi nhỏ lẻ tích lũy bất thường.
+          {rises.length === 0 && (
+            <div style={softBox}>
+              {!hasHistory
+                ? 'Cần ít nhất 1 tháng dữ liệu trước để so sánh.'
+                : forecast.elapsedDays < 5
+                  ? 'Từ ngày 05 trở đi sẽ so sánh (đầu tháng ít dữ liệu, dễ báo sai).'
+                  : '✅ Không có nhóm nào chi cao bất thường so với cùng kỳ.'}
             </div>
           )}
         </div>
 
-        {/* TRỤ CỘT 3: NHỊP SINH HỌC TÀI CHÍNH THEO CHU KỲ */}
+        {/* 3. Thu – chi tháng này */}
         <div className="card">
           <div className="card-head" style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🌴</span>
-              <b>3. Nhịp sinh học tài chính theo chu kỳ</b>
-            </div>
-            <span className="pill-tag">
-              Cao điểm: {temporal.peakDayLabel}
-            </span>
+            <b>🌱 3. Thu – chi tháng này</b>
           </div>
+          {net.hasIncome && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              {statBox('Hiện còn', money(net.netSoFar), net.netSoFar >= 0 ? 'inc' : 'exp')}
+              {statBox('Dự kiến cuối tháng', money(net.projectedNet), net.projectedNet >= 0 ? 'inc' : 'exp')}
+            </div>
+          )}
+          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: net.suggestedSaving > 0 ? 12 : 0 }}>{net.copy}</p>
+          {net.suggestedSaving > 0 && (
+            <button
+              type="button"
+              className="btn primary"
+              style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }}
+              onClick={() => {
+                onClose()
+                onQuickTransferSaving(net.suggestedSaving)
+              }}
+            >
+              💸 Chuyển {money(net.suggestedSaving)} vào {net.savingFundName}
+            </button>
+          )}
+        </div>
 
-          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 12 }}>
-            {temporal.weekendCopy}
-          </p>
-
-          {/* Biểu đồ cột mini Thứ 2 -> Chủ Nhật */}
+        {/* 4. Nhịp chi trong tuần */}
+        <div className="card">
+          <div className="card-head" style={{ marginBottom: 8 }}>
+            <b>📅 4. Nhịp chi trong tuần</b>
+            <span className="pill-tag">Nhiều nhất: {weekly.peakDayLabel}</span>
+          </div>
+          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 12 }}>{weekly.copy}</p>
           <div
             style={{
               display: 'grid',
@@ -363,131 +217,27 @@ export default function SmartInsightsModal({
               padding: '12px 8px 6px',
               background: 'color-mix(in srgb, var(--fg) 4%, transparent)',
               borderRadius: 14,
-              marginBottom: 12,
             }}
           >
-            {temporal.weekdayStats.map(st => {
-              const barPct = Math.max(
-                8,
-                Math.round((st.avgAmount / maxWeekdayAvg) * 100),
-              )
-              const barColor = st.isWeekend ? 'var(--warn)' : 'var(--acc)'
-              return (
+            {weekly.weekdayStats.map(st => (
+              <div key={st.shortLabel} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                 <div
-                  key={st.shortLabel}
+                  title={`${st.fullLabel}: TB ${money(st.avgAmount)}/ngày`}
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    height: '100%',
-                    justifyContent: 'flex-end',
+                    width: '100%',
+                    maxWidth: 28,
+                    height: `${Math.max(8, Math.round((st.avgAmount / maxWeekdayAvg) * 100))}%`,
+                    background: st.avgAmount > 0 ? (st.isWeekend ? 'var(--warn)' : 'var(--acc)') : 'var(--bar-track)',
+                    border: st.avgAmount > 0 ? 'none' : '1px solid var(--bar-bd)',
+                    borderRadius: '6px 6px 3px 3px',
                   }}
-                >
-                  <div
-                    title={`${st.fullLabel}: TB ${money(st.avgAmount)}`}
-                    style={{
-                      width: '100%',
-                      maxWidth: 28,
-                      height: `${barPct}%`,
-                      background: st.avgAmount > 0 ? barColor : 'var(--bar-track)',
-                      border: st.avgAmount > 0 ? 'none' : '1px solid var(--bar-bd)',
-                      borderRadius: '6px 6px 3px 3px',
-                      opacity: st.avgAmount > 0 ? 0.95 : 1,
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: st.isWeekend ? 700 : 500,
-                      color: st.isWeekend ? 'var(--warn)' : 'var(--mut)',
-                      marginTop: 5,
-                    }}
-                  >
-                    {st.shortLabel}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          <div
-            style={{
-              padding: '10px 12px',
-              borderRadius: 12,
-              background: 'color-mix(in srgb, var(--fg) 5%, transparent)',
-              fontSize: 13,
-              lineHeight: 1.45,
-            }}
-          >
-            <b>💸 Chu kỳ sau ngày nhận thu nhập:</b>{' '}
-            <span className="mut">{temporal.paydayCopy}</span>
-          </div>
-        </div>
-
-        {/* TRỤ CỘT 4: CHI PHÍ CƠ HỘI & CAN THIỆP 1-CHẠM */}
-        <div className="card">
-          <div className="card-head" style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🌱</span>
-              <b>4. Chi phí cơ hội & Tích lũy lãi kép</b>
-            </div>
-            <span className="pill-tag" style={{ color: 'var(--acc)' }}>
-              1h làm ≈ {money(opportunityCost.hourlyWage)}
-            </span>
-          </div>
-
-          <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 12 }}>
-            {opportunityCost.copy}
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 10,
-              marginBottom: 14,
-            }}
-          >
-            <div className="group-stat-box" style={{ cursor: 'default' }}>
-              <div>
-                <div className="mut" style={{ fontSize: 12 }}>
-                  Tích lũy sau 1 năm (6.5%/năm)
-                </div>
-                <b className="inc" style={{ fontSize: 17 }}>
-                  {money(opportunityCost.compound1YearValue)}
-                </b>
+                />
+                <span style={{ fontSize: 12, fontWeight: st.isWeekend ? 700 : 500, color: st.isWeekend ? 'var(--warn)' : 'var(--mut)', marginTop: 5 }}>
+                  {st.shortLabel}
+                </span>
               </div>
-            </div>
-            <div className="group-stat-box" style={{ cursor: 'default' }}>
-              <div>
-                <div className="mut" style={{ fontSize: 12 }}>
-                  Tích lũy sau 3 năm (6.5%/năm)
-                </div>
-                <b className="inc" style={{ fontSize: 17 }}>
-                  {money(opportunityCost.compound3YearValue)}
-                </b>
-              </div>
-            </div>
+            ))}
           </div>
-
-          <button
-            type="button"
-            className="btn primary"
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              borderRadius: 12,
-              padding: '12px 16px',
-              fontWeight: 700,
-            }}
-            onClick={() => {
-              onClose()
-              onQuickTransferSaving(opportunityCost.potentialMonthlySaving)
-            }}
-          >
-            💸 Cất ngay {money(opportunityCost.potentialMonthlySaving)} sang{' '}
-            {opportunityCost.savingFundName}
-          </button>
         </div>
       </div>
     </div>,

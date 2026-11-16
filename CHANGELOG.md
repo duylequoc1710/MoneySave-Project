@@ -9,7 +9,16 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 - Thêm giao dịch mới: nhóm mặc định = **nhóm bạn dùng nhiều nhất trong 90 ngày** (trước là nhóm đầu danh sách). Hàng nút **"nhóm hay dùng"** (tối đa 4, vuốt ngang) dưới ô Nhóm – 1 chạm để chọn.
 - Ví mặc định = ví bạn dùng gần nhất cho nhóm đó (nếu nhóm không gắn sẵn ví).
 - Không tính giao dịch tự động (định kỳ, phân bổ tiết kiệm). Sửa giao dịch cũ không đổi gì.
-- +2 test → 78/78. Không đổi dữ liệu/schema.
+- +2 test.
+
+### 🧠 Smart Insights làm lại theo số liệu thật (PO thấy nhiều mục chưa thực tế)
+- **Dự báo cuối tháng:** tách *khoản lớn* (≥ 1 triệu hoặc ≥ 10% mức chi tháng) khỏi chi hằng ngày; dự báo = đã chi + nhịp chi hằng ngày × ngày còn lại + khoản lớn thường có mà tháng này chưa trả. So *cùng kỳ* (đến cùng ngày của 3 tháng trước) thay vì "% thời gian tháng"; không còn so tổng chi với tổng ngân sách chỉ đặt cho vài nhóm.
+- **Nhóm chi tăng so với cùng kỳ** thay "Phát hiện đột biến": chỉ chi hằng ngày, từ ngày 05, tăng ≥ 40% và ≥ 200k → tiền nhà/học phí trả sớm không còn bị báo "gấp 3x".
+- **Thu – chi tháng này** thay "Chi phí cơ hội & lãi kép": hiện còn / dự kiến cuối tháng còn bao nhiêu; chỉ hiện khi có ghi thu nhập; gợi ý chuyển phần dư dự kiến vào Ví Tiết Kiệm (sửa được số tiền).
+- **Nhịp chi trong tuần:** không tính khoản lớn, chia đúng số lần mỗi thứ xuất hiện.
+- **Bỏ:** "Rò rỉ vi mô" (Ăn uống hằng ngày luôn bị báo), "vung tay sau ngày lương", quy đổi giờ làm (giả định lương 15 triệu), lãi kép 6,5%, số tiền "cất ngay" tự đặt.
+- Thẻ ở Tổng quan: tối đa 3 nhận định (dự báo, nhóm tăng, thu – chi).
+- Test Smart Insights viết lại (3 kịch bản: tiền nhà trả sớm, ăn uống tăng + có lương, chưa có lịch sử) → tổng 80/80. Không đổi dữ liệu/schema.
 
 ---
 

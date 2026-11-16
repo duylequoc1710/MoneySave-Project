@@ -848,64 +848,68 @@ describe('Bảo mật & Kiểm tra định dạng khi Khôi phục dữ liệu (
   })
 })
 
-describe('Hệ thống Phân tích Hành vi Tài chính 4 Trụ cột (computeSmartInsights)', () => {
-  it('Tính đúng Dự báo dòng tiền, Phát hiện rò rỉ vi mô, Nhịp chi cuối tuần, Chi phí cơ hội & hiển thị dd/MM/yyyy', () => {
-    const funds: Fund[] = [
-      { id: 1, name: 'Ví chính', icon: '💵', color: '#22c55e', initialBalance: 10_000_000 },
-      { id: 2, name: 'Ví Tiết Kiệm', icon: '🏦', color: '#06b6d4', initialBalance: 50_000_000, excludeFromTotal: true },
-    ]
-    const cats: Category[] = [
-      { id: 1, name: 'Siêu Thị', type: 'expense', icon: '🛒', color: '#10b981', fundId: 1 },
-      { id: 2, name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', fundId: 1 },
-      { id: 3, name: 'Lương', type: 'income', icon: '💰', color: '#22c55e', fundId: 1 },
-    ]
-    const txs: Tx[] = [
-      // Tháng 10/2026: Lương + chi tiêu
-      { id: 1, type: 'income', amount: 17_600_000, date: '2026-10-05', fundId: 1, categoryId: 3, note: 'Lương tháng 10', createdAt: 1 },
-      { id: 2, type: 'expense', amount: 2_500_000, date: '2026-10-06', fundId: 1, categoryId: 1, note: 'Mua đồ sau lương', createdAt: 2 },
-      // Các khoản nhỏ lẻ rò rỉ vi mô
-      { id: 3, type: 'expense', amount: 55_000, date: '2026-10-18', fundId: 1, categoryId: 2, note: 'Cà phê', createdAt: 3 },
-      { id: 4, type: 'expense', amount: 65_000, date: '2026-10-24', fundId: 1, categoryId: 2, note: 'Trà sữa', createdAt: 4 },
-      { id: 5, type: 'expense', amount: 70_000, date: '2026-10-25', fundId: 1, categoryId: 2, note: 'Ăn vặt CN', createdAt: 5 },
-      // Ngày 01/11/2026 (Chủ Nhật)
-      { id: 6, type: 'expense', amount: 348_200, date: '2026-11-01', fundId: 1, categoryId: 1, note: 'Đi siêu thị', createdAt: 6 },
-      { id: 7, type: 'expense', amount: 45_000, date: '2026-11-01', fundId: 1, categoryId: 2, note: 'Cà phê sáng', createdAt: 7 },
-    ]
+describe('Smart Insights – chỉ dùng số liệu thật (computeSmartInsights)', () => {
+  const funds: Fund[] = [
+    { id: 1, name: 'Ví chính', icon: '💵', color: '#22c55e', initialBalance: 10_000_000 },
+    { id: 2, name: 'Ví Tiết Kiệm', icon: '🏦', color: '#06b6d4', initialBalance: 50_000_000, excludeFromTotal: true },
+  ]
+  const cats: Category[] = [
+    { id: 1, name: 'Nhà ở', type: 'expense', icon: '🏠', color: '#10b981', fundId: 1 },
+    { id: 2, name: 'Ăn uống', type: 'expense', icon: '🍜', color: '#f97316', fundId: 1 },
+    { id: 3, name: 'Lương', type: 'income', icon: '💰', color: '#22c55e', fundId: 1 },
+  ]
+  let nextId = 1
+  const tx = (type: 'income' | 'expense', amount: number, date: string, categoryId: number): Tx =>
+    ({ id: nextId++, type, amount, date, fundId: 1, categoryId, createdAt: nextId }) as Tx
+  // 3 tháng trước: tiền nhà 5tr ngày 05, ăn uống 100k/ngày ngày 01–28
+  const history = (): Tx[] =>
+    ['2026-08', '2026-09', '2026-10'].flatMap(m => [
+      tx('expense', 5_000_000, `${m}-05`, 1),
+      ...Array.from({ length: 28 }, (_, i) => tx('expense', 100_000, `${m}-${String(i + 1).padStart(2, '0')}`, 2)),
+    ])
+  const days = (n: number, amount: number) =>
+    Array.from({ length: n }, (_, i) => tx('expense', amount, `2026-11-${String(i + 1).padStart(2, '0')}`, 2))
 
-    const res = computeSmartInsights({
-      txs,
-      funds,
-      cats,
-      budgets: [],
-      today: new Date(2026, 10, 1), // 01/11/2026
-    })
-
-    // Định dạng hiển thị luôn là MM/yyyy và dd/MM/yyyy
+  it('tiền nhà trả sớm hơn thường lệ KHÔNG bị báo đột biến; dự báo không phóng đại khoản lớn', () => {
+    const res = computeSmartInsights({ txs: [...history(), tx('expense', 5_000_000, '2026-11-01', 1), ...days(10, 100_000)], funds, cats, today: new Date(2026, 10, 10) })
     assert.equal(res.monthStr, '11/2026')
-    assert.equal(res.todayStr, '01/11/2026')
+    assert.equal(res.todayStr, '10/11/2026')
+    assert.equal(res.hasHistory, true)
+    assert.equal(res.forecast.baselineExpense, 7_800_000) // 5tr + 28 × 100k
+    assert.equal(res.forecast.largeThreshold, 1_000_000)
+    assert.equal(res.forecast.largeThisMonth, 5_000_000)
+    assert.equal(res.forecast.usualToDate, 6_000_000) // nhà (ngày 05) + 10 ngày ăn uống
+    assert.equal(res.forecast.dailyRate, 100_000)
+    assert.equal(res.forecast.expectedLargeRemaining, 0)
+    assert.equal(res.forecast.projectedMonthExpense, 8_000_000) // 6tr + 20 ngày × 100k
+    assert.equal(res.forecast.paceStatus, 'safe')
+    assert.deepEqual(res.rises, [])
+    assert.equal(res.topCat.name, 'Nhà ở')
+  })
 
-    // Top nhóm chi tháng 11/2026 là Siêu Thị (348,200 ₫)
-    assert.equal(res.topCat.name, 'Siêu Thị')
-    assert.equal(res.topCat.amount, 348_200)
+  it('ăn uống tăng so với cùng kỳ → báo; khoản lớn chưa trả được cộng vào dự báo; thu – chi khi có lương', () => {
+    const res = computeSmartInsights({ txs: [...history(), tx('income', 20_000_000, '2026-11-01', 3), ...days(10, 250_000)], funds, cats, today: new Date(2026, 10, 10) })
+    assert.equal(res.rises.length, 1)
+    assert.equal(res.rises[0].categoryName, 'Ăn uống')
+    assert.equal(res.rises[0].usualAmount, 1_000_000)
+    assert.equal(res.rises[0].extraAmount, 1_500_000)
+    assert.equal(res.forecast.expectedLargeRemaining, 5_000_000) // tiền nhà thường có, tháng này chưa trả
+    assert.equal(res.forecast.projectedMonthExpense, 2_500_000 + 250_000 * 20 + 5_000_000)
+    assert.equal(res.net.hasIncome, true)
+    assert.equal(res.net.netSoFar, 17_500_000)
+    assert.equal(res.net.projectedNet, 7_500_000)
+    assert.equal(res.net.suggestedSaving, 7_500_000)
+    assert.equal(res.net.savingFundName, 'Ví Tiết Kiệm')
+    assert.deepEqual(res.heroCards.map(c => c.id), ['forecast', 'rise-2', 'net'])
+  })
 
-    // Trụ cột 1: Dự báo dòng tiền được làm mượt theo lịch sử thay vì lấy 393,200 * 30 = 11.79tr cứng nhắc
-    assert.equal(res.burnRate.thisMonthExpense, 393_200)
-    assert.ok(res.burnRate.projectedMonthExpense > 0)
-
-    // Trụ cột 2: Phát hiện rò rỉ vi mô ở nhóm Ăn uống (4 lần nhỏ lẻ trong 30 ngày qua)
-    assert.ok(res.anomalies.microLeaks.length >= 1)
-    assert.equal(res.anomalies.microLeaks[0].categoryName, 'Ăn uống')
-    assert.equal(res.anomalies.microLeaks[0].txCount, 4)
-
-    // Trụ cột 3: Phát hiện hiệu ứng sau ngày nhận lương (05/10/2026)
-    assert.equal(res.temporal.paydayDetected, true)
-    assert.equal(res.temporal.lastPaydayDateDmy, '05/10/2026')
-    assert.ok(res.temporal.payday5DaySharePct > 50)
-
-    // Trụ cột 4: Lương 17,600,000 / 176 giờ = 100,000 ₫/giờ và chọn đúng Ví Tiết Kiệm
-    assert.equal(res.opportunityCost.hourlyWage, 100_000)
-    assert.equal(res.opportunityCost.savingFundName, 'Ví Tiết Kiệm')
-    assert.ok(res.heroCards.length >= 4)
+  it('chưa có tháng trước / đầu tháng: không so sánh, không có thẻ thu – chi khi chưa ghi thu nhập', () => {
+    const res = computeSmartInsights({ txs: days(3, 100_000), funds, cats, today: new Date(2026, 10, 3) })
+    assert.equal(res.hasHistory, false)
+    assert.deepEqual(res.rises, [])
+    assert.equal(res.net.hasIncome, false)
+    assert.deepEqual(res.heroCards.map(c => c.id), ['forecast'])
+    assert.equal(res.forecast.projectedMonthExpense, 300_000 + 100_000 * 27)
   })
 })
 

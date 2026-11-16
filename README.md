@@ -8,7 +8,7 @@
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/d%C3%B9ng_mi%E1%BB%85n_ph%C3%AD-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Dùng miễn phí" /></a>
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.17.0-3b82f6" alt="Version v2.17.0" /></a>
     <a href="https://github.com/duylequoc1710/MoneySave-Project/actions/workflows/ci.yml"><img src="https://github.com/duylequoc1710/MoneySave-Project/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-78%2F78%20passing-brightgreen" alt="Tests" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-80%2F80%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
@@ -77,11 +77,12 @@ Không chỉ dừng lại ở việc ghi chép thu chi thông thường, **Money
 
 ## 🌟 Các Trụ Cột Tính Năng Nổi Bật
 
-### 1. 🧠 Smart Insights – Phân Tích Hành Vi Tài Chính 4 Trụ Cột
-* **Dự báo dòng tiền & Tốc độ chi tiêu (`Burn Rate & Projection Engine`):** Dự phóng tổng chi tiêu cuối tháng có tính trọng số *Ngày thường vs Cuối tuần* và làm mượt dữ liệu đầu tháng; trực quan hóa qua thanh **Dual-Pace Sparkbar** (so sánh `% tốc độ chi` với `% thời gian tháng`).
-* **Phát hiện bất thường & Rò rỉ vi mô (`Anomaly & Micro-leak Detector`):** Tự động cảnh báo các nhóm chi tăng đột biến (*Spike*) và các thói quen chi nhỏ lẻ lặp lại nhiều lần (*Micro-leaks* như cà phê, ăn vặt, dịch vụ ngầm).
-* **Nhịp sinh học tài chính (`Temporal & Payday Patterns`):** Phân tích biểu đồ chi tiêu Thứ 2 – Chủ Nhật và nhận diện *Hội chứng chi tiêu 5 ngày sau khi nhận lương (Payday Effect)*.
-* **Quy đổi chi phí cơ hội & Can thiệp 1-chạm (`Opportunity Cost & 1-Click Actions`):** Quy đổi số tiền chi tiêu ra **số giờ làm việc tương đương** hoặc **giá trị lãi kép 6.5%/năm sau 1–3 năm**; hỗ trợ đặt trần ngân sách hoặc trích tiền sang Ví Tiết Kiệm chỉ với 1 chạm.
+### 1. 🧠 Smart Insights – Nhận định từ số liệu thật (v2.17.0)
+* **Dự báo cuối tháng:** tách *khoản lớn* (tiền nhà, học phí… từ 1 triệu hoặc 10% mức chi tháng) khỏi *chi hằng ngày*; dự báo = đã chi + nhịp chi hằng ngày × số ngày còn lại + khoản lớn thường có nhưng tháng này chưa trả. Thanh tiến độ so *đã chi* với *cùng kỳ thường lệ* (đến cùng ngày này của 3 tháng trước).
+* **Nhóm chi tăng so với cùng kỳ:** so chi hằng ngày từng nhóm từ đầu tháng đến hôm nay với cùng kỳ các tháng trước (từ ngày 05, tăng ≥ 40% và ≥ 200.000 ₫) – tiền nhà trả sớm không bị báo sai.
+* **Thu – chi tháng này:** hiện còn bao nhiêu, dự kiến cuối tháng dư/thiếu bao nhiêu (chỉ khi có ghi thu nhập); 1 chạm chuyển phần dư vào Ví Tiết Kiệm.
+* **Nhịp chi trong tuần:** biểu đồ Thứ 2 – Chủ Nhật của chi hằng ngày (không tính khoản lớn).
+* Không giả định lương, giờ làm hay lãi suất – mọi con số đều tính từ giao dịch của bạn.
 
 ### 2. 💳 Quản Trị Quỹ Tín Dụng & Chuyển Đổi Trả Góp (`3 / 6 / 12 / 24` Tháng)
 * **Tách bạch Kỳ sao kê đã chốt & Kỳ đang mở:** Phân biệt rõ dư nợ của kỳ sao kê cũ cần tất toán ở hạn gần nhất và khoản chi phát sinh trong kỳ sao kê mới (thanh toán ở tháng kế tiếp), không gây báo động giả.
@@ -161,7 +162,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
-* **`v2.17.0` (2026-11-16):** Nhập nhanh: tự chọn sẵn nhóm hay dùng nhất (vd. Ăn uống) và ví quen dùng, thêm hàng nút nhóm hay dùng 1 chạm.
+* **`v2.17.0` (2026-11-16):** Nhập nhanh (tự chọn sẵn nhóm & ví hay dùng, hàng nút 1 chạm); Smart Insights làm lại theo số liệu thật (tách khoản lớn, so cùng kỳ, thu – chi tháng).
 * **`v2.16.1` (2026-11-16):** CI tự động: GitHub tự chạy test, build, lint mỗi lần đẩy code.
 * **`v2.16.0` (2026-11-16):** Chữ to & dễ đọc hơn (16px, số tiền thẳng cột), màu giao diện Sáng đủ tương phản, nút chữ dễ bấm (44px), icon thống nhất trong cửa sổ.
 * **`v2.15.1` (2026-11-16):** Sẵn sàng khoá két Firebase cũ: tài khoản mới không báo lỗi đồng bộ khi két cũ đã khoá.

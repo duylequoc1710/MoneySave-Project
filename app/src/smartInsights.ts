@@ -1,14 +1,16 @@
-import { addDays, addMonths, getDaysInMonth, parseISO } from 'date-fns'
+import { addMonths, getDaysInMonth, parseISO } from 'date-fns'
 import type { Budget, Category, Fund, Tx } from './db.ts'
 import { filterReportableTxs, fmtDmy, getCategoryFullName, money, monthKey, monthLabel, ymd } from './lib.ts'
 
+/**
+ * Smart Insights (v2.18.0) – chỉ dùng số liệu thật của người dùng, không giả định lương/lãi suất.
+ * Nguyên tắc: tách "khoản lớn" (tiền nhà, học phí, mua sắm lớn – thường 1 lần/tháng) khỏi "chi hằng ngày",
+ * và so với CÙNG KỲ (đến cùng ngày này của các tháng trước) thay vì nhân theo số ngày.
+ */
+
 export type InsightTone = 'good' | 'warn' | 'danger' | 'info'
 
-export type InsightActionType =
-  | 'set_budget'
-  | 'transfer_saving'
-  | 'open_expense_report'
-  | 'open_detail'
+export type InsightActionType = 'set_budget' | 'transfer_saving' | 'open_expense_report' | 'open_detail'
 
 export interface InsightCTA {
   label: string
@@ -20,7 +22,6 @@ export interface InsightCTA {
 
 export interface HeroInsightCard {
   id: string
-  pillar: 1 | 2 | 3 | 4
   badge: string
   icon: string
   tone: InsightTone
@@ -31,49 +32,29 @@ export interface HeroInsightCard {
   cta: InsightCTA
 }
 
-export interface SpikeAnomalyItem {
+export interface CategoryRise {
   categoryId: number
   categoryName: string
   categoryIcon: string
-  categoryColor: string
-  currentAmount: number
-  normalAverage: number
-  multiplier: number
-  currentLimit: number | null
+  currentAmount: number // chi hằng ngày của nhóm từ đầu tháng đến hôm nay
+  usualAmount: number // trung bình cùng kỳ các tháng trước
+  extraAmount: number
+  risePct: number
   suggestedLimit: number
-  headline: string
-  detailCopy: string
-}
-
-export interface MicroLeakItem {
-  categoryId: number
-  categoryName: string
-  categoryIcon: string
-  categoryColor: string
-  txCount: number
-  totalAmount: number
-  avgTicket: number
-  workHoursEquivalent: number
-  currentLimit: number | null
-  suggestedLimit: number
-  scopeLabel: string
-  headline: string
-  detailCopy: string
 }
 
 export interface WeekdayBarStat {
   dayIndex: number // 0 = T2 ... 6 = CN
   shortLabel: string
   fullLabel: string
-  totalAmount: number
   avgAmount: number
-  txCount: number
   isWeekend: boolean
 }
 
 export interface SmartInsightsResult {
   monthStr: string // MM/yyyy
   todayStr: string // dd/MM/yyyy
+  hasHistory: boolean // có ít nhất 1 tháng trước có chi tiêu
   topCat: {
     id: number
     name: string
@@ -81,80 +62,67 @@ export interface SmartInsightsResult {
     color: string
     amount: number
     pctOfMonth: number
-    workHours: number
     currentLimit: number | null
     suggestedLimit: number
   }
-  burnRate: {
+  forecast: {
     thisMonthExpense: number
-    thisMonthIncome: number
-    lastMonthExpense: number
-    avg3MonthsExpense: number
-    baselineExpense: number
+    largeThreshold: number
+    largeThisMonth: number
+    baselineExpense: number // TB cả tháng của tối đa 3 tháng trước
+    usualToDate: number // TB đã chi đến cùng ngày này của các tháng trước
     elapsedDays: number
     daysInMonth: number
-    remainingDays: number
-    rawDailyAvgThisMonth: number
-    weightedDailyBurn: number
+    dailyRate: number // nhịp chi hằng ngày dùng để dự báo
+    expectedLargeRemaining: number // khoản lớn thường có nhưng tháng này chưa phát sinh
     projectedMonthExpense: number
     projectedVsBaselinePct: number
-    monthSoFarDiffPct: number
-    timeProgressPct: number
-    spendProgressPct: number
-    paceIndex: number
+    spendProgressPct: number // đã chi / TB tháng
+    usualProgressPct: number // thường lệ đến hôm nay / TB tháng
     paceStatus: 'safe' | 'watch' | 'overpace'
     headline: string
     copy: string
   }
-  anomalies: {
-    spikes: SpikeAnomalyItem[]
-    microLeaks: MicroLeakItem[]
-    summaryCopy: string
+  rises: CategoryRise[]
+  net: {
+    hasIncome: boolean
+    income: number
+    expense: number
+    netSoFar: number
+    projectedNet: number
+    suggestedSaving: number
+    savingFundId: number | undefined
+    savingFundName: string
+    copy: string
   }
-  temporal: {
+  weekly: {
+    weekdayStats: WeekdayBarStat[]
     avgWeekdaySpend: number
     avgWeekendSpend: number
     weekendMultiplier: number
     peakDayLabel: string
-    weekdayStats: WeekdayBarStat[]
-    paydayDetected: boolean
-    lastPaydayDateDmy: string | null
-    payday5DaySpend: number
-    payday5DaySharePct: number
-    weekendHeadline: string
-    weekendCopy: string
-    paydayCopy: string
-  }
-  opportunityCost: {
-    hasActualIncome: boolean
-    monthlyReferenceIncome: number
-    hourlyWage: number
-    topCatWorkHours: number
-    potentialMonthlySaving: number
-    compound1YearValue: number
-    compound3YearValue: number
-    savingFundId: number | undefined
-    savingFundName: string
-    headline: string
     copy: string
   }
   heroCards: HeroInsightCard[]
 }
 
 const WEEKDAY_META: Array<{ shortLabel: string; fullLabel: string; isWeekend: boolean }> = [
-  { shortLabel: 'T2', fullLabel: 'Thứ Hai', isWeekend: false },
-  { shortLabel: 'T3', fullLabel: 'Thứ Ba', isWeekend: false },
-  { shortLabel: 'T4', fullLabel: 'Thứ Tư', isWeekend: false },
-  { shortLabel: 'T5', fullLabel: 'Thứ Năm', isWeekend: false },
-  { shortLabel: 'T6', fullLabel: 'Thứ Sáu', isWeekend: false },
-  { shortLabel: 'T7', fullLabel: 'Thứ Bảy', isWeekend: true },
+  { shortLabel: 'T2', fullLabel: 'Thứ 2', isWeekend: false },
+  { shortLabel: 'T3', fullLabel: 'Thứ 3', isWeekend: false },
+  { shortLabel: 'T4', fullLabel: 'Thứ 4', isWeekend: false },
+  { shortLabel: 'T5', fullLabel: 'Thứ 5', isWeekend: false },
+  { shortLabel: 'T6', fullLabel: 'Thứ 6', isWeekend: false },
+  { shortLabel: 'T7', fullLabel: 'Thứ 7', isWeekend: true },
   { shortLabel: 'CN', fullLabel: 'Chủ Nhật', isWeekend: true },
 ]
 
-function roundToNearest50k(val: number): number {
-  if (val <= 0) return 500_000
+/** Làm tròn lên bội số 50.000 (tối thiểu 100.000) – chỉ để gợi ý sẵn trong ô hạn mức, người dùng sửa được. */
+function roundUp50k(val: number): number {
   return Math.max(100_000, Math.ceil(val / 50_000) * 50_000)
 }
+
+const sum = (txs: Tx[]) => txs.reduce((s, t) => s + t.amount, 0)
+const dayOf = (iso: string) => Number(iso.slice(8, 10))
 
 export function computeSmartInsights(params: {
   txs: Tx[]
@@ -164,610 +132,260 @@ export function computeSmartInsights(params: {
   today?: Date
 }): SmartInsightsResult {
   const { txs, funds, cats, budgets = [], today = new Date() } = params
-  const reportableTxs = filterReportableTxs(txs, funds, 0)
+  const reportable = filterReportableTxs(txs, funds, 0)
   const cMap = new Map(cats.map(c => [c.id!, c]))
   const bMap = new Map(budgets.map(b => [b.categoryId, b.limit]))
+  const catName = (cid: number) => {
+    const c = cMap.get(cid)
+    return c ? getCategoryFullName(c, cats) : 'Không nhóm'
+  }
 
-  const thisMonthKey = monthKey(today)
-  const lastMonthKey = monthKey(addMonths(today, -1))
-  const prev3MonthKeys = [
-    monthKey(addMonths(today, -1)),
-    monthKey(addMonths(today, -2)),
-    monthKey(addMonths(today, -3)),
-  ]
-
-  const monthStr = monthLabel(today) // MM/yyyy
+  const monthStr = monthLabel(today)
   const todayIso = ymd(today)
-  const todayStr = fmtDmy(todayIso) // dd/MM/yyyy
-
+  const todayStr = fmtDmy(todayIso)
+  const thisKey = monthKey(today)
   const daysInMonth = getDaysInMonth(today)
-  const elapsedDays = Math.max(1, Math.min(daysInMonth, today.getDate()))
-  const remainingDays = Math.max(0, daysInMonth - elapsedDays)
+  const elapsedDays = Math.min(daysInMonth, today.getDate())
+  const remainingDays = daysInMonth - elapsedDays
 
-  const thisMonthTxs = reportableTxs.filter(
-    t => t.date.startsWith(thisMonthKey) && t.date <= todayIso,
-  )
-  const lastMonthTxs = reportableTxs.filter(t => t.date.startsWith(lastMonthKey))
-  const prev3MonthsTxs = reportableTxs.filter(t =>
-    prev3MonthKeys.some(k => t.date.startsWith(k)),
-  )
+  const thisMonth = reportable.filter(t => t.date.startsWith(thisKey) && t.date <= todayIso)
+  const thisExp = thisMonth.filter(t => t.type === 'expense')
+  const thisMonthExpense = sum(thisExp)
+  const thisMonthIncome = sum(thisMonth.filter(t => t.type === 'income'))
 
-  const thisMonthExpense = thisMonthTxs
-    .filter(t => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0)
-  const thisMonthIncome = thisMonthTxs
-    .filter(t => t.type === 'income')
-    .reduce((s, t) => s + t.amount, 0)
-  const lastMonthExpense = lastMonthTxs
-    .filter(t => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0)
-
-  // Đếm số tháng thực sự có dữ liệu trong 3 tháng trước để tính trung bình chuẩn xác
-  const activePrevMonths = prev3MonthKeys.filter(k =>
-    prev3MonthsTxs.some(t => t.type === 'expense' && t.date.startsWith(k)),
-  ).length
-  const prev3TotalExpense = prev3MonthsTxs
-    .filter(t => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0)
-  const avg3MonthsExpense =
-    activePrevMonths > 0 ? Math.round(prev3TotalExpense / activePrevMonths) : 0
-
-  // Thu nhập tham chiếu để tính chi phí cơ hội (giờ làm việc)
-  const activeIncomeMonths = prev3MonthKeys.filter(k =>
-    prev3MonthsTxs.some(t => t.type === 'income' && t.date.startsWith(k)),
-  ).length
-  const prev3TotalIncome = prev3MonthsTxs
-    .filter(t => t.type === 'income')
-    .reduce((s, t) => s + t.amount, 0)
-  const avgHistoricalIncome =
-    activeIncomeMonths > 0 ? Math.round(prev3TotalIncome / activeIncomeMonths) : 0
-  const recordedIncome = Math.max(thisMonthIncome, avgHistoricalIncome)
-  const hasActualIncome = recordedIncome > 0
-  const monthlyReferenceIncome = hasActualIncome ? recordedIncome : 15_000_000
-  // Chuẩn 22 ngày công x 8 giờ = 176 giờ/tháng
-  const hourlyWage = Math.max(25_000, Math.round(monthlyReferenceIncome / 176))
-
-  // Top nhóm chi tiêu tháng này
-  const catSpendThisMonth = new Map<number, number>()
-  thisMonthTxs
-    .filter(t => t.type === 'expense')
-    .forEach(t => {
-      const cid = t.categoryId ?? 0
-      catSpendThisMonth.set(cid, (catSpendThisMonth.get(cid) ?? 0) + t.amount)
+  // Tối đa 3 tháng trước, chỉ tính tháng có chi tiêu
+  const prevMonths = [1, 2, 3]
+    .map(i => {
+      const d = addMonths(today, -i)
+      const key = monthKey(d)
+      const dim = getDaysInMonth(d)
+      return { key, dim, exp: reportable.filter(t => t.type === 'expense' && t.date.startsWith(key)) }
     })
+    .filter(m => m.exp.length > 0)
+  const hasHistory = prevMonths.length > 0
+  const n = Math.max(1, prevMonths.length)
+  const baselineExpense = hasHistory ? Math.round(prevMonths.reduce((s, m) => s + sum(m.exp), 0) / n) : 0
 
+  // Khoản lớn: từ 1 triệu hoặc từ 10% mức chi tháng thường lệ (lấy mức cao hơn)
+  const largeThreshold = Math.max(1_000_000, Math.round(baselineExpense * 0.1))
+  const isLarge = (t: Tx) => t.amount >= largeThreshold
+  const toDay = (m: { dim: number }) => Math.min(elapsedDays, m.dim) // "cùng kỳ" của tháng ngắn hơn
+
+  const usualToDate = hasHistory
+    ? Math.round(prevMonths.reduce((s, m) => s + sum(m.exp.filter(t => dayOf(t.date) <= toDay(m))), 0) / n)
+    : 0
+  const histLargeAvg = prevMonths.reduce((s, m) => s + sum(m.exp.filter(isLarge)), 0) / n
+  const histDays = prevMonths.reduce((s, m) => s + m.dim, 0)
+  const histDailyRate = histDays ? prevMonths.reduce((s, m) => s + sum(m.exp.filter(t => !isLarge(t))), 0) / histDays : 0
+
+  const largeThisMonth = sum(thisExp.filter(isLarge))
+  const curDailyRate = (thisMonthExpense - largeThisMonth) / elapsedDays
+  // Đầu tháng ít dữ liệu → pha nhịp thường lệ; từ ngày 10 dùng hoàn toàn nhịp tháng này
+  const w = hasHistory ? Math.min(1, elapsedDays / 10) : 1
+  const dailyRate = Math.round(curDailyRate * w + histDailyRate * (1 - w))
+  const expectedLargeRemaining = hasHistory ? Math.max(0, Math.round(histLargeAvg - largeThisMonth)) : 0
+  const projectedMonthExpense = Math.round(thisMonthExpense + dailyRate * remainingDays + expectedLargeRemaining)
+  const projectedVsBaselinePct =
+    baselineExpense > 0 ? Math.round(((projectedMonthExpense - baselineExpense) / baselineExpense) * 100) : 0
+  const paceStatus: 'safe' | 'watch' | 'overpace' =
+    projectedVsBaselinePct > 15 ? 'overpace' : projectedVsBaselinePct > 5 ? 'watch' : 'safe'
+  const spendProgressPct = baselineExpense > 0 ? Math.min(150, Math.round((thisMonthExpense / baselineExpense) * 100)) : 0
+  const usualProgressPct =
+    baselineExpense > 0 ? Math.round((usualToDate / baselineExpense) * 100) : Math.round((elapsedDays / daysInMonth) * 100)
+
+  const forecastHeadline = !hasHistory
+    ? 'Chưa có tháng trước để so sánh'
+    : paceStatus === 'overpace'
+      ? `Dự kiến chi cao hơn thường lệ ${projectedVsBaselinePct}%`
+      : paceStatus === 'watch'
+        ? 'Chi tiêu hơi cao hơn thường lệ'
+        : 'Chi tiêu trong mức thường lệ'
+  const largeNote = largeThisMonth > 0 ? ` Trong đó khoản lớn (từ ${money(largeThreshold)}): ${money(largeThisMonth)}.` : ''
+  const forecastCopy = hasHistory
+    ? `Đến ${todayStr} đã chi ${money(thisMonthExpense)} (cùng kỳ các tháng trước: ${money(usualToDate)}).${largeNote} Dự kiến cả tháng ~${money(projectedMonthExpense)}, trung bình 3 tháng trước ${money(baselineExpense)}.`
+    : `Đến ${todayStr} đã chi ${money(thisMonthExpense)}.${largeNote} Nếu giữ nhịp chi hằng ngày hiện tại, cả tháng khoảng ~${money(projectedMonthExpense)} (ước tính thô vì chưa có tháng trước).`
+
+  // Nhóm chi nhiều nhất tháng này
+  const catSpend = new Map<number, number>()
+  for (const t of thisExp) catSpend.set(t.categoryId ?? 0, (catSpend.get(t.categoryId ?? 0) ?? 0) + t.amount)
   let topCid = 0
-  let topCamt = 0
-  catSpendThisMonth.forEach((amt, cid) => {
-    if (amt > topCamt) {
-      topCamt = amt
-      topCid = cid
-    }
+  let topAmt = 0
+  catSpend.forEach((amt, cid) => {
+    if (amt > topAmt) [topAmt, topCid] = [amt, cid]
   })
+  const histCatMonthAvg = (cid: number) =>
+    prevMonths.reduce((s, m) => s + sum(m.exp.filter(t => (t.categoryId ?? 0) === cid)), 0) / n
+  const suggestLimit = (cid: number, fallback: number) => bMap.get(cid) ?? roundUp50k(histCatMonthAvg(cid) || fallback)
   const topCatObj = cMap.get(topCid)
-  const topCatName = topCatObj
-    ? getCategoryFullName(topCatObj, cats)
-    : topCamt > 0
-      ? 'Chi tiêu khác'
-      : 'Chưa phát sinh chi tiêu'
-  const topCatLimit = topCid ? (bMap.get(topCid) ?? null) : null
-  const topCatSuggestedLimit = roundToNearest50k(
-    topCatLimit ? topCatLimit * 1.1 : Math.max(topCamt * 1.5, 1_000_000),
-  )
-
   const topCat = {
     id: topCid,
-    name: topCatName,
+    name: topCatObj ? catName(topCid) : topAmt > 0 ? 'Không nhóm' : 'Chưa phát sinh chi tiêu',
     icon: topCatObj?.icon ?? '📊',
     color: topCatObj?.color ?? '#28c76f',
-    amount: topCamt,
-    pctOfMonth:
-      thisMonthExpense > 0 ? Math.round((topCamt / thisMonthExpense) * 100) : 0,
-    workHours: +(topCamt / hourlyWage).toFixed(1),
-    currentLimit: topCatLimit,
-    suggestedLimit: topCatSuggestedLimit,
+    amount: topAmt,
+    pctOfMonth: thisMonthExpense > 0 ? Math.round((topAmt / thisMonthExpense) * 100) : 0,
+    currentLimit: topCid ? (bMap.get(topCid) ?? null) : null,
+    suggestedLimit: suggestLimit(topCid, topAmt),
   }
 
-  // ============================================================================
-  // TRỤ CỘT 3 (Tính trước để cung cấp trọng số Ngày thường vs Cuối tuần cho Trụ cột 1)
-  // ============================================================================
-  // Tập dữ liệu phân tích hành vi: gộp tháng này + 3 tháng trước (nếu có)
-  const behaviorExpenseTxs = [
-    ...prev3MonthsTxs.filter(t => t.type === 'expense'),
-    ...thisMonthTxs.filter(t => t.type === 'expense'),
-  ]
-
-  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0]
-  const weekdayCounts = [0, 0, 0, 0, 0, 0, 0]
-  const distinctDatesByDow: Array<Set<string>> = Array.from(
-    { length: 7 },
-    () => new Set<string>(),
-  )
-
-  behaviorExpenseTxs.forEach(t => {
-    const d = parseISO(t.date)
-    const dowMon0 = (d.getDay() + 6) % 7 // 0 = Thứ 2 ... 6 = Chủ Nhật
-    weekdayTotals[dowMon0] += t.amount
-    weekdayCounts[dowMon0] += 1
-    distinctDatesByDow[dowMon0].add(t.date)
-  })
-
-  const totalObservedSpanDays = Math.max(
-    elapsedDays + activePrevMonths * 30,
-    7,
-  )
-  const approxWeeks = Math.max(1, totalObservedSpanDays / 7)
-
-  const weekdayStats: WeekdayBarStat[] = WEEKDAY_META.map((meta, idx) => {
-    const totalAmount = weekdayTotals[idx]
-    const avgAmount = Math.round(totalAmount / approxWeeks)
-    return {
-      dayIndex: idx,
-      shortLabel: meta.shortLabel,
-      fullLabel: meta.fullLabel,
-      totalAmount,
-      avgAmount,
-      txCount: weekdayCounts[idx],
-      isWeekend: meta.isWeekend,
-    }
-  })
-
-  const weekdaySum = weekdayTotals.slice(0, 5).reduce((s, x) => s + x, 0)
-  const weekendSum = weekdayTotals.slice(5, 7).reduce((s, x) => s + x, 0)
-  const avgWeekdaySpend = Math.round(weekdaySum / (approxWeeks * 5))
-  const avgWeekendSpend = Math.round(weekendSum / (approxWeeks * 2))
-  const weekendMultiplier =
-    avgWeekdaySpend > 0
-      ? +(avgWeekendSpend / avgWeekdaySpend).toFixed(1)
-      : avgWeekendSpend > 0
-        ? 2.0
-        : 1.0
-
-  let peakDayIdx = 0
-  weekdayStats.forEach((st, idx) => {
-    if (st.avgAmount > weekdayStats[peakDayIdx].avgAmount) peakDayIdx = idx
-  })
-  const peakDayLabel =
-    weekdayStats[peakDayIdx].totalAmount > 0
-      ? weekdayStats[peakDayIdx].fullLabel
-      : 'Chủ Nhật'
-
-  // Phát hiện hiệu ứng sau ngày nhận lương (Payday Effect)
-  const allIncomes = [
-    ...prev3MonthsTxs.filter(t => t.type === 'income' && t.amount >= 1_000_000),
-    ...thisMonthTxs.filter(t => t.type === 'income' && t.amount >= 1_000_000),
-  ].sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount)
-
-  let paydayDetected = false
-  let lastPaydayDateDmy: string | null = null
-  let payday5DaySpend = 0
-  let payday5DaySharePct = 0
-
-  if (allIncomes.length > 0) {
-    const latestPayTx = allIncomes[0]
-    lastPaydayDateDmy = fmtDmy(latestPayTx.date)
-    const payDateObj = parseISO(latestPayTx.date)
-    const windowEndIso = ymd(addDays(payDateObj, 5))
-    const payMonthKey = latestPayTx.date.slice(0, 7)
-
-    const monthExpTotal = reportableTxs
-      .filter(t => t.type === 'expense' && t.date.startsWith(payMonthKey))
-      .reduce((s, t) => s + t.amount, 0)
-
-    payday5DaySpend = reportableTxs
-      .filter(
-        t =>
-          t.type === 'expense' &&
-          t.date >= latestPayTx.date &&
-          t.date <= windowEndIso,
-      )
-      .reduce((s, t) => s + t.amount, 0)
-
-    if (monthExpTotal > 0 && payday5DaySpend > 0) {
-      paydayDetected = true
-      payday5DaySharePct = Math.min(
-        100,
-        Math.round((payday5DaySpend / monthExpTotal) * 100),
-      )
-    }
-  }
-
-  const weekendHeadline =
-    weekendMultiplier >= 1.35
-      ? `Nhịp chi cuối tuần cao gấp ${weekendMultiplier}x ngày thường`
-      : `Nhịp chi tiêu ổn định giữa các ngày trong tuần`
-  const weekendCopy =
-    weekendMultiplier >= 1.35
-      ? `Thống kê cho thấy bạn chi trung bình ${money(avgWeekendSpend)}/ngày vào Thứ 7 & CN (so với ${money(avgWeekdaySpend)}/ngày đi làm). Ngày chi mạnh tay nhất thường là ${peakDayLabel}.`
-      : `Chi tiêu ngày cuối tuần (${money(avgWeekendSpend)}/ngày) và ngày thường (${money(avgWeekdaySpend)}/ngày) đang rất cân bằng. Ngày phát sinh cao nhất là ${peakDayLabel}.`
-
-  const paydayCopy = paydayDetected
-    ? `Trong 5 ngày ngay sau đợt nhận thu nhập (${lastPaydayDateDmy}), bạn đã chi ${money(payday5DaySpend)} — chiếm ${payday5DaySharePct}% tổng chi của tháng đó.`
-    : `Chưa phát sinh hội chứng vung tay sau ngày nhận lương. Mẹo nhỏ: Hãy trích trước 20% thu nhập sang Ví Tiết Kiệm ngay ngày lương về.`
-
-  // ============================================================================
-  // TRỤ CỘT 1: DỰ BÁO DÒNG TIỀN & TỐC ĐỘ ĐỐT TIỀN (BURN RATE & PROJECTION)
-  // ============================================================================
-  let remainingWeekdays = 0
-  let remainingWeekendDays = 0
-  for (let d = elapsedDays + 1; d <= daysInMonth; d++) {
-    const dt = new Date(today.getFullYear(), today.getMonth(), d)
-    const dow = dt.getDay()
-    if (dow === 0 || dow === 6) remainingWeekendDays++
-    else remainingWeekdays++
-  }
-
-  const rawDailyAvgThisMonth = Math.round(thisMonthExpense / elapsedDays)
-  const totalBudgetLimit = budgets.reduce((s, b) => s + b.limit, 0)
-  const baselineExpense =
-    avg3MonthsExpense > 0
-      ? avg3MonthsExpense
-      : lastMonthExpense > 0
-        ? lastMonthExpense
-        : totalBudgetLimit > 0
-          ? totalBudgetLimit
-          : thisMonthExpense * (daysInMonth / elapsedDays)
-
-  // Để tránh sai số phóng đại vào những ngày đầu tháng (elapsedDays <= 4),
-  // kết hợp nhịp lịch sử Ngày thường / Cuối tuần với tốc độ thực tế của tháng này
-  const curMonthWeight = Math.min(1, elapsedDays / 10)
-  const histDailyAvg = baselineExpense > 0 ? baselineExpense / daysInMonth : rawDailyAvgThisMonth
-  const blendedDailyRate = Math.round(
-    rawDailyAvgThisMonth * curMonthWeight + histDailyAvg * (1 - curMonthWeight),
-  )
-
-  const rhythmProjectedRemaining =
-    avgWeekdaySpend + avgWeekendSpend > 0 && elapsedDays <= 7
-      ? remainingWeekdays *
-          Math.round(avgWeekdaySpend * (1 - curMonthWeight) + rawDailyAvgThisMonth * curMonthWeight) +
-        remainingWeekendDays *
-          Math.round(avgWeekendSpend * (1 - curMonthWeight) + rawDailyAvgThisMonth * curMonthWeight)
-      : remainingDays * blendedDailyRate
-
-  const projectedMonthExpense = Math.round(thisMonthExpense + rhythmProjectedRemaining)
-  const weightedDailyBurn = Math.round(projectedMonthExpense / daysInMonth)
-
-  const projectedVsBaselinePct =
-    baselineExpense > 0
-      ? Math.round(((projectedMonthExpense - baselineExpense) / baselineExpense) * 100)
-      : 0
-
-  const monthSoFarDiffPct =
-    lastMonthExpense > 0
-      ? Math.round(((thisMonthExpense - lastMonthExpense) / lastMonthExpense) * 100)
-      : 0
-
-  const timeProgressPct = Math.round((elapsedDays / daysInMonth) * 100)
-  const referenceCap =
-    totalBudgetLimit > 0
-      ? totalBudgetLimit
-      : baselineExpense > 0
-        ? baselineExpense
-        : Math.max(projectedMonthExpense, 1)
-  const spendProgressPct = Math.min(
-    150,
-    Math.round((thisMonthExpense / Math.max(referenceCap, 1)) * 100),
-  )
-  const paceIndex = spendProgressPct - timeProgressPct
-
-  const paceStatus: 'safe' | 'watch' | 'overpace' =
-    paceIndex > 15 || projectedVsBaselinePct > 15
-      ? 'overpace'
-      : paceIndex > 5 || projectedVsBaselinePct > 5
-        ? 'watch'
-        : 'safe'
-
-  const burnHeadline =
-    paceStatus === 'overpace'
-      ? `Nhịp chi nhanh hơn thời gian (+${Math.max(paceIndex, projectedVsBaselinePct)}%)`
-      : paceStatus === 'watch'
-        ? `Nhịp chi tiêu đang sát ngưỡng kế hoạch`
-        : `Nhịp chi tiêu điều độ & trong tầm kiểm soát`
-
-  const burnCopy =
-    elapsedDays <= 3 && baselineExpense > 0
-      ? `Tháng ${monthStr} mới qua ${elapsedDays} ngày (đã chi ${money(thisMonthExpense)}). Kết hợp nhịp sinh hoạt 3 tháng trước, dự kiến chốt tháng quanh mức ~${money(projectedMonthExpense)}.`
-      : paceStatus === 'overpace'
-        ? `Hôm nay là ${todayStr} (${timeProgressPct}% thời gian tháng) nhưng đã dùng ${spendProgressPct}% định mức. Với đà này, dự kiến cuối tháng chạm ~${money(projectedMonthExpense)}.`
-        : `Hôm nay là ${todayStr} (${timeProgressPct}% chặng đường tháng ${monthStr}). Với nhịp độ hiện tại, dự báo chốt tháng ở mức ~${money(projectedMonthExpense)} (${projectedVsBaselinePct <= 0 ? `tiết kiệm ${Math.abs(projectedVsBaselinePct)}%` : `cao hơn ${projectedVsBaselinePct}%`} so với trung bình).`
-
-  // ============================================================================
-  // TRỤ CỘT 2: PHÁT HIỆN BẤT THƯỜNG (SPIKE) & RÒ RỈ VI MÔ (MICRO-LEAKS)
-  // ============================================================================
-  const prevCatMonthlyAvg = new Map<number, number>()
-  if (activePrevMonths > 0) {
-    prev3MonthsTxs
-      .filter(t => t.type === 'expense')
-      .forEach(t => {
-        const cid = t.categoryId ?? 0
-        prevCatMonthlyAvg.set(
-          cid,
-          (prevCatMonthlyAvg.get(cid) ?? 0) + t.amount / activePrevMonths,
-        )
-      })
-  }
-
-  const spikes: SpikeAnomalyItem[] = []
-  catSpendThisMonth.forEach((curAmt, cid) => {
-    if (curAmt < 200_000) return
-    const histMonthAvg = prevCatMonthlyAvg.get(cid) ?? 0
-    // Quy đổi mức bình thường theo tỷ lệ số ngày đã qua (tối thiểu 30% tháng để tránh nhiễu ngày đầu)
-    const expectedToDate =
-      histMonthAvg > 0
-        ? histMonthAvg * Math.max(0.3, elapsedDays / daysInMonth)
-        : 0
-    if (expectedToDate >= 100_000 && curAmt >= expectedToDate * 1.6) {
-      const c = cMap.get(cid)
-      const cName = c ? getCategoryFullName(c, cats) : 'Không nhóm'
-      const mult = +(curAmt / expectedToDate).toFixed(1)
-      const curLimit = bMap.get(cid) ?? null
-      const suggested = roundToNearest50k(Math.max(curAmt * 1.15, histMonthAvg))
-      spikes.push({
+  // Nhóm chi hằng ngày tăng so với cùng kỳ (không tính khoản lớn; cần ≥ 5 ngày để bớt nhiễu)
+  const rises: CategoryRise[] = []
+  if (hasHistory && elapsedDays >= 5) {
+    const curByCat = new Map<number, number>()
+    for (const t of thisExp) if (!isLarge(t)) curByCat.set(t.categoryId ?? 0, (curByCat.get(t.categoryId ?? 0) ?? 0) + t.amount)
+    curByCat.forEach((cur, cid) => {
+      const usual =
+        prevMonths.reduce(
+          (s, m) => s + sum(m.exp.filter(t => (t.categoryId ?? 0) === cid && !isLarge(t) && dayOf(t.date) <= toDay(m))),
+          0,
+        ) / n
+      if (usual <= 0 || cur < 300_000 || cur < usual * 1.4 || cur - usual < 200_000) return
+      rises.push({
         categoryId: cid,
-        categoryName: cName,
-        categoryIcon: c?.icon ?? '⚡',
-        categoryColor: c?.color ?? '#f25551',
-        currentAmount: curAmt,
-        normalAverage: Math.round(histMonthAvg),
-        multiplier: mult,
-        currentLimit: curLimit,
-        suggestedLimit: suggested,
-        headline: `${cName} tăng gấp ${mult}x cùng kỳ`,
-        detailCopy: `Đã chi ${money(curAmt)} trong ${elapsedDays} ngày đầu tháng ${monthStr} (mức trung bình cả tháng trước đây là ${money(Math.round(histMonthAvg))}).`,
+        categoryName: catName(cid),
+        categoryIcon: cMap.get(cid)?.icon ?? '📈',
+        currentAmount: cur,
+        usualAmount: Math.round(usual),
+        extraAmount: Math.round(cur - usual),
+        risePct: Math.round(((cur - usual) / usual) * 100),
+        suggestedLimit: suggestLimit(cid, cur),
       })
-    }
-  })
-  spikes.sort((a, b) => b.currentAmount - a.currentAmount)
-
-  // Rò rỉ vi mô (Micro-leaks): Nếu đầu tháng (elapsedDays <= 7) thì quét 30 ngày gần nhất để đủ mẫu hành vi
-  const thirtyDaysAgoIso = ymd(addDays(today, -30))
-  const useRolling30ForLeaks = elapsedDays <= 7 && prev3MonthsTxs.length > 0
-  const leakSourceTxs = useRolling30ForLeaks
-    ? reportableTxs.filter(
-        t => t.type === 'expense' && t.date >= thirtyDaysAgoIso && t.date <= todayIso,
-      )
-    : thisMonthTxs.filter(t => t.type === 'expense')
-  const leakScopeLabel = useRolling30ForLeaks ? '30 ngày qua' : `tháng ${monthStr}`
-
-  const smallByCat = new Map<number, Tx[]>()
-  leakSourceTxs
-    .filter(t => t.amount > 0 && t.amount <= 200_000)
-    .forEach(t => {
-      const cid = t.categoryId ?? 0
-      smallByCat.set(cid, [...(smallByCat.get(cid) ?? []), t])
     })
+    rises.sort((a, b) => b.extraAmount - a.extraAmount)
+  }
 
-  const microLeaks: MicroLeakItem[] = []
-  smallByCat.forEach((list, cid) => {
-    const sum = list.reduce((s, t) => s + t.amount, 0)
-    if (list.length >= 2 && sum >= 100_000) {
-      const c = cMap.get(cid)
-      const cName = c ? getCategoryFullName(c, cats) : 'Chi tiêu lặt vặt'
-      const avgTicket = Math.round(sum / list.length)
-      const hrs = +(sum / hourlyWage).toFixed(1)
-      const curLimit = bMap.get(cid) ?? null
-      const suggested = roundToNearest50k(Math.max(sum * 1.2, 500_000))
-      microLeaks.push({
-        categoryId: cid,
-        categoryName: cName,
-        categoryIcon: c?.icon ?? '☕',
-        categoryColor: c?.color ?? '#f59e0b',
-        txCount: list.length,
-        totalAmount: sum,
-        avgTicket,
-        workHoursEquivalent: hrs,
-        currentLimit: curLimit,
-        suggestedLimit: suggested,
-        scopeLabel: leakScopeLabel,
-        headline: `${list.length} khoản nhỏ tại ${cName} (${money(sum)})`,
-        detailCopy: `Các khoản chi lẻ trung bình ${money(avgTicket)}/lần trong ${leakScopeLabel} đã âm thầm cộng dồn thành ${money(sum)} (~${hrs} giờ làm việc).`,
-      })
-    }
-  })
-  microLeaks.sort((a, b) => b.totalAmount - a.totalAmount)
-
-  const anomalySummaryCopy =
-    spikes.length > 0
-      ? `Phát hiện ${spikes.length} nhóm có tốc độ chi tăng đột biến so với nhịp thông thường.`
-      : microLeaks.length > 0
-        ? `Không có khoản chi đột biến lớn, nhưng có ${microLeaks.length} nhóm chi nhỏ lẻ lặp lại nhiều lần cần lưu ý.`
-        : `Chưa phát hiện khoản chi đột biến hay rò rỉ bất thường nào trong kỳ này.`
-
-  // ============================================================================
-  // TRỤ CỘT 4: QUY ĐỔI CHI PHÍ CƠ HỘI & HÀNH ĐỘNG CAN THIỆP 1-CHẠM
-  // ============================================================================
+  // Thu – chi tháng này (chỉ khi có ghi thu nhập)
   const savingFund =
     funds.find(f => !f.archived && (f.excludeFromTotal || /tiết kiệm|saving|đầu tư|invest|tích lũy/i.test(f.name))) ??
     funds.find(f => !f.archived && f.kind !== 'credit')
+  const netSoFar = thisMonthIncome - thisMonthExpense
+  const projectedNet = thisMonthIncome - projectedMonthExpense
+  const suggestedSaving = thisMonthIncome > 0 && projectedNet >= 500_000 ? Math.floor(projectedNet / 100_000) * 100_000 : 0
+  const netCopy =
+    thisMonthIncome > 0
+      ? `Tháng ${monthStr}: thu ${money(thisMonthIncome)}, đã chi ${money(thisMonthExpense)}, hiện còn ${money(netSoFar)}. Nếu chi tiếp như dự báo, cuối tháng ${projectedNet >= 0 ? `còn khoảng ${money(projectedNet)}` : `thiếu khoảng ${money(-projectedNet)}`}.`
+      : `Chưa ghi thu nhập tháng ${monthStr}. Ghi khoản lương/thu nhập để xem tháng này còn dư bao nhiêu.`
 
-  const rawSavingRoom =
-    baselineExpense > projectedMonthExpense
-      ? baselineExpense - projectedMonthExpense
-      : topCamt > 0
-        ? Math.round(topCamt * 0.2)
-        : 500_000
-  const potentialMonthlySaving = roundToNearest50k(
-    Math.min(Math.max(rawSavingRoom, 200_000), 10_000_000),
-  )
-  // Lãi kép 6.5%/năm khi tích lũy đều đặn hàng tháng: FV = PMT * [((1 + r)^n - 1) / r]
-  const compound1YearValue = Math.round(potentialMonthlySaving * 12.43)
-  const compound3YearValue = Math.round(potentialMonthlySaving * 39.72)
+  // Nhịp chi trong tuần: chỉ chi hằng ngày, chia đúng số lần mỗi thứ xuất hiện trong khoảng quan sát
+  const startIso = hasHistory ? `${prevMonths[prevMonths.length - 1].key}-01` : `${thisKey}-01`
+  const dowCount = [0, 0, 0, 0, 0, 0, 0]
+  for (let d = parseISO(startIso); ymd(d) <= todayIso; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1))
+    dowCount[(d.getDay() + 6) % 7]++
+  const dowTotal = [0, 0, 0, 0, 0, 0, 0]
+  for (const t of reportable)
+    if (t.type === 'expense' && !isLarge(t) && t.date >= startIso && t.date <= todayIso) dowTotal[(parseISO(t.date).getDay() + 6) % 7] += t.amount
+  const weekdayStats: WeekdayBarStat[] = WEEKDAY_META.map((m, i) => ({
+    dayIndex: i,
+    ...m,
+    avgAmount: dowCount[i] ? Math.round(dowTotal[i] / dowCount[i]) : 0,
+  }))
+  const avgOf = (idx: number[]) => {
+    const c = idx.reduce((s, i) => s + dowCount[i], 0)
+    return c ? Math.round(idx.reduce((s, i) => s + dowTotal[i], 0) / c) : 0
+  }
+  const avgWeekdaySpend = avgOf([0, 1, 2, 3, 4])
+  const avgWeekendSpend = avgOf([5, 6])
+  const weekendMultiplier = avgWeekdaySpend > 0 ? +(avgWeekendSpend / avgWeekdaySpend).toFixed(1) : 1
+  const peak = weekdayStats.reduce((a, b) => (b.avgAmount > a.avgAmount ? b : a))
+  const peakDayLabel = peak.avgAmount > 0 ? peak.fullLabel : '—'
+  const weeklyCopy =
+    weekendMultiplier >= 1.3
+      ? `Chi hằng ngày (không tính khoản lớn) vào T7–CN trung bình ${money(avgWeekendSpend)}/ngày, gấp ${weekendMultiplier} lần ngày thường (${money(avgWeekdaySpend)}/ngày). Ngày chi nhiều nhất: ${peakDayLabel}.`
+      : `Chi hằng ngày (không tính khoản lớn) khá đều: ngày thường ${money(avgWeekdaySpend)}/ngày, cuối tuần ${money(avgWeekendSpend)}/ngày. Ngày chi nhiều nhất: ${peakDayLabel}.`
 
-  const oppHeadline =
-    baselineExpense > projectedMonthExpense && baselineExpense > 0
-      ? `Dư địa tiết kiệm dự kiến: +${money(potentialMonthlySaving)}/tháng`
-      : `Tối ưu 20% nhóm ${topCat.name} = +${money(potentialMonthlySaving)}/tháng`
-
-  const oppCopy =
-    topCamt > 0
-      ? `Khoản chi cho "${topCat.name}" (${money(topCamt)}) tương đương ~${topCat.workHours} giờ làm việc. Nếu trích đều đặn ${money(potentialMonthlySaving)}/tháng vào quỹ tích lũy (6.5%/năm), bạn sẽ có ${money(compound1YearValue)} sau 1 năm và ${money(compound3YearValue)} sau 3 năm.`
-      : `Nếu duy trì thói quen cất trước ${money(potentialMonthlySaving)}/tháng vào quỹ tích lũy (lãi kép 6.5%/năm), bạn sẽ tạo được quỹ dự phòng ${money(compound1YearValue)} sau 1 năm.`
-
-  // ============================================================================
-  // TỔNG HỢP DANH SÁCH HERO INSIGHT CARDS (3 - 4 KỊCH BẢN THỰC TẾ)
-  // ============================================================================
-  const heroCards: HeroInsightCard[] = []
-
-  // Card 1: Dự báo dòng tiền & Tốc độ chi (Burn Rate)
-  heroCards.push({
-    id: 'burn-rate',
-    pillar: 1,
-    badge: 'Dự báo dòng tiền',
-    icon: paceStatus === 'overpace' ? '🔥' : paceStatus === 'watch' ? '⏳' : '🧭',
-    tone: paceStatus === 'overpace' ? 'danger' : paceStatus === 'watch' ? 'warn' : 'good',
-    title: burnHeadline,
-    body: burnCopy,
-    metricLabel: `Dự báo chốt tháng ${monthStr}`,
-    metricValue: `~${money(projectedMonthExpense)}`,
-    cta:
-      topCid > 0
-        ? {
-            label: topCatLimit
-              ? `🎯 Điều chỉnh trần ${topCat.name}`
-              : `🎯 Đặt hạn mức cho ${topCat.name}`,
-            actionType: 'set_budget',
-            categoryId: topCid,
-            suggestedLimit: topCat.suggestedLimit,
-          }
-        : {
-            label: '📊 Xem chi tiết khoản chi',
-            actionType: 'open_expense_report',
-          },
-  })
-
-  // Card 2: Rò rỉ vi mô hoặc Khoản chi đột biến
-  if (spikes.length > 0) {
-    const sp = spikes[0]
+  // Thẻ nhận định ở Tổng quan
+  const heroCards: HeroInsightCard[] = [
+    {
+      id: 'forecast',
+      badge: 'Dự báo cuối tháng',
+      icon: paceStatus === 'overpace' ? '🔥' : paceStatus === 'watch' ? '⏳' : '🧭',
+      tone: !hasHistory ? 'info' : paceStatus === 'overpace' ? 'danger' : paceStatus === 'watch' ? 'warn' : 'good',
+      title: forecastHeadline,
+      body: forecastCopy,
+      metricLabel: 'Dự kiến cả tháng',
+      metricValue: `~${money(projectedMonthExpense)}`,
+      cta:
+        topCid > 0
+          ? {
+              label: topCat.currentLimit ? `🎯 Sửa hạn mức ${topCat.name}` : `🎯 Đặt hạn mức cho ${topCat.name}`,
+              actionType: 'set_budget',
+              categoryId: topCid,
+              suggestedLimit: topCat.suggestedLimit,
+            }
+          : { label: '📊 Xem báo cáo chi', actionType: 'open_expense_report' },
+    },
+  ]
+  if (rises.length > 0) {
+    const r = rises[0]
     heroCards.push({
-      id: `spike-${sp.categoryId}`,
-      pillar: 2,
-      badge: 'Phát hiện đột biến',
-      icon: sp.categoryIcon,
-      tone: 'danger',
-      title: `⚡ ${sp.headline}`,
-      body: sp.detailCopy,
-      metricLabel: 'Mức vượt trung bình',
-      metricValue: `${sp.multiplier}x`,
-      cta: {
-        label: `🔒 Khóa trần ${sp.categoryName} (${money(sp.suggestedLimit)})`,
-        actionType: 'set_budget',
-        categoryId: sp.categoryId,
-        suggestedLimit: sp.suggestedLimit,
-      },
-    })
-  } else if (microLeaks.length > 0) {
-    const ml = microLeaks[0]
-    heroCards.push({
-      id: `leak-${ml.categoryId}`,
-      pillar: 2,
-      badge: 'Rò rỉ vi mô',
-      icon: ml.categoryIcon,
+      id: `rise-${r.categoryId}`,
+      badge: 'Tăng so với cùng kỳ',
+      icon: r.categoryIcon,
       tone: 'warn',
-      title: `☕ ${ml.headline}`,
-      body: ml.detailCopy,
-      metricLabel: 'Quy đổi công sức',
-      metricValue: `~${ml.workHoursEquivalent} giờ làm`,
-      cta: {
-        label: `🔒 Đặt trần ${ml.categoryName} (${money(ml.suggestedLimit)})`,
-        actionType: 'set_budget',
-        categoryId: ml.categoryId,
-        suggestedLimit: ml.suggestedLimit,
-      },
+      title: `${r.categoryName} cao hơn thường lệ ${money(r.extraAmount)}`,
+      body: `Đến ${todayStr} đã chi ${money(r.currentAmount)} cho ${r.categoryName} (không tính khoản lớn); cùng kỳ các tháng trước trung bình ${money(r.usualAmount)}.`,
+      metricLabel: 'So với cùng kỳ',
+      metricValue: `+${r.risePct}%`,
+      cta: { label: `🎯 Hạn mức ${r.categoryName}`, actionType: 'set_budget', categoryId: r.categoryId, suggestedLimit: r.suggestedLimit },
     })
   }
-
-  // Card 3: Nhịp sinh học tài chính (Cuối tuần / Payday)
-  heroCards.push({
-    id: 'temporal-rhythm',
-    pillar: 3,
-    badge: 'Nhịp sinh học chi tiêu',
-    icon: weekendMultiplier >= 1.35 ? '🌴' : '📅',
-    tone: weekendMultiplier >= 1.35 ? 'info' : 'good',
-    title: weekendHeadline,
-    body: paydayDetected && payday5DaySharePct >= 35 ? paydayCopy : weekendCopy,
-    metricLabel: 'Ngày chi cao điểm',
-    metricValue: peakDayLabel,
-    cta: {
-      label: '📈 Xem biểu đồ Thứ 2 – CN',
-      actionType: 'open_detail',
-    },
-  })
-
-  // Card 4: Chi phí cơ hội & Tích lũy 1-chạm
-  heroCards.push({
-    id: 'opportunity-cost',
-    pillar: 4,
-    badge: 'Chi phí cơ hội & Lãi kép',
-    icon: '🌱',
-    tone: 'good',
-    title: oppHeadline,
-    body: oppCopy,
-    metricLabel: 'Tích lũy sau 1 năm (6.5%)',
-    metricValue: money(compound1YearValue),
-    cta: {
-      label: `💸 Cất ngay ${money(potentialMonthlySaving)} sang Tích lũy`,
-      actionType: 'transfer_saving',
-      suggestedTransferAmount: potentialMonthlySaving,
-    },
-  })
+  if (thisMonthIncome > 0) {
+    heroCards.push({
+      id: 'net',
+      badge: 'Thu – chi tháng này',
+      icon: projectedNet >= 0 ? '🌱' : '⚠️',
+      tone: projectedNet >= 0 ? 'good' : 'danger',
+      title: projectedNet >= 0 ? `Dự kiến cuối tháng còn dư ~${money(projectedNet)}` : `Dự kiến chi vượt thu ~${money(-projectedNet)}`,
+      body: netCopy,
+      metricLabel: 'Hiện còn',
+      metricValue: money(netSoFar),
+      cta:
+        suggestedSaving > 0
+          ? {
+              label: `💸 Chuyển ${money(suggestedSaving)} vào ${savingFund?.name ?? 'tiết kiệm'}`,
+              actionType: 'transfer_saving',
+              suggestedTransferAmount: suggestedSaving,
+            }
+          : { label: '📊 Xem báo cáo chi', actionType: 'open_expense_report' },
+    })
+  }
 
   return {
     monthStr,
     todayStr,
+    hasHistory,
     topCat,
-    burnRate: {
+    forecast: {
       thisMonthExpense,
-      thisMonthIncome,
-      lastMonthExpense,
-      avg3MonthsExpense,
-      baselineExpense: Math.round(baselineExpense),
+      largeThreshold,
+      largeThisMonth,
+      baselineExpense,
+      usualToDate,
       elapsedDays,
       daysInMonth,
-      remainingDays,
-      rawDailyAvgThisMonth,
-      weightedDailyBurn,
+      dailyRate,
+      expectedLargeRemaining,
       projectedMonthExpense,
       projectedVsBaselinePct,
-      monthSoFarDiffPct,
-      timeProgressPct,
       spendProgressPct,
-      paceIndex,
+      usualProgressPct,
       paceStatus,
-      headline: burnHeadline,
-      copy: burnCopy,
+      headline: forecastHeadline,
+      copy: forecastCopy,
     },
-    anomalies: {
-      spikes,
-      microLeaks,
-      summaryCopy: anomalySummaryCopy,
-    },
-    temporal: {
-      avgWeekdaySpend,
-      avgWeekendSpend,
-      weekendMultiplier,
-      peakDayLabel,
-      weekdayStats,
-      paydayDetected,
-      lastPaydayDateDmy,
-      payday5DaySpend,
-      payday5DaySharePct,
-      weekendHeadline,
-      weekendCopy,
-      paydayCopy,
-    },
-    opportunityCost: {
-      hasActualIncome,
-      monthlyReferenceIncome,
-      hourlyWage,
-      topCatWorkHours: topCat.workHours,
-      potentialMonthlySaving,
-      compound1YearValue,
-      compound3YearValue,
+    rises,
+    net: {
+      hasIncome: thisMonthIncome > 0,
+      income: thisMonthIncome,
+      expense: thisMonthExpense,
+      netSoFar,
+      projectedNet,
+      suggestedSaving,
       savingFundId: savingFund?.id,
       savingFundName: savingFund?.name ?? 'Ví Tiết Kiệm',
-      headline: oppHeadline,
-      copy: oppCopy,
+      copy: netCopy,
     },
+    weekly: { weekdayStats, avgWeekdaySpend, avgWeekendSpend, weekendMultiplier, peakDayLabel, copy: weeklyCopy },
     heroCards,
   }
 }

@@ -185,16 +185,16 @@ export default function Overview() {
   function handleQuickTransferSaving(amount: number) {
     const fromId = cashFunds[0]?.id ?? funds[0]?.id
     const toId =
-      smartInsights.opportunityCost.savingFundId &&
-      smartInsights.opportunityCost.savingFundId !== fromId
-        ? smartInsights.opportunityCost.savingFundId
+      smartInsights.net.savingFundId &&
+      smartInsights.net.savingFundId !== fromId
+        ? smartInsights.net.savingFundId
         : funds.find(f => !f.archived && f.id !== fromId)?.id
     setPayDraft({
       type: 'transfer',
       amount,
       fundId: fromId,
       toFundId: toId ?? null,
-      note: `Tích lũy thông minh tháng ${smartInsights.monthStr}`,
+      note: `Chuyển tiết kiệm tháng ${smartInsights.monthStr}`,
     })
   }
 
@@ -744,13 +744,13 @@ export default function Overview() {
               </b>
               {smartInsights.topCat.amount > 0 && (
                 <span className="pill-tag" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-                  ~{smartInsights.topCat.workHours}h làm
+                  {smartInsights.topCat.pctOfMonth}% tổng chi
                 </span>
               )}
             </div>
             <div style={{ marginTop: 4 }}>
               <span className="mut" style={{ fontSize: 13 }}>
-                Tổng đã chi{' '}
+                Nhóm chi nhiều nhất{' '}
               </span>
               <b className="exp" style={{ fontSize: 20 }}>
                 {money(smartInsights.topCat.amount)}
@@ -759,9 +759,8 @@ export default function Overview() {
             <div className="mut" style={{ fontSize: 13, marginTop: 4 }}>
               Dự báo chốt tháng {smartInsights.monthStr}:{' '}
               <b style={{ color: 'var(--fg)' }}>
-                ~{money(smartInsights.burnRate.projectedMonthExpense)}
-              </b>{' '}
-              ({money(smartInsights.burnRate.weightedDailyBurn)}/ngày)
+                ~{money(smartInsights.forecast.projectedMonthExpense)}
+              </b>
             </div>
           </div>
 
@@ -774,17 +773,19 @@ export default function Overview() {
               className="ring-badge"
               style={{
                 borderColor:
-                  smartInsights.burnRate.projectedVsBaselinePct > 0
+                  smartInsights.forecast.projectedVsBaselinePct > 0
                     ? 'var(--exp)'
                     : 'var(--inc)',
               }}
             >
-              {Math.abs(smartInsights.burnRate.projectedVsBaselinePct)}%
+              {Math.abs(smartInsights.forecast.projectedVsBaselinePct)}%
             </div>
             <small className="mut" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
-              {smartInsights.burnRate.projectedVsBaselinePct > 0
-                ? 'Cao hơn TB tháng'
-                : 'Thấp hơn TB tháng'}
+              {!smartInsights.hasHistory
+                ? 'Chưa có tháng trước'
+                : smartInsights.forecast.projectedVsBaselinePct > 0
+                  ? 'Cao hơn TB tháng'
+                  : 'Thấp hơn TB tháng'}
             </small>
           </div>
         </div>
@@ -801,23 +802,23 @@ export default function Overview() {
             className="mut"
           >
             <span>
-              Tốc độ chi:{' '}
+              Đã chi:{' '}
               <b
                 style={{
                   color:
-                    smartInsights.burnRate.paceStatus === 'overpace'
+                    smartInsights.forecast.paceStatus === 'overpace'
                       ? 'var(--exp)'
-                      : smartInsights.burnRate.paceStatus === 'watch'
+                      : smartInsights.forecast.paceStatus === 'watch'
                         ? 'var(--warn)'
                         : 'var(--inc)',
                 }}
               >
-                {smartInsights.burnRate.spendProgressPct}%
-              </b>
+                {smartInsights.forecast.spendProgressPct}%
+              </b>{' '}
+              mức TB tháng
             </span>
             <span>
-              Thời gian tháng ({smartInsights.todayStr}):{' '}
-              <b>{smartInsights.burnRate.timeProgressPct}%</b>
+              Cùng kỳ thường lệ: <b>{smartInsights.forecast.usualProgressPct}%</b>
             </span>
           </div>
           <div className="sparkbar-track">
@@ -825,23 +826,23 @@ export default function Overview() {
               className="sparkbar-fill"
               style={{
                 width: `${
-                  smartInsights.burnRate.spendProgressPct > 0
-                    ? Math.min(100, Math.max(4, smartInsights.burnRate.spendProgressPct))
+                  smartInsights.forecast.spendProgressPct > 0
+                    ? Math.min(100, Math.max(4, smartInsights.forecast.spendProgressPct))
                     : 0
                 }%`,
                 background:
-                  smartInsights.burnRate.paceStatus === 'overpace'
+                  smartInsights.forecast.paceStatus === 'overpace'
                     ? 'var(--exp)'
-                    : smartInsights.burnRate.paceStatus === 'watch'
+                    : smartInsights.forecast.paceStatus === 'watch'
                       ? 'var(--warn)'
                       : 'var(--inc)',
               }}
             />
             <div
-              title={`Tiến độ thời gian tháng: ${smartInsights.burnRate.timeProgressPct}%`}
+              title={`Thường lệ đến hôm nay: ${smartInsights.forecast.usualProgressPct}%`}
               style={{
                 position: 'absolute',
-                left: `${Math.min(98, Math.max(2, smartInsights.burnRate.timeProgressPct))}%`,
+                left: `${Math.min(98, Math.max(2, smartInsights.forecast.usualProgressPct))}%`,
                 top: -3,
                 bottom: -3,
                 width: 3,
