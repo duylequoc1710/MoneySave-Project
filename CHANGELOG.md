@@ -4,6 +4,19 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.9.0] – 2026-11-16
+### 💾 Sao lưu / Khôi phục tối ưu cho điện thoại
+- **1 file sao lưu duy nhất `MoneySave-SaoLuu.json`** (`backupFile.ts`): iPhone/Android mở bảng chia sẻ hệ điều hành → "Lưu vào Tệp" (iCloud/Trên iPhone), Google Drive…; lưu cùng thư mục và chọn "Thay thế" để bản mới ghi đè bản cũ. Máy tính Chrome/Edge: lần đầu chọn nơi lưu, các lần sau **tự ghi đè** vào đúng file đó (nút "Đổi nơi lưu").
+- **Xem trước trước khi khôi phục** (`describeBackup`, `components/backupActions.ts`): ngày sao lưu, số giao dịch & khoảng ngày, số ví/nhóm/ngân sách/định kỳ/kế hoạch, so với dữ liệu hiện tại; vẫn tự lưu bản sao an toàn trước khi ghi đè.
+- **Gộp bản sao an toàn tự động**: bản "trước đồng bộ Cloud ghi đè" và bản "hằng ngày" chỉ giữ 1 bản/ngày (ghi đè trong ngày) → hết cảnh sinh hàng loạt bản rời rạc; bản trước Khôi phục/Xoá sạch vẫn luôn tạo mới; bản cũ không bị xoá khi nâng cấp.
+### ⚡ Hiệu năng & an toàn dữ liệu
+- JSON sao lưu/đồng bộ/bản sao dạng gọn (nhỏ hơn ~30–40%).
+- Gọi `navigator.storage.persist()` giảm nguy cơ iOS/Safari tự dọn dữ liệu.
+- Sửa thu hồi URL tải file quá sớm (Safari có thể huỷ tải).
+- +5 unit test (`backup.test.ts`) → 55/55.
+
+---
+
 ## [v2.8.0] – 2026-11-01
 ### ✨ Tính năng mới & Đồng bộ giao diện ứng dụng
 - **⌨️ Đồng bộ Bàn phím máy tính nội bộ & Thay thế 100% bàn phím / dropdown hệ thống:**

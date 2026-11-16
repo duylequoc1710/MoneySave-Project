@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, exportAll } from '../db'
-import { backupReminderState, BACKUP_REMIND_DAYS, markBackupDownloaded, snoozeBackupReminder } from '../safetyBackup'
+import { db } from '../db'
+import { backupReminderState, BACKUP_REMIND_DAYS, snoozeBackupReminder } from '../safetyBackup'
+import { runBackup } from './backupActions'
 
 /** Thanh nhắc tải file sao lưu JSON nếu đã quá 7 ngày (chỉ khi có giao dịch). */
 export default function BackupReminder() {
@@ -10,13 +11,7 @@ export default function BackupReminder() {
   if (!state || !txCount) return null
 
   async function backupNow() {
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([await exportAll()], { type: 'application/json' }))
-    a.download = `moneysave-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
-    markBackupDownloaded()
-    setState(undefined)
+    if (await runBackup()) setState(undefined)
   }
 
   return (

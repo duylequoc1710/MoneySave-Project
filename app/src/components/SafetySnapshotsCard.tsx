@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { importAll } from '../db'
+import { downloadFile } from '../backupFile'
 import { deleteSafetySnapshot, listSafetySnapshots, type SafetySnapshot } from '../safetyBackup'
 import { showAlert, showConfirm } from './AppDialog'
 
@@ -31,7 +32,7 @@ export default function SafetySnapshotsCard() {
     })
     if (!ok) return
     try {
-      await importAll(s.json)
+      await importAll(s.json, undefined, { source: 'restore' })
       await showAlert({
         title: 'Khôi phục thành công',
         message: 'Đã khôi phục dữ liệu từ bản sao an toàn.',
@@ -48,11 +49,7 @@ export default function SafetySnapshotsCard() {
   }
 
   function download(s: SafetySnapshot) {
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([s.json], { type: 'application/json' }))
-    a.download = `moneysave-safety-${format(new Date(s.createdAt), 'yyyyMMdd-HHmm')}.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    downloadFile(`moneysave-safety-${format(new Date(s.createdAt), 'yyyyMMdd-HHmm')}.json`, s.json, 'application/json')
   }
 
   return (
@@ -64,7 +61,7 @@ export default function SafetySnapshotsCard() {
         <div className="grow">
           <b>Bản sao an toàn tự động</b>
           <small>
-            Tự lưu trên máy trước khi Khôi phục / Đồng bộ ghi đè / Xoá sạch và mỗi ngày 1 bản (giữ 15 bản gần nhất, không ảnh hưởng dữ liệu chính)
+            Tự lưu trên máy trước khi Khôi phục / Xoá sạch. Bản trước Đồng bộ ghi đè và bản hằng ngày tự gộp còn 1 bản/ngày (tối đa 15 bản, không ảnh hưởng dữ liệu chính)
           </small>
         </div>
       </div>

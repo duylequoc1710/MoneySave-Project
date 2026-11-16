@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { format } from 'date-fns'
-import { db, exportAll, importAll, type Category, type Fund, type Tx } from '../db'
+import { db, type Category, type Fund, type Tx } from '../db'
 import {
   applyTheme,
   buildCsvContent,
@@ -10,7 +10,8 @@ import {
   type ThemeMode,
 } from '../lib'
 import SafetySnapshotsCard from '../components/SafetySnapshotsCard'
-import { markBackupDownloaded } from '../safetyBackup'
+import { canPickSaveFile, downloadFile, getRememberedFileName } from '../backupFile'
+import { runBackup, runRestoreFromFile } from '../components/backupActions'
 import { auditData, type DataIssue } from '../dataAudit'
 import { clearAllToCleanState, seedDemoData3Months } from '../demoData'
 import {
@@ -81,15 +82,7 @@ export default function Settings() {
     else setSyncMsg('✅ Dữ liệu đã được đồng bộ, không có thay đổi mới.')
   }
 
-  function download(name: string, content: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType })
-    const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(blob),
-      download: name,
-    })
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
+  const download = downloadFile
 
   function handleExportExcel() {
     const xml = buildExcelXml(funds, cats, txs)
@@ -103,22 +96,18 @@ export default function Settings() {
     download(`MoneySave-GiaoDich-${dateStr}.csv`, csv, 'text/csv;charset=utf-8')
   }
 
-  async function handleRestore(file?: File) {
-    if (!file) return
-    try {
-      await importAll(await file.text())
-      await showAlert({
-        title: 'Khôi phục thành công',
-        message: 'Đã khôi phục dữ liệu từ file sao lưu thành công!',
-        tone: 'success',
-      })
-    } catch (e) {
-      await showAlert({
-        title: 'Lỗi khôi phục',
-        message: 'Lỗi khôi phục: ' + (e as Error).message,
-        tone: 'danger',
-      })
+  // Máy tính (Chrome/Edge): hiện tên file sao lưu đang được ghi đè
+  const [backupFileName, setBackupFileName] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    getRememberedFileName().then(n => alive && setBackupFileName(n))
+    return () => {
+      alive = false
     }
+  }, [])
+
+  async function handleBackup(chooseNewLocation = false) {
+    if (await runBackup({ chooseNewLocation })) setBackupFileName(await getRememberedFileName())
   }
 
   return (
@@ -448,21 +437,22 @@ export default function Settings() {
 
         <div className="row">
           <div className="ico round" style={{ background: '#3b82f624' }}>
-            ⬇️
+            💾
           </div>
           <div className="grow">
-            <b>Sao lưu toàn bộ (JSON)</b>
-            <small>Lưu trọn vẹn 100% Ví, Nhóm, Giao dịch, Ngân sách & Định kỳ ra file</small>
+            <b>Sao lưu toàn bộ (1 file duy nhất)</b>
+            <small>
+              {backupFileName
+                ? `Ghi đè vào file "${backupFileName}" đã chọn trên máy`
+                : 'Lưu file MoneySave-SaoLuu.json vào Tệp / iCloud / Google Drive. Lưu cùng chỗ và chọn "Thay thế" để bản mới ghi đè bản cũ'}
+            </small>
+            {canPickSaveFile() && backupFileName && (
+              <button type="button" className="btn" style={{ marginTop: 6, padding: '4px 10px', fontSize: 12 }} onClick={() => handleBackup(true)}>
+                Đổi nơi lưu
+              </button>
+            )}
           </div>
-          <button
-            type="button"
-            className="btn"
-            onClick={async () => {
-              const dateStr = new Date().toISOString().slice(0, 10)
-              download(`moneysave-backup-${dateStr}.json`, await exportAll(), 'application/json')
-              markBackupDownloaded()
-            }}
-          >
+          <button type="button" className="btn pri" onClick={() => handleBackup()}>
             Sao lưu
           </button>
         </div>
@@ -472,8 +462,8 @@ export default function Settings() {
             ⬆️
           </div>
           <div className="grow">
-            <b>Khôi phục dữ liệu (JSON)</b>
-            <small>Nạp lại dữ liệu từ file sao lưu JSON từ máy tính hoặc điện thoại khác</small>
+            <b>Khôi phục từ file sao lưu</b>
+            <small>Chọn file từ Tệp / iCloud / Google Drive – xem trước số giao dịch & ngày sao lưu trước khi ghi đè</small>
           </div>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
             Khôi phục
@@ -481,10 +471,10 @@ export default function Settings() {
           <input
             ref={fileRef}
             type="file"
-            accept=".json"
+            accept=".json,application/json"
             hidden
             onChange={e => {
-              handleRestore(e.target.files?.[0])
+              runRestoreFromFile(e.target.files?.[0])
               e.target.value = ''
             }}
           />

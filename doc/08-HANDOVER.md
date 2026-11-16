@@ -1,6 +1,6 @@
 # 08 – Tài liệu bàn giao (Handover) cho AI / kỹ sư tiếp nhận
 
-> Cập nhật: 2026-11-04 · Phiên bản: **v2.8.0** · HEAD `e14bd3f` · Nhánh `main` đồng bộ `origin/main` (https://github.com/duylequoc1710/MoneySave-Project).
+> Cập nhật: 2026-11-16 · Phiên bản: **v2.9.0** (nhánh `claude/happy-sagan-q2h7at`, chờ PO duyệt merge `main`) · production vẫn v2.8.0.
 
 ## 1. Dự án là gì
 **MoneySave** – PWA quản lý tài chính cá nhân, offline-first, tiếng Việt. Live: https://moneysavedl.vercel.app (Vercel tự deploy khi push `main`).
@@ -8,7 +8,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
-- `npm test`: 50/50 pass. Dexie schema `version(4)` (bảng `funds, categories, txs, budgets, recurrings, savingsGoals`).
+- `npm test`: 55/55 pass (v2.9.0, nhánh `claude/happy-sagan-q2h7at`, CHƯA merge `main`). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục

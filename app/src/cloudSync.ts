@@ -464,7 +464,7 @@ export async function pullCloudToLocal(customCfg?: CloudSyncConfig): Promise<boo
     const decryptedJson = await decryptVault(remote, cfg.passphrase)
     isApplyingRemoteImport = true
     try {
-      await importAll(decryptedJson, db)
+      await importAll(decryptedJson, db, { source: 'sync' })
     } finally {
       setTimeout(() => {
         isApplyingRemoteImport = false
@@ -520,7 +520,7 @@ export async function syncNowSmart(silent = false): Promise<'pushed' | 'pulled' 
       const decryptedJson = await decryptVault(remote, cfg.passphrase)
       isApplyingRemoteImport = true
       try {
-        await importAll(decryptedJson, db)
+        await importAll(decryptedJson, db, { source: 'sync' })
       } finally {
         setTimeout(() => {
           isApplyingRemoteImport = false

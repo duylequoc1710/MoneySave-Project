@@ -67,11 +67,21 @@ document.addEventListener('visibilitychange', () => {
 
 // Khởi chạy an toàn: chỉ bổ sung danh mục mặc định nếu cơ sở dữ liệu trống,
 // tuyệt đối không bao giờ tự động xóa hay can thiệp vào giao dịch thực tế của người dùng.
+// LƯU Ý (2026-11-16): PHẢI chạy xong trước khi render. App khởi động bộ đồng bộ Cloud (hook Dexie);
+// nếu seed/định kỳ ghi dữ liệu sau khi hook đã gắn, máy sẽ bị coi là "vừa chỉnh sửa" và có thể đẩy
+// dữ liệu cũ/mặc định đè lên Cloud. Snapshot hằng ngày chỉ tốn thời gian 1 lần/ngày.
 async function initApp() {
   await seedIfEmpty()
   // Bản sao an toàn hằng ngày (trước khi bất kỳ tiến trình tự động nào ghi dữ liệu)
   await ensureDailySnapshot(() => exportAll())
   await processRecurringTransactions().catch(() => {})
+}
+
+// Xin trình duyệt giữ dữ liệu lâu dài (giảm nguy cơ iOS/Safari tự dọn IndexedDB). Không chặn khởi động.
+try {
+  navigator.storage?.persist?.().catch(() => {})
+} catch {
+  /* ignore */
 }
 
 initApp().then(() =>

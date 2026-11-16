@@ -324,14 +324,55 @@ export async function exportAll(store: StoreSubset = db) {
       recurrings: store.recurrings ? await store.recurrings.toArray() : [],
       savingsGoals: store.savingsGoals ? await store.savingsGoals.toArray() : [],
     },
-    null,
-    2,
+    // JSON gọn (không thụt lề): nhỏ hơn ~30-40% cho file sao lưu, đồng bộ Cloud & bản sao an toàn
   )
+}
+
+export interface BackupSummary {
+  exportedAt: string | null
+  funds: number
+  categories: number
+  txs: number
+  budgets: number
+  recurrings: number
+  savingsGoals: number
+  firstDate: string | null
+  lastDate: string | null
+}
+
+/** Đọc nhanh thông tin file sao lưu (không ghi gì) để người dùng xem trước khi khôi phục. Ném lỗi nếu file sai định dạng. */
+export function describeBackup(json: string): BackupSummary {
+  let d: Record<string, unknown>
+  try {
+    d = JSON.parse(json)
+  } catch {
+    throw new Error('File không phải bản sao lưu MoneySave / MoneyGo hợp lệ')
+  }
+  if ((d?.app !== 'MoneyGo' && d?.app !== 'MoneySave') || !Array.isArray(d.funds) || !Array.isArray(d.txs)) {
+    throw new Error('File không phải bản sao lưu MoneySave / MoneyGo hợp lệ')
+  }
+  const len = (v: unknown) => (Array.isArray(v) ? v.length : 0)
+  const dates = (d.txs as { date?: unknown }[])
+    .map(t => t?.date)
+    .filter((x): x is string => typeof x === 'string')
+    .sort()
+  return {
+    exportedAt: typeof d.exportedAt === 'string' ? d.exportedAt : null,
+    funds: len(d.funds),
+    categories: len(d.categories),
+    txs: len(d.txs),
+    budgets: len(d.budgets),
+    recurrings: len(d.recurrings),
+    savingsGoals: len(d.savingsGoals),
+    firstDate: dates[0] ?? null,
+    lastDate: dates[dates.length - 1] ?? null,
+  }
 }
 
 export async function importAll(
   json: string,
   store: StoreSubset & Pick<MoneyDB, 'transaction'> = db,
+  opts: { source?: 'restore' | 'sync' } = {},
 ) {
   const d = JSON.parse(json)
   if (
@@ -358,7 +399,8 @@ export async function importAll(
   }
   // An toàn dữ liệu: tự lưu bản sao dữ liệu hiện tại (CSDL riêng) trước khi bị ghi đè
   if (store === (db as unknown)) {
-    await saveSafetySnapshot(await exportAll(db), 'Trước khi khôi phục / đồng bộ ghi đè')
+    if (opts.source === 'sync') await saveSafetySnapshot(await exportAll(db), 'Trước khi đồng bộ Cloud ghi đè', 'sync')
+    else await saveSafetySnapshot(await exportAll(db), 'Trước khi khôi phục dữ liệu', 'event')
   }
   const tables = [
     store.funds,

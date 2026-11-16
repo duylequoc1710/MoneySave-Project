@@ -25,11 +25,15 @@
 ### §2.3 [THẤP] `URL.revokeObjectURL` ngay sau `a.click()` (`Settings.tsx:91`)
 - Một số bản Safari huỷ tải file trước khi kịp lưu. Nên trì hoãn revoke (vd. 30–60 giây) — sẽ gộp vào GĐ1 sao lưu.
 
+### §2.4 [CAO – xử lý trong S3] Giao dịch định kỳ sinh ra khi quay lại app có thể đẩy dữ liệu cũ đè Cloud
+- `main.tsx` `visibilitychange` → `processRecurringTransactions()` chạy SAU khi hook đồng bộ đã gắn → `markLocalMutated()` → `syncNowSmart` thấy `localMut` mới hơn bản Cloud → **push** thay vì **pull**, dù máy này đang có dữ liệu cũ hơn thiết bị khác.
+- Hướng sửa trong S3: trước khi sinh giao dịch định kỳ, đồng bộ kéo về trước; hoặc không đánh dấu `localMutated` cho ghi tự động.
+
 ## §3. Hiệu năng & độ mượt
 | # | Vấn đề | Vị trí | Tác động | Công sức |
 |---|---|---|---|---|
 | §3.1 | Polling 30 s + mỗi lần focus đều **tải toàn bộ két mã hoá** chỉ để so `updatedAt` | `cloudSync.ts:614-631`, `fetchRemoteVault` | Tốn data/pin di động, chậm khi dữ liệu lớn | Vừa – tách node meta nhỏ `{updatedAt, deviceId}` (làm chung với §2.1a) |
-| §3.2 | Khởi động chờ `ensureDailySnapshot` (export toàn DB + so chuỗi) **trước khi vẽ UI** | `main.tsx:70-85` | Màn trắng lâu hơn khi nhiều giao dịch | Nhỏ – vẽ UI trước, chạy snapshot/recurring nền theo đúng thứ tự |
+| §3.2 | Khởi động chờ `ensureDailySnapshot` **trước khi vẽ UI** | `main.tsx` | Chỉ chậm 1 lần/ngày | **KHÔNG SỬA** (2026-11-16): vẽ UI trước sẽ gắn hook đồng bộ sớm → seed/định kỳ bị coi là "chỉnh sửa mới" → có thể đẩy dữ liệu cũ đè Cloud. Xem §2.4 |
 | §3.3 | `exportAll` in JSON thụt lề (`null, 2`) cho cả sync & 15 snapshot | `db.ts:314` | Payload/ bộ nhớ to hơn ~30–40%, mã hoá chậm hơn | Nhỏ – bản nén cho sync/snapshot, giữ dạng đẹp cho file người dùng |
 | §3.4 | Mỗi trang + modal tự `db.txs.toArray()` riêng; mỗi lần ghi, mọi truy vấn chạy lại | `pages/*`, `TxDetailModal`, `SavingsGoalsModal` | Ổn đến vài chục nghìn giao dịch; giật nhẹ khi mở modal trên máy yếu | Vừa – hook dùng chung (1 nguồn dữ liệu) – ưu tiên thấp |
 | §3.5 | File quá lớn: `SavingsGoalsModal` 2117 dòng, `CreditCardDetailModal` 1613, `Overview` 1255 | components | Khó bảo trì, dễ sinh lỗi khi sửa | Lớn – tách dần khi đụng tới, không làm riêng |
@@ -65,8 +69,8 @@
 ### Lát đề xuất (thứ tự ưu tiên)
 | Lát | Nội dung | Người làm | Phụ thuộc |
 |---|---|---|---|
-| S1 | Quick wins an toàn: §2.2 persist storage, §3.2 khởi động nhanh, §3.3 JSON nén cho sync/snapshot | Opus/Sonnet | – |
-| S2 | Sao lưu GĐ1: Web Share + xem trước khi khôi phục + sửa §2.3 (+A+ nếu D3) | Sonnet, Opus review | D2, D3 |
-| S3 | Bảo mật đồng bộ §2.1(a) + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu | Opus | D1, PO đổi rule Firebase |
+| S1 ✅ | §2.2 persist storage, §3.3 JSON gọn (§3.2 huỷ – xem §2.4) | Opus | v2.9.0 |
+| S2 ✅ | Sao lưu GĐ1: 1 file duy nhất (ghi đè), Web Share, xem trước khi khôi phục, gộp snapshot theo ngày, sửa §2.3. A+ (mật khẩu file) chưa làm – chờ D3 | Opus | v2.9.0 |
+| S3 | Bảo mật đồng bộ §2.1(a) + §2.4 + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu | Opus | D1, PO đổi rule Firebase |
 | S4 | Google Drive GĐ2 | Sonnet, Opus review | S2 xác nhận, PO tạo OAuth Client ID |
 | S5 | TODO-1 tách logic tìm kiếm + test; hook dữ liệu dùng chung §3.4 | Sonnet | – |
