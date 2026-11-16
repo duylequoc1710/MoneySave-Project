@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { CalendarClock, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff, PiggyBank, RefreshCw, Search } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -341,7 +342,7 @@ export default function Overview() {
               aria-label="Ẩn/hiện số dư"
               title="Ẩn/hiện số dư"
             >
-              {hideBalance ? '🙈' : '👁'}
+              {hideBalance ? <EyeOff size={22} /> : <Eye size={22} />}
             </button>
           </div>
           <div className="mut" style={{ fontSize: 13 }}>
@@ -355,7 +356,7 @@ export default function Overview() {
             title="Tìm kiếm chức năng, giao dịch, ghi chú"
             aria-label="Tìm kiếm"
           >
-            🔍
+            <Search size={22} />
           </button>
           <button
             className={`icon-btn ${isReloading ? 'spin-btn' : ''}`}
@@ -367,7 +368,7 @@ export default function Overview() {
               transform: isReloading ? 'rotate(360deg)' : 'none',
             }}
           >
-            🔄
+            <RefreshCw size={22} />
           </button>
         </div>
       </div>
@@ -405,7 +406,7 @@ export default function Overview() {
 
       {/* 2b. Quỹ tín dụng (hiển thị trực tiếp ở Tổng quan, bấm vào mở trang chi tiết giao dịch & trả góp) */}
       <div className="sec-head">
-        <span>💳 Quỹ tín dụng</span>
+        <span><CreditCard size="1.1em" /> Quỹ tín dụng</span>
         <span className="link-green" onClick={() => nav('/accounts')}>
           Quản lý thẻ
         </span>
@@ -421,7 +422,7 @@ export default function Overview() {
             gap: 12,
           }}
         >
-          <span className="mut">💳 Theo dõi hạn mức, kỳ sao kê & trả góp với Quỹ tín dụng</span>
+          <span className="mut"><CreditCard size="1.1em" /> Theo dõi hạn mức, kỳ sao kê & trả góp với Quỹ tín dụng</span>
           <span className="link-green" onClick={() => nav('/accounts')}>
             + Thêm thẻ
           </span>
@@ -463,7 +464,7 @@ export default function Overview() {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          📅 {info.activeInstallmentsCount} trả góp
+                          <CalendarClock size="1em" /> {info.activeInstallmentsCount} trả góp
                         </span>
                       )}
                     </div>
@@ -603,7 +604,7 @@ export default function Overview() {
       {savingsGoals.length > 0 && (
         <>
           <div className="sec-head">
-            <span>🐷 Quỹ Tiết Kiệm</span>
+            <span><PiggyBank size="1.1em" /> Quỹ Tiết Kiệm</span>
             <span className="link-green" onClick={() => setShowSavingsModal(true)}>
               Xem chi tiết
             </span>
@@ -899,7 +900,7 @@ export default function Overview() {
                     title="Nhận định trước"
                     aria-label="Nhận định trước"
                   >
-                    ‹
+                    <ChevronLeft size={20} />
                   </button>
                   <span className="mut" style={{ fontSize: 12 }}>
                     {(insightIdx % smartInsights.heroCards.length) + 1}/
@@ -917,7 +918,7 @@ export default function Overview() {
                     title="Nhận định tiếp theo"
                     aria-label="Nhận định tiếp theo"
                   >
-                    ›
+                    <ChevronRight size={20} />
                   </button>
                 </div>
               )}
@@ -1098,13 +1099,13 @@ export default function Overview() {
 
         <div className="report-BottomNav">
           <button className="icon-btn" onClick={() => setReportSlide(0)} aria-label="Báo cáo trước">
-            ‹
+            <ChevronLeft size={20} />
           </button>
           <span className="link-green" onClick={() => setReportSlide(s => (s === 0 ? 1 : 0))}>
             {reportSlide === 0 ? 'Báo cáo xu hướng' : 'Báo cáo chi tiêu'}
           </span>
           <button className="icon-btn" onClick={() => setReportSlide(1)} aria-label="Báo cáo sau">
-            ›
+            <ChevronRight size={20} />
           </button>
         </div>
         <div style={{ textAlign: 'center', marginTop: 4 }}>

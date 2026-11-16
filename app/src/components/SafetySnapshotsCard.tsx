@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { LifeBuoy } from 'lucide-react'
 import { format } from 'date-fns'
 import { importAll } from '../db'
 import { downloadFile } from '../backupFile'
@@ -60,7 +61,7 @@ export default function SafetySnapshotsCard() {
     <div className="card" style={{ padding: '4px 16px' }}>
       <div className="row" style={{ borderBottom: items.length ? undefined : 0 }}>
         <div className="ico round" style={{ background: '#f59e0b24' }}>
-          🛟
+          <LifeBuoy size={22} color="#f59e0b" />
         </div>
         <div className="grow">
           <b>Bản sao an toàn tự động</b>

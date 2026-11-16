@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ChevronRight, Cloud, FileText, LifeBuoy } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { fmtDmy } from '../lib'
 import {
@@ -73,7 +74,7 @@ export default function DriveBackupRows() {
     <>
       <div className="row">
         <div className="ico round" style={{ background: '#f59e0b24' }}>
-          ☁️
+          <Cloud size={22} color="#f59e0b" />
         </div>
         <div className="grow">
           <b>Sao lưu lên Google Drive</b>
@@ -94,7 +95,7 @@ export default function DriveBackupRows() {
 
       <div className="row">
         <div className="ico round" style={{ background: '#f59e0b24' }}>
-          🛟
+          <LifeBuoy size={22} color="#f59e0b" />
         </div>
         <div className="grow">
           <b>Khôi phục từ Google Drive</b>
@@ -136,7 +137,7 @@ export default function DriveBackupRows() {
                         }}
                       >
                         <div className="ico round" style={{ background: '#f59e0b24', width: 38, height: 38, flexShrink: 0 }}>
-                          📄
+                          <FileText size={22} color="#f59e0b" />
                         </div>
                         <div className="grow" style={{ minWidth: 0 }}>
                           <b style={{ fontSize: 14.5, display: 'block' }}>Ngày {d ? fmtDmy(d) : f.name}</b>
@@ -145,7 +146,7 @@ export default function DriveBackupRows() {
                             {kb ? ` · ${kb} KB` : ''}
                           </small>
                         </div>
-                        <span className="mut" style={{ fontSize: 17 }}>›</span>
+                        <ChevronRight size={18} className="mut" />
                       </div>
                     )
                   })}

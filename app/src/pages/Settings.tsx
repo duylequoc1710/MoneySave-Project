@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ChevronRight, Cloud, DatabaseBackup, FileDown, FileSpreadsheet, KeyRound, Lock, LockKeyhole, Moon, Palette, RefreshCw, ScrollText, SearchCheck, ShieldCheck, Smartphone, Sun, Settings as SettingsIcon } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { format } from 'date-fns'
 import { db, type Category, type Fund, type Tx } from '../db'
@@ -104,11 +105,11 @@ export default function Settings() {
   return (
     <>
       <div className="ledger-topbar" style={{ marginBottom: 14 }}>
-        <h1 style={{ margin: 0 }}>⚙️ Cài đặt</h1>
+        <h1 style={{ margin: 0 }}><SettingsIcon size="1em" /> Cài đặt</h1>
       </div>
 
       {/* 1. TÀI KHOẢN & ĐỒNG BỘ NHIỀU THIẾT BỊ */}
-      <h2>☁️ TÀI KHOẢN & ĐỒNG BỘ</h2>
+      <h2><Cloud size="1.1em" /> TÀI KHOẢN & ĐỒNG BỘ</h2>
       <div className="card">
         {authUser ? (
           <>
@@ -151,7 +152,7 @@ export default function Settings() {
             </small>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn on" style={{ fontSize: 12.5, padding: '6px 12px' }} onClick={handleSyncNow}>
-                🔄 Đồng bộ ngay
+                <RefreshCw size="1.1em" /> Đồng bộ ngay
               </button>
               <button
                 type="button"
@@ -168,7 +169,7 @@ export default function Settings() {
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: '4px 0' }}>
-            <div style={{ fontSize: 26, marginBottom: 4 }}>🔐</div>
+            <div style={{ marginBottom: 4 }}><LockKeyhole size={28} className="mut" /></div>
             <b style={{ fontSize: 15 }}>Chưa đăng nhập – dữ liệu chỉ lưu trên máy này</b>
             <p className="mut" style={{ fontSize: 13, margin: '4px 0 12px', lineHeight: 1.4 }}>
               Đăng nhập bằng Email & Mật khẩu để tự động đồng bộ giữa điện thoại và máy tính.
@@ -179,7 +180,7 @@ export default function Settings() {
               style={{ width: '100%', padding: '11px', fontSize: 14.5, fontWeight: 700, borderRadius: 12 }}
               onClick={() => setShowAuthModal(true)}
             >
-              🔑 Đăng nhập hoặc Đăng ký
+              <KeyRound size="1.1em" /> Đăng nhập hoặc Đăng ký
             </button>
           </div>
         )}
@@ -192,29 +193,29 @@ export default function Settings() {
       </div>
 
       {/* 2. GIAO DIỆN */}
-      <h2>🎨 GIAO DIỆN</h2>
+      <h2><Palette size="1.1em" /> GIAO DIỆN</h2>
       <div className="card">
         <div className="seg">
           <button type="button" className={theme === 'dark' ? 'on' : ''} onClick={() => handleThemeChange('dark')}>
-            🌙 Tối
+            <Moon size="1.1em" /> Tối
           </button>
           <button type="button" className={theme === 'light' ? 'on' : ''} onClick={() => handleThemeChange('light')}>
-            ☀️ Sáng
+            <Sun size="1.1em" /> Sáng
           </button>
           <button type="button" className={theme === 'system' ? 'on' : ''} onClick={() => handleThemeChange('system')}>
-            📱 Theo máy
+            <Smartphone size="1.1em" /> Theo máy
           </button>
         </div>
       </div>
 
       {/* 3. DỮ LIỆU CÁ NHÂN (OFFLINE-FIRST) */}
-      <h2>💾 SAO LƯU & KHÔI PHỤC</h2>
+      <h2><DatabaseBackup size="1.1em" /> SAO LƯU & KHÔI PHỤC</h2>
       <div className="card" style={{ padding: '4px 16px' }}>
         <DriveBackupRows />
 
         <div className="row">
           <div className="ico round" style={{ background: '#3b82f624' }}>
-            💾
+            <FileDown size={22} color="#3b82f6" />
           </div>
           <div className="grow">
             <b>Sao lưu ra file</b>
@@ -259,7 +260,7 @@ export default function Settings() {
 
         <div className="row">
           <div className="ico round" style={{ background: '#22c55e24' }}>
-            📊
+            <FileSpreadsheet size={22} color="#22c55e" />
           </div>
           <div className="grow">
             <b>Xuất báo cáo Excel</b>
@@ -272,7 +273,7 @@ export default function Settings() {
 
         <div className="row" style={{ borderBottom: auditIssues ? undefined : 0 }}>
           <div className="ico round" style={{ background: '#14b8a624' }}>
-            🔍
+            <SearchCheck size={22} color="#14b8a6" />
           </div>
           <div className="grow">
             <b>Kiểm tra toàn vẹn dữ liệu</b>
@@ -300,7 +301,7 @@ export default function Settings() {
       <SafetySnapshotsCard />
 
       {/* 5. THÔNG TIN LƯU TRỮ TRÊN THIẾT BỊ */}
-      <h2>🛡️ DỮ LIỆU TRÊN MÁY NÀY</h2>
+      <h2><ShieldCheck size="1.1em" /> DỮ LIỆU TRÊN MÁY NÀY</h2>
       <div className="card">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 10 }}>
           <div className="group-stat-box" style={{ cursor: 'default' }}>
@@ -331,7 +332,7 @@ export default function Settings() {
           </div>
         </div>
         <p className="mut" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
-          🔒 Dữ liệu lưu ngay trên thiết bị này. Khi đăng nhập đồng bộ, dữ liệu được mã hoá (AES-256) trước khi gửi lên Cloud.
+          <Lock size="1em" /> Dữ liệu lưu ngay trên thiết bị này. Khi đăng nhập đồng bộ, dữ liệu được mã hoá (AES-256) trước khi gửi lên Cloud.
         </p>
         <a
           className="row"
@@ -341,13 +342,13 @@ export default function Settings() {
           style={{ textDecoration: 'none', color: 'inherit', borderBottom: 0, padding: '8px 0 0' }}
         >
           <div className="ico round" style={{ background: '#64748b24' }}>
-            📜
+            <ScrollText size={22} color="#64748b" />
           </div>
           <div className="grow">
             <b>Chính sách quyền riêng tư</b>
             <small>Dữ liệu lưu ở đâu, quyền Google Drive, cách xoá dữ liệu</small>
           </div>
-          <span className="mut" style={{ fontSize: 17 }}>›</span>
+          <ChevronRight size={18} className="mut" />
         </a>
       </div>
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import type { Fund, Tx } from '../db'
 import { computeTotalBalance, effectOn, money } from '../lib'
 
@@ -30,7 +31,7 @@ export function WalletSelectorPill({ fundFilter, onChange, funds, txs }: Props) 
       >
         <span className="wallet-pill-icon">{fundFilter === 0 ? '🌐' : (selectedFund?.icon ?? '👛')}</span>
         <span className="wallet-pill-label">{fundFilter === 0 ? 'Tổng cộng' : (selectedFund?.name ?? 'Chọn ví')}</span>
-        <span className="wallet-pill-caret">▾</span>
+        <ChevronDown size={16} className="wallet-pill-caret" />
       </button>
 
       {open && (

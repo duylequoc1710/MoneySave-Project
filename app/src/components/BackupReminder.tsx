@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Cloud, Save } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import { backupReminderState, BACKUP_REMIND_DAYS, snoozeBackupReminder } from '../safetyBackup'
@@ -45,7 +46,7 @@ export default function BackupReminder() {
           : `Đã ${Math.floor(drive.hoursSince / 24)} ngày chưa sao lưu lên Google Drive.`
     return (
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', margin: '8px 0' }}>
-        <span style={{ fontSize: 20 }}>☁️</span>
+        <Cloud size={22} className="mut" />
         <div className="grow" style={{ fontSize: 13 }}>{label}</div>
         <button
           type="button"
@@ -90,7 +91,7 @@ export default function BackupReminder() {
 
   return (
     <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', margin: '8px 0' }}>
-      <span style={{ fontSize: 20 }}>💾</span>
+      <Save size={22} className="mut" />
       <div className="grow" style={{ fontSize: 13 }}>
         {state.daysSince === null
           ? 'Bạn chưa tải file sao lưu dữ liệu lần nào.'

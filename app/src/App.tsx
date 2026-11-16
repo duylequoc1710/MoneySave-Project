@@ -5,6 +5,7 @@ const Ledger = lazy(() => import('./pages/Ledger'))
 const Budgets = lazy(() => import('./pages/Budgets'))
 const Accounts = lazy(() => import('./pages/Accounts'))
 const Settings = lazy(() => import('./pages/Settings'))
+import { CalendarClock, House, KeyRound, Plus, ReceiptText, UserRound, Wallet } from 'lucide-react'
 import TxForm from './components/TxForm'
 import AuthLanding from './components/AuthLanding'
 import BackupReminder from './components/BackupReminder'
@@ -94,7 +95,12 @@ export default function App() {
     }
   }, [])
 
-  const accountLabel = authUser ? `👤 ${authUser.email}` : '🔑 Đăng nhập / Đăng ký'
+  const accountLabel = (
+    <>
+      {authUser ? <UserRound size="1.15em" /> : <KeyRound size="1.15em" />}{' '}
+      {authUser ? authUser.email : 'Đăng nhập / Đăng ký'}
+    </>
+  )
 
   if (!authUser && !skipAuth) {
     return (
@@ -126,16 +132,16 @@ export default function App() {
           />
         </NavLink>
         <NavLink to="/" end>
-          <span>🏠</span>Tổng quan
+          <House size={22} />Tổng quan
         </NavLink>
         <NavLink to="/ledger">
-          <span>👛</span>Sổ giao dịch
+          <ReceiptText size={22} />Sổ giao dịch
         </NavLink>
         <NavLink to="/budgets">
-          <span>📅</span>Ngân sách
+          <CalendarClock size={22} />Ngân sách
         </NavLink>
         <NavLink to="/accounts">
-          <span>👤</span>Ví của tôi
+          <Wallet size={22} />Ví của tôi
         </NavLink>
 
         <div className="desktop-nav-footer">
@@ -209,7 +215,7 @@ export default function App() {
         className={`ml-fab-pill ${!isNavVisible ? 'fab-hidden' : ''}`}
         onClick={() => setAddingTx(true)}
       >
-        <span style={{ fontSize: 20, fontWeight: 400 }}>＋</span> Thêm giao dịch
+        <Plus size={20} strokeWidth={2.5} /> Thêm giao dịch
       </button>
       {updatedToast && (
         <div

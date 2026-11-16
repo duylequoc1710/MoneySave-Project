@@ -169,11 +169,17 @@ h1, h2, h3, h4, h5, h6 {
 .nav a:active {
   transform: scale(0.92);
 }
-.nav a span {
+.nav a svg {
   display: block;
-  font-size: 18px;
   margin-bottom: 2px;
-  line-height: 1;
+}
+.nav a.active svg {
+  color: var(--acc);
+}
+/* U2: icon SVG (lucide) – thẳng hàng với chữ, đổi màu theo theme qua currentColor */
+.lucide {
+  flex-shrink: 0;
+  vertical-align: -0.15em;
 }
 .nav a.active {
   color: var(--fg);
@@ -248,15 +254,9 @@ main {
     background: color-mix(in srgb, var(--fg) 6%, transparent);
     color: var(--fg);
   }
-  .nav a span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    font-size: 17px;
-    flex-shrink: 0;
-    line-height: 1;
+  .nav a svg {
+    width: 20px;
+    height: 20px;
     margin: 0;
   }
   .nav a.active {

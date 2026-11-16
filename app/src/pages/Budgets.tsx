@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { CalendarDays, ChevronRight, Repeat, Target } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { startOfMonth } from 'date-fns'
 import DateInput from '../components/DateInput'
@@ -157,10 +158,10 @@ export default function Budgets() {
 
       <div className="seg" style={{ marginTop: 12 }}>
         <button className={tab === 'recurring' ? 'on' : ''} onClick={() => setTab('recurring')}>
-          🔁 Giao dịch định kỳ ({recurrings.length})
+          <Repeat size="1.1em" /> Giao dịch định kỳ ({recurrings.length})
         </button>
         <button className={tab === 'budget' ? 'on' : ''} onClick={() => setTab('budget')}>
-          🎯 Ngân sách tháng ({activeBudgets.length})
+          <Target size="1.1em" /> Ngân sách tháng ({activeBudgets.length})
         </button>
       </div>
 
@@ -435,7 +436,7 @@ export default function Budgets() {
                             color: isRepeat ? 'var(--acc)' : 'var(--mut)',
                           }}
                         >
-                          {isRepeat ? '🔁 Lặp lại tháng sau' : `📅 Tháng ${monthLabel(curMonth)}`}
+                          {isRepeat ? <><Repeat size="1em" /> Lặp lại tháng sau</> : <><CalendarDays size="1em" /> Tháng {monthLabel(curMonth)}</>}
                         </span>
                       </div>
 
@@ -659,7 +660,7 @@ function BudgetFormModal({
               </small>
             </div>
             <span className="mut" style={{ fontSize: 18 }}>
-              ›
+              <ChevronRight size={20} />
             </span>
           </div>
         </div>
@@ -903,7 +904,7 @@ function RecurringForm({
                 <b style={{ fontSize: 15, display: 'block' }}>{selCat?.name || 'Chọn nhóm'}</b>
               </div>
               <span className="mut" style={{ fontSize: 18 }}>
-                ›
+                <ChevronRight size={20} />
               </span>
             </div>
           </div>

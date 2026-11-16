@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CalendarClock, ChevronRight, CreditCard, PiggyBank, Settings, Snowflake, Tags } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Category, type Fund, type SavingsGoal, type Tx } from '../db'
@@ -135,7 +136,7 @@ export default function Accounts() {
             onClick={() => nav('/settings')}
             title="Mở Cài đặt Giao diện & Dữ liệu cá nhân"
           >
-            ⚙️ Cài đặt
+            <Settings size="1.1em" /> Cài đặt
           </button>
           <button
             className="close-pill-btn"
@@ -178,7 +179,7 @@ export default function Accounts() {
                 </div>
               </div>
               <span className="mut" style={{ fontSize: 18 }}>
-                ›
+                <ChevronRight size={20} />
               </span>
             </div>
           )
@@ -207,7 +208,7 @@ export default function Accounts() {
                 </div>
               </div>
               <span className="mut" style={{ fontSize: 18 }}>
-                ›
+                <ChevronRight size={20} />
               </span>
             </div>
           )
@@ -217,7 +218,7 @@ export default function Accounts() {
       {/* 3. VÍ ĐÃ LƯU TRỮ (ĐÓNG BĂNG) */}
       {archivedWallets.length > 0 && (
         <>
-          <h2>❄️ ĐÃ LƯU TRỮ (ĐÓNG BĂNG)</h2>
+          <h2><Snowflake size="1.1em" /> ĐÃ LƯU TRỮ (ĐÓNG BĂNG)</h2>
           <div className="card" style={{ padding: '0 16px', opacity: 0.7 }}>
             {archivedWallets.map(f => (
               <div className="row" key={f.id} onClick={() => setFundEdit(f)} style={{ cursor: 'pointer' }}>
@@ -245,7 +246,7 @@ export default function Accounts() {
           margin: '22px 0 8px',
         }}
       >
-        <h2 style={{ margin: 0 }}>🐷 Quỹ Tiết Kiệm</h2>
+        <h2 style={{ margin: 0 }}><PiggyBank size="1.1em" /> Quỹ Tiết Kiệm</h2>
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             type="button"
@@ -328,7 +329,7 @@ export default function Accounts() {
             )}
           </div>
           <span className="mut" style={{ fontSize: 18 }}>
-            ›
+            <ChevronRight size={20} />
           </span>
         </div>
 
@@ -407,7 +408,7 @@ export default function Accounts() {
 
       {/* 5. QUỸ TÍN DỤNG (TINH GỌN CÀI ĐẶT & THÊM THẺ) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '22px 0 8px' }}>
-        <h2 style={{ margin: 0 }}>💳 Quỹ tín dụng</h2>
+        <h2 style={{ margin: 0 }}><CreditCard size="1.1em" /> Quỹ tín dụng</h2>
         <button
           className="btn pri"
           style={{ padding: '6px 12px', fontSize: 13 }}
@@ -466,7 +467,7 @@ export default function Accounts() {
                     <b style={{ fontSize: 16 }}>{f.name}</b>
                     {info.activeInstallmentsCount > 0 && (
                       <span className="pill-tag" style={{ fontSize: 12, color: 'var(--acc)', whiteSpace: 'nowrap' }}>
-                        📅 {info.activeInstallmentsCount} trả góp
+                        <CalendarClock size="1em" /> {info.activeInstallmentsCount} trả góp
                       </span>
                     )}
                   </div>
@@ -521,7 +522,7 @@ export default function Accounts() {
 
       {/* 5. NHÓM GIAO DỊCH */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '20px 0 8px' }}>
-        <h2 style={{ margin: 0 }}>🏷️ Nhóm giao dịch</h2>
+        <h2 style={{ margin: 0 }}><Tags size="1.1em" /> Nhóm giao dịch</h2>
         <button
           className="btn"
           style={{ padding: '6px 12px', fontSize: 13 }}
@@ -567,7 +568,7 @@ export default function Accounts() {
                         : 'Nhóm cha đại diện'}
                     </small>
                   </div>
-                  <span className="mut" style={{ fontSize: 18 }}>›</span>
+                  <ChevronRight size={18} className="mut" />
                 </div>
 
                 {/* Danh sách các Nhóm Con thuộc Nhóm Cha */}
@@ -589,7 +590,7 @@ export default function Accounts() {
                           {ch.fundId ? '· Quỹ: ' + funds.find(f => f.id === ch.fundId)?.name : ''}
                         </small>
                       </div>
-                      <span className="mut" style={{ fontSize: 16 }}>›</span>
+                      <ChevronRight size={18} className="mut" />
                     </div>
                   ))}
                 </div>
@@ -618,7 +619,7 @@ export default function Accounts() {
                         {c.fundId ? 'Quỹ mặc định: ' + funds.find(f => f.id === c.fundId)?.name : 'Không gán quỹ'}
                       </small>
                     </div>
-                    <span className="mut" style={{ fontSize: 18 }}>›</span>
+                    <ChevronRight size={18} className="mut" />
                   </div>
                 ))}
               </div>

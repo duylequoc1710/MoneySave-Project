@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { CalendarDays, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -205,7 +206,7 @@ export default function Ledger() {
           title="Chọn khoảng thời gian lọc chi tiết"
           aria-label="Chọn khoảng thời gian"
         >
-          📅
+          <CalendarDays size={22} />
         </button>
 
         <WalletSelectorPill
@@ -222,7 +223,7 @@ export default function Ledger() {
           title="Tìm kiếm"
           aria-label="Tìm kiếm"
         >
-          🔍
+          <Search size={22} />
         </button>
       </div>
 
@@ -253,7 +254,7 @@ export default function Ledger() {
           onTouchCancel={handleTouchEnd}
         >
           <button className="m-arrow" onClick={() => selectMonth(tabLeft, 'prev')} title="Tháng trước" aria-label="Tháng trước">
-            ‹
+            <ChevronLeft size={20} />
           </button>
           <button
             className="m-tab"
@@ -292,20 +293,20 @@ export default function Ledger() {
             {getMonthTabLabel(tabRight, nowMonth)}
           </button>
           <button className="m-arrow" onClick={() => selectMonth(tabRight, 'next')} title="Tháng kế tiếp" aria-label="Tháng kế tiếp">
-            ›
+            <ChevronRight size={20} />
           </button>
         </div>
       ) : (
         <div className="active-range-banner">
           <span onClick={() => setShowTimeModal(true)} style={{ cursor: 'pointer' }}>
-            📅 Khoảng lọc: <b>{resolvedRange.label}</b>
+            <CalendarDays size="1.1em" /> Khoảng lọc: <b>{resolvedRange.label}</b>
           </span>
           <button
             type="button"
             className="range-reset-btn"
             onClick={() => selectMonth(nowMonth)}
           >
-            ✕ Về theo tháng
+            <X size="1em" /> Về theo tháng
           </button>
         </div>
       )}
