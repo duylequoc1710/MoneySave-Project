@@ -21,3 +21,6 @@ moneygo-backup*.json
 *.db
 
 
+
+# Cấu hình cục bộ của Claude Code
+.claude/settings.local.json
