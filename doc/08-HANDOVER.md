@@ -1,6 +1,6 @@
 # 08 – Tài liệu bàn giao (Handover) cho AI / kỹ sư tiếp nhận
 
-> Cập nhật: 2026-11-16 (phiên 02) · production `main` = **v2.12.0** (Cài đặt gọn) · OAuth đã Publish; chờ PO thử sao lưu Drive thật (T-30).
+> Cập nhật: 2026-11-16 (phiên 02) · production `main` = **v2.12.0** + skill Claude Code (`.claude/skills`, CLAUDE.md) · OAuth đã Publish; chờ PO thử sao lưu Drive thật (T-30).
 
 ## 1. Dự án là gì
 **MoneySave** – PWA quản lý tài chính cá nhân, offline-first, tiếng Việt. Live: https://moneysavedl.vercel.app (Vercel tự deploy khi push `main`).
