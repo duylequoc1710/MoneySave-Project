@@ -16,7 +16,7 @@
 - Mỗi thay đổi: `npm test && npm run build` phải xanh trước khi push; cập nhật CHANGELOG, badge README, `doc/01-SRS.md`, `doc/05-TEST-PLAN.md`, nhật ký phiên `doc/sessions/YYYY-MM-DD-NN.md`; sự cố → `doc/07-INCIDENT-LOGS-AND-CASE-STUDIES.md`.
 - UI: dùng bàn phím số in-app, `InAppSelectModal`, `AppDialog`; không dùng `alert/confirm/prompt`, `<select>`, `autoFocus`; modal dùng `createPortal` + `.sheetbg` (xem 08-HANDOVER §5).
 - Ngày lưu `YYYY-MM-DD`, hiển thị `dd/MM/yyyy` qua `fmtDmy`; không `new Date('YYYY-MM-DD')` để hiển thị.
-- Chủ dự án không chuyên kỹ thuật: trả lời tiếng Việt (kể cả khi skill viết/yêu cầu tiếng Anh), ngắn gọn, đưa khuyến nghị rõ ràng.
+- Chủ dự án không chuyên kỹ thuật: trả lời tiếng Việt (kể cả khi skill viết/yêu cầu tiếng Anh), ngắn gọn, đưa khuyến nghị rõ ràng. Xưng hô: AI xưng **"tôi"**, gọi chủ dự án là **"bạn"** (không dùng "em", "anh/chị").
 - Ảnh chụp màn hình: chỉ chụp/xem khi cần làm rõ để sửa chính xác (tốn token); gửi PO tối đa 1–3 ảnh của thay đổi rõ nhất, không gửi bộ đầy đủ. Ưu tiên tiết kiệm thời gian và token.
 
 ## Skill Claude Code (chép sẵn trong `.claude/skills/`, xem `SOURCES.md`)
