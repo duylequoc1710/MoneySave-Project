@@ -41,3 +41,10 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 
 ## 7. Cách làm việc với PO
 PO (duyle) giao tiếp tiếng Việt; trả lời tiếng Việt, ngắn gọn; hoàn tất mỗi yêu cầu theo quy trình mục 4.
+
+## 8. Quy tắc làm việc mới (từ 2026-11-16, tiếp quản bởi Claude Opus trên Claude Code cloud)
+1. **Vai trò:** Opus = kỹ sư trưởng: lập kế hoạch, review độc lập, tư vấn để PO (non-tech) quyết định. Opus tự làm các lát nhỏ nhanh gọn; lát lặp/khối lượng lớn giao Sonnet (subagent) và Opus review.
+2. **Ngân sách phiên:** mỗi phiên chat tối đa ~300k token hoặc 1 lần compact. Nếu vượt nhẹ thì làm xong lát đang dở rồi bàn giao.
+3. **Bàn giao cuối phiên:** cập nhật nhật ký `doc/sessions/YYYY-MM-DD-NN.md` (các mục đánh số), mục 2 & 6 của file này; tài liệu dài chia mục `§n` để phiên sau chỉ đọc đúng mục cần.
+4. **Nhánh & deploy (chờ PO chốt D4 trong `09-REVIEW-AND-PLAN-2026-11.md`):** phiên cloud làm trên nhánh `claude/*`, push nhánh đó; chỉ merge vào `main` (= deploy production Vercel) khi PO đồng ý.
+5. **Kế hoạch hiện hành:** `09-REVIEW-AND-PLAN-2026-11.md` (§5 lát S1…S5).

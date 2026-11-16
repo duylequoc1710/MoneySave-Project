@@ -11,6 +11,7 @@
 | 05-TEST-PLAN.md | Kịch bản & kết quả kiểm thử |
 | 06-ROADMAP.md | Trạng thái tính năng, kế hoạch đồng bộ realtime, deploy |
 | 08-HANDOVER.md | **Tài liệu bàn giao cho AI/kỹ sư tiếp nhận (ĐỌC ĐẦU TIÊN)**: trạng thái, cấu trúc, quy trình, lưu ý |
+| 09-REVIEW-AND-PLAN-2026-11.md | **Review độc lập 2026-11 + kế hoạch lát S1…S5 + nghiên cứu sao lưu điện thoại/Google Drive** (chia mục §n) |
 | 07-INCIDENT-LOGS-AND-CASE-STUDIES.md | **Sổ tay sự cố kỹ thuật & Case studies (RCA, giải pháp, quy tắc phòng ngừa)** |
 | PLAN-initial.md | Kế hoạch ban đầu (WHY, rủi ro, tiêu chí) |
 | adr/ | Architecture Decision Records |
