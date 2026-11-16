@@ -2,7 +2,8 @@ import { ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
-import { evaluateKeypadExpression, formatKeypadDisplay, money, ymd } from '../lib'
+import { addDays } from 'date-fns'
+import { evaluateKeypadExpression, formatKeypadDisplay, lastFundForCategory, money, rankFrequentCategories, ymd } from '../lib'
 import DateInput from './DateInput'
 import Keypad, { NumericInputBox } from './Keypad'
 import CategoryPickerModal from './CategoryPickerModal'
@@ -29,6 +30,9 @@ export default function TxForm({
 }) {
   const funds = useLiveQuery(() => db.funds.filter(f => !f.archived || f.id === tx?.fundId).toArray(), [tx?.fundId]) ?? []
   const cats = useLiveQuery(() => db.categories.toArray(), []) ?? []
+  // Giao dịch 90 ngày gần đây → gợi ý nhóm hay dùng + ví hay dùng (chỉ khi thêm mới)
+  const recentTxs =
+    useLiveQuery(() => (tx ? [] : db.txs.where('date').aboveOrEqual(ymd(addDays(new Date(), -90))).toArray()), [tx]) ?? []
   const [type, setType] = useState<TxType>(tx?.type ?? draft?.type ?? 'expense')
   const [amount, setAmount] = useState(tx ? String(tx.amount) : draft?.amount ? String(draft.amount) : '')
   const [showKeypad, setShowKeypad] = useState<boolean>(false)
@@ -74,8 +78,19 @@ export default function TxForm({
   }, [showKeypad])
 
   const list = cats.filter(c => c.type === type)
-  const selCat = type === 'transfer' ? undefined : (cats.find(c => c.id === categoryId) ?? list[0])
-  const fid = fundId === '' ? (selCat?.fundId ?? funds[0]?.id) : fundId
+  const frequentCats = rankFrequentCategories(recentTxs, type)
+    .map(id => list.find(c => c.id === id))
+    .filter(c => c !== undefined)
+  const selCat = type === 'transfer' ? undefined : (cats.find(c => c.id === categoryId) ?? frequentCats[0] ?? list[0])
+  const usualFund = lastFundForCategory(recentTxs, selCat?.id)
+  const fid =
+    fundId === '' ? (selCat?.fundId ?? (funds.some(f => f.id === usualFund) ? usualFund : undefined) ?? funds[0]?.id) : fundId
+
+  function pickCategory(cat: (typeof cats)[number]) {
+    if (cat.type !== type) setType(cat.type)
+    setCategoryId(cat.id!)
+    if (!tx && !draft?.fundId && cat.fundId) setFundId(cat.fundId)
+  }
 
   async function save() {
     const amt = evaluateKeypadExpression(amount)
@@ -261,6 +276,21 @@ export default function TxForm({
               </div>
               <span className="mut" style={{ fontSize: 18 }}><ChevronRight size="1em" aria-hidden /></span>
             </div>
+            {!tx && frequentCats.length > 1 && (
+              <div className="quick-cats" aria-label="Nhóm hay dùng">
+                {frequentCats.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={c.id === selCat?.id ? 'on' : ''}
+                    aria-pressed={c.id === selCat?.id}
+                    onClick={() => pickCategory(c)}
+                  >
+                    <span aria-hidden>{c.icon}</span> {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <div className="fld">
@@ -420,11 +450,7 @@ export default function TxForm({
             type={type}
             selectedId={selCat?.id ?? ''}
             categories={cats}
-            onSelect={cat => {
-              if (cat.type !== type) setType(cat.type)
-              setCategoryId(cat.id!)
-              if (!tx && !draft?.fundId && cat.fundId) setFundId(cat.fundId)
-            }}
+            onSelect={pickCategory}
             onClose={() => setShowCatPicker(false)}
           />
         )}

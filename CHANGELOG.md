@@ -4,6 +4,15 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.17.0] – 2026-11-16
+### ⚡ Nhập giao dịch nhanh hơn
+- Thêm giao dịch mới: nhóm mặc định = **nhóm bạn dùng nhiều nhất trong 90 ngày** (trước là nhóm đầu danh sách). Hàng nút **"nhóm hay dùng"** (tối đa 4, vuốt ngang) dưới ô Nhóm – 1 chạm để chọn.
+- Ví mặc định = ví bạn dùng gần nhất cho nhóm đó (nếu nhóm không gắn sẵn ví).
+- Không tính giao dịch tự động (định kỳ, phân bổ tiết kiệm). Sửa giao dịch cũ không đổi gì.
+- +2 test → 78/78. Không đổi dữ liệu/schema.
+
+---
+
 ## [v2.16.1] – 2026-11-16
 ### 🤖 CI tự động
 - GitHub Actions (`.github/workflows/ci.yml`): mỗi lần đẩy nhánh hoặc mở PR tự chạy `npm ci`, `npm test`, `npm run build`, `npm run lint` (Node 22). Báo đỏ trước khi lỗi lên Vercel (bài học TODO-3: commit `9f53f54` từng lên `main` khi build lỗi).

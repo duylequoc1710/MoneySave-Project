@@ -1754,3 +1754,29 @@ h2 {
   vertical-align: -0.125em;
 }
 
+
+/* Nhóm hay dùng trong form thêm giao dịch: 1 chạm chọn nhóm */
+.quick-cats {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-top: 8px;
+  scrollbar-width: none;
+}
+.quick-cats button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 1px solid var(--bd);
+  background: var(--card);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.quick-cats button.on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+  font-weight: 600;
+}

@@ -1131,3 +1131,29 @@ export function analyzeSavingsGoal(
     monthlyRoadmap,
   }
 }
+
+/**
+ * Nhóm hay dùng nhất của một loại (chi/thu): đếm số lần dùng trong `txs` (đã lọc theo khoảng ngày gần đây),
+ * hoà → nhóm dùng gần nhất trước. Bỏ giao dịch tự động (định kỳ, phân bổ tiết kiệm) vì người dùng không tự chọn.
+ */
+export function rankFrequentCategories(txs: Tx[], type: Tx['type'], limit = 4): number[] {
+  const stat = new Map<number, { n: number; last: string }>()
+  for (const t of txs) {
+    if (t.type !== type || t.categoryId == null || t.recurringId || t.savingsAction) continue
+    const s = stat.get(t.categoryId) ?? { n: 0, last: '' }
+    s.n++
+    if (t.date > s.last) s.last = t.date
+    stat.set(t.categoryId, s)
+  }
+  return [...stat.entries()]
+    .sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))
+    .slice(0, limit)
+    .map(([id]) => id)
+}
+
+/** Ví dùng gần nhất cho một nhóm (để khỏi chọn lại ví mỗi lần). */
+export function lastFundForCategory(txs: Tx[], categoryId: number | undefined): number | undefined {
+  let best: Tx | undefined
+  for (const t of txs) if (t.categoryId === categoryId && (!best || t.date > best.date || (t.date === best.date && (t.id ?? 0) > (best.id ?? 0)))) best = t
+  return best?.fundId
+}

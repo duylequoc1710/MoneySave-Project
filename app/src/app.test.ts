@@ -26,6 +26,8 @@ import {
   ymd,
   monthKey,
   shiftMonth,
+  rankFrequentCategories,
+  lastFundForCategory,
 } from './lib.ts'
 import {
   computeDueDates,
@@ -952,5 +954,28 @@ describe('Quỹ Tiết Kiệm & Lộ trình kế hoạch từng tháng (analyzeS
     assert.equal(info.monthlyRoadmap[1].isCurrent, true)
     assert.equal(info.monthlyRoadmap[5].monthLabel, '03/2027')
     assert.equal(info.monthlyRoadmap[5].remainingToGoalAfterMonth, 0)
+  })
+})
+
+describe('Nhập nhanh: nhóm & ví hay dùng', () => {
+  const t = (id: number, categoryId: number, date: string, extra: Record<string, unknown> = {}) =>
+    ({ id, type: 'expense', amount: 1, date, fundId: 1, categoryId, ...extra }) as unknown as Tx
+  it('xếp theo số lần dùng, hoà → dùng gần nhất; bỏ giao dịch định kỳ / tiết kiệm / khác loại', () => {
+    const txs = [
+      t(1, 10, '2026-11-01'), t(2, 10, '2026-11-02'), t(3, 10, '2026-11-03'), // Ăn uống ×3
+      t(4, 20, '2026-11-01'), t(5, 20, '2026-11-02'), // ×2, cũ hơn
+      t(6, 30, '2026-11-05'), t(7, 30, '2026-11-06'), // ×2, mới hơn → đứng trước 20
+      t(8, 40, '2026-11-07', { recurringId: 1 }), t(9, 40, '2026-11-07', { recurringId: 1 }), t(10, 40, '2026-11-07', { recurringId: 1 }), t(11, 40, '2026-11-07', { recurringId: 1 }),
+      t(12, 50, '2026-11-07', { savingsAction: 'allocate' }),
+      t(13, 60, '2026-11-07', { type: 'income' }),
+    ]
+    assert.deepEqual(rankFrequentCategories(txs, 'expense'), [10, 30, 20])
+    assert.deepEqual(rankFrequentCategories(txs, 'income'), [60])
+    assert.deepEqual(rankFrequentCategories([], 'expense'), [])
+  })
+  it('ví dùng gần nhất cho nhóm', () => {
+    const txs = [t(1, 10, '2026-11-01', { fundId: 1 }), t(2, 10, '2026-11-03', { fundId: 2 }), t(3, 20, '2026-11-05', { fundId: 3 })]
+    assert.equal(lastFundForCategory(txs, 10), 2)
+    assert.equal(lastFundForCategory(txs, 99), undefined)
   })
 })
