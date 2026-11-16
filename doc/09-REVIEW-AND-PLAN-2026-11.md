@@ -120,3 +120,7 @@
 - Đạt: lưu cục bộ, sao lưu file, sao lưu Google Drive (S4a – mỗi người tự chịu dung lượng Drive của mình).
 - Chưa đạt: đồng bộ đăng nhập dùng Firebase **của PO** → (1) khoá suy từ uid+email nên chủ Firebase về kỹ thuật giải mã được; (2) gói miễn phí Spark ~1 GB lưu trữ / 10 GB tải mỗi tháng → nhiều người dùng sẽ chạm trần (Spark: ngừng; Blaze: tính tiền).
 - Hướng S4b (đề xuất): đồng bộ qua file trên Drive của từng người (`drive.file`/`appDataFolder`), so `modifiedTime` để kéo/đẩy, giữ snapshot an toàn; Firebase giữ song song trong giai đoạn chuyển. Đánh đổi: chậm hơn (30 s–vài phút), mỗi máy đăng nhập Google. Lựa chọn tối thiểu thay thế: "mật khẩu két" riêng (§2.1b) để Firebase chỉ giữ dữ liệu không giải mã được.
+
+## §8. S4b – Tạm dừng (PO chốt 2026-11-16)
+PO giữ Firebase cho đồng bộ nhiều máy thêm một thời gian. Lý do: người dùng hiện là gia đình/bạn bè, còn xa trần gói miễn phí; Vercel chỉ phục vụ mã app (không chạm dữ liệu) nên không lo trần. Code đồng bộ Drive (bộ máy + giao diện, v2.17.0) nằm sẵn trên nhánh `claude/s4b-drive-sync` kèm kế hoạch đầy đủ ở §8 của nhánh đó; mở lại khi gần trần Firebase hoặc cần quyền riêng tư tuyệt đối.
+
