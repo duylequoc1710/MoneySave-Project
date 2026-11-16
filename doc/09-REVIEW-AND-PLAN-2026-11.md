@@ -90,7 +90,7 @@
 3. Firebase Console → Realtime Database → Rules → dán cấu hình trong `06-DEPLOYMENT-GUIDE.md` mục 5 → Publish.
 4. Mở app → bấm 🔄 → kiểm tra Data trên Firebase có nhánh `moneysave_users/<uid>` (app tự sao chép).
 
-### §6.3 Giai đoạn 2 (≥7 ngày sau, khi PO xác nhận dữ liệu đầy đủ trên mọi thiết bị)
+### §6.3 Giai đoạn 2 (≥7 ngày sau, khi PO xác nhận dữ liệu đầy đủ trên mọi thiết bị) – ✅ PO đã khoá 2026-11-16
 **Hướng dẫn PO (từ v2.15.1 – app đã sẵn sàng):**
 1. Trên **mọi** thiết bị đang dùng app: mở app, bấm 🔄, Cài đặt hiện "Đã đồng bộ lúc …" và số giao dịch khớp nhau.
 2. Cài đặt › Sao lưu ra file (giữ 1 bản dự phòng).
