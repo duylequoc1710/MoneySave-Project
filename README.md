@@ -6,8 +6,8 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/d%C3%B9ng_mi%E1%BB%85n_ph%C3%AD-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Dùng miễn phí" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.15.1-3b82f6" alt="Version v2.15.1" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-73%2F73%20passing-brightgreen" alt="Tests" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.16.0-3b82f6" alt="Version v2.16.0" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-75%2F75%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
@@ -160,6 +160,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.16.0` (2026-11-16):** Chữ to & dễ đọc hơn (16px, số tiền thẳng cột), màu giao diện Sáng đủ tương phản, nút chữ dễ bấm (44px), icon thống nhất trong cửa sổ.
 * **`v2.15.1` (2026-11-16):** Sẵn sàng khoá két Firebase cũ: tài khoản mới không báo lỗi đồng bộ khi két cũ đã khoá.
 * **`v2.15.0` (2026-11-16):** Hiệu ứng mở cửa sổ & nhấn nút mượt hơn, tự tắt khi máy bật "Giảm chuyển động".
 * **`v2.14.0` (2026-11-16):** Tổng quan đưa Giao dịch gần đây lên trên; màn hình trống có hướng dẫn và nút làm ngay.

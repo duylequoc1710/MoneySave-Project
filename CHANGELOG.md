@@ -4,6 +4,18 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.16.0] – 2026-11-16
+### 🔤 Chữ & màu (U3)
+- Chữ gốc 16px (trước 14.5px); mọi cỡ chữ theo một thang thống nhất 12–34px (bỏ cỡ lẻ 12.5/13.5/14.5…); số tiền dùng chữ số đều rộng (`tabular-nums`) → các cột tiền thẳng hàng.
+- Màu thành token ngữ nghĩa: thêm `--warn` (cảnh báo) và `--info` (thông tin); chữ màu cứng trong các màn hình chuyển sang token.
+- Giao diện **Sáng** đạt tương phản ≥ 4.5:1: chữ phụ, xanh thu, đỏ chi, cam cảnh báo, xanh dương thông tin đậm hơn; chữ trắng trên nút xanh 5.0:1 (trước 3.3:1).
+- Nút chữ (tab Tối/Sáng/Theo máy, "+ Cài đặt mới", tab tháng, chọn ví, Đóng, Đăng ký/Đăng nhập) cao tối thiểu 44px.
+- Ký tự "‹ Đóng", "›", "⌄" trong cửa sổ đổi sang icon SVG, có nhãn đọc màn hình.
+- Sửa nhỏ: viền/nền nhãn "tốc độ chi" và nhãn trạng thái mục tiêu hiển thị đúng màu (trước là chuỗi màu không hợp lệ).
+- +2 test chặn cỡ chữ lệch thang và màu Sáng dưới 4.5:1 → 75/75. Không đổi dữ liệu/schema.
+
+---
+
 ## [v2.15.1] – 2026-11-16
 ### 🔒 Chuẩn bị khoá két Firebase cũ (giai đoạn 2)
 - Sửa: khi két cũ `moneysave_vaults` đã bị khoá, tài khoản **mới** đăng nhập lần đầu không còn báo lỗi đồng bộ (bỏ qua bước sao chép két cũ thay vì dừng lại).

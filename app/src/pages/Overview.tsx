@@ -833,7 +833,7 @@ export default function Overview() {
                   smartInsights.burnRate.paceStatus === 'overpace'
                     ? 'var(--exp)'
                     : smartInsights.burnRate.paceStatus === 'watch'
-                      ? '#f59e0b'
+                      ? 'var(--warn)'
                       : 'var(--inc)',
               }}
             />
