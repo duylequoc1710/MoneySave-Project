@@ -4,6 +4,15 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.15.0] – 2026-11-16
+### ✨ Chuyển động mượt (U5)
+- Mở cửa sổ (modal): nền mờ dần 0.18s, tấm trượt nhẹ lên 0.24s.
+- Nhấn nút (`.btn`, nút Đóng, nút icon, thanh chọn): thu nhỏ nhẹ 0.12s để biết đã bấm.
+- Máy bật **"Giảm chuyển động"** (iPhone: Trợ năng › Chuyển động) → tắt mọi hiệu ứng.
+- Chỉ CSS, không đổi dữ liệu/schema. 72/72 test.
+
+---
+
 ## [v2.14.0] – 2026-11-16
 ### 🧭 Tổng quan gọn hơn & màn hình trống có hướng dẫn (U4)
 - **Tổng quan:** "Giao dịch gần đây" chuyển lên ngay sau "Ví của tôi" (mục dùng nhiều nhất, không phải cuộn qua các thẻ tín dụng).

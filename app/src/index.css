@@ -1680,3 +1680,45 @@ h2 {
 
 
 
+
+/* U5: chuyển động mượt – mở modal (nền mờ dần + tấm trượt lên), phản hồi khi nhấn nút */
+@keyframes sheetFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheetSlideUp {
+  from {
+    transform: translate3d(0, 24px, 0);
+    opacity: 0.6;
+  }
+}
+.sheetbg {
+  animation: sheetFadeIn 0.18s ease-out;
+}
+.sheet {
+  animation: sheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn,
+.close-pill-btn,
+.icon-btn,
+.seg button {
+  transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.btn:active,
+.close-pill-btn:active,
+.icon-btn:active,
+.seg button:active {
+  transform: scale(0.96);
+}
+/* Máy bật "Giảm chuyển động" → tắt hiệu ứng */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

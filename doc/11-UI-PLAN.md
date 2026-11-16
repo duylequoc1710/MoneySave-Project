@@ -31,7 +31,7 @@ Quan sát thêm (ảnh chụp):
 | **U2** ✅ v2.13.0 | Bộ icon SVG thống nhất (`lucide-react`, chỉ nạp icon dùng tới, ~vài KB): thanh điều hướng, header (tìm kiếm, đồng bộ, lịch), mũi tên ‹ ›, tiêu đề mục, Cài đặt. Icon đổi màu theo theme, trạng thái "đang chọn" rõ hơn | Thấp–vừa | Vừa |
 | **U3** | Chữ & màu: cỡ chữ gốc 15–16px theo thang thống nhất, số tiền `tabular-nums`, gom màu thành token ngữ nghĩa, kiểm tra tương phản giao diện Sáng | Vừa (ảnh hưởng mọi trang) | Vừa |
 | **U4** ✅ v2.14.0 | Tổng quan gọn & trạng thái trống: thứ tự thẻ theo mức dùng, hướng dẫn khi chưa có dữ liệu (Sổ giao dịch, Thẻ tín dụng, Ngân sách) | Thấp | Nhỏ–vừa |
-| **U5** | Chuyển động mượt: hiệu ứng mở/đóng modal, nhấn nút (150–250ms), tắt khi máy bật "Giảm chuyển động" | Thấp | Nhỏ |
+| **U5** ✅ v2.15.0 | Chuyển động mượt: hiệu ứng mở/đóng modal, nhấn nút (150–250ms), tắt khi máy bật "Giảm chuyển động" | Thấp | Nhỏ |
 
 Khuyến nghị thứ tự: **U1 → U2 → U4 → U3 → U5**. (U1 + U2 xong ở v2.13.0, phiên 2026-11-16-03 – còn lại: nút chữ 30–35px như "+ Cài đặt mới", tab Tối/Sáng chưa đạt 44px → gộp vào U3; modal (‹ Đóng, ›) vẫn dùng ký tự/emoji → làm cùng U3/U4.) U1 + U2 mang lại khác biệt nhìn thấy rõ nhất với rủi ro thấp.
 
