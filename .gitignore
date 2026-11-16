@@ -21,3 +21,9 @@ moneygo-backup*.json
 *.db
 
 
+
+# Cấu hình cục bộ của Claude Code
+.claude/settings.local.json
+# Dữ liệu tra cứu của skill (không phải dữ liệu tài chính) – cho phép commit
+!/.claude/skills/**/*.csv
+__pycache__/
