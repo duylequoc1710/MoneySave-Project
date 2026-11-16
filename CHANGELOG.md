@@ -5,10 +5,12 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 ---
 
 ## [v2.18.0] – 2026-11-16
-### ⚡ Số tiền hay nhập + Tổng quan gọn hơn
+### ⚡ Số tiền hay nhập, Tổng quan gọn hơn, giờ ghi giao dịch
 - Bàn phím số khi thêm giao dịch: hàng nút gợi ý giờ là **4 số tiền bạn hay nhập cho nhóm đang chọn** (90 ngày gần đây, vd. Ăn uống: 35k · 50k…), thiếu thì bù 50k/100k/200k/500k. Đổi nhóm → gợi ý đổi theo.
 - Tổng quan: gộp "Giao dịch gần đây" và "Chi tiêu nhiều nhất" thành **1 thẻ có 3 tab** (Gần đây · Chi tuần này · Chi tháng này) – trang ngắn hơn 1 thẻ; tiêu đề và nút "Xem tất cả / Xem chi tiết" đổi theo tab.
-- +1 test → 81/81. Không đổi dữ liệu/schema.
+- Sổ giao dịch: bỏ nút "＋ Thêm giao dịch" thừa trong ô "Chưa có giao dịch" (đã có nút nổi). Đang xem tháng khác (trước/sau) mà bấm Thêm giao dịch → **ngày mặc định nằm trong tháng đó** (cùng ngày, kẹp theo số ngày của tháng).
+- **Giờ ghi giao dịch:** giao dịch ghi đúng ngày hiện **giờ:phút** lúc bấm Lưu (vd. "08:05 · Cà phê"); giao dịch ghi bù/ghi trước hiện "nhập dd/MM/yyyy". Áp dụng ở Sổ giao dịch, Giao dịch gần đây và Chi tiết giao dịch. Dùng mốc `createdAt` có sẵn → giao dịch cũ cũng hiện; giao dịch định kỳ/tiết kiệm tự tạo không gắn nhãn.
+- +3 test → 83/83. Không đổi dữ liệu/schema.
 
 ---
 

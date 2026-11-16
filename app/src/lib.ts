@@ -1178,3 +1178,28 @@ export function frequentAmounts(txs: Tx[], categoryId: number | undefined, limit
   for (const d of defaults) if (top.length < limit && !top.includes(d)) top.push(d)
   return top.sort((a, b) => a - b)
 }
+
+/** Ngày mặc định do trang đang mở đặt cho form thêm giao dịch (Sổ giao dịch đang xem tháng khác) – null = hôm nay. */
+export const txFormPageDefaults: { date: string | null } = { date: null }
+
+/**
+ * Ngày mặc định khi thêm giao dịch lúc đang xem một khoảng thời gian (vd. tháng trước/sau ở Sổ giao dịch):
+ * hôm nay nếu nằm trong khoảng; ngoài khoảng → cùng ngày trong tháng của khoảng (kẹp theo số ngày & giới hạn khoảng).
+ */
+export function defaultTxDate(from: string, to: string, today: string): string {
+  if (today >= from && today <= to) return today
+  const [y, m] = from.split('-').map(Number)
+  const dim = new Date(y, m, 0).getDate()
+  const d = `${from.slice(0, 7)}-${String(Math.min(Number(today.slice(8, 10)), dim)).padStart(2, '0')}`
+  return d < from ? from : d > to ? to : d
+}
+
+/**
+ * Nhãn thời điểm ghi: giao dịch ghi đúng ngày → "HH:mm" (giờ bấm Lưu, từ `createdAt`);
+ * ghi bù/ghi trước (ngày giao dịch khác ngày bấm Lưu) → "nhập dd/MM/yyyy". Giao dịch tự động (định kỳ, tiết kiệm) → rỗng.
+ */
+export function txTimeLabel(t: Pick<Tx, 'date' | 'createdAt' | 'recurringId' | 'savingsAction'>): string {
+  if (!t.createdAt || t.recurringId || t.savingsAction) return ''
+  const d = new Date(t.createdAt)
+  return ymd(d) === t.date ? format(d, 'HH:mm') : `nhập ${fmtDmy(ymd(d))}`
+}

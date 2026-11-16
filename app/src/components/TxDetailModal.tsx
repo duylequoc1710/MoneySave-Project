@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { db, type Category, type Fund, type Tx } from '../db.ts'
-import { computeInstallmentStatus, fmtDmy, getCategoryFullName, money } from '../lib.ts'
+import { computeInstallmentStatus, fmtDmy, getCategoryFullName, money, txTimeLabel } from '../lib.ts'
 import type { TxFormDraft } from './TxForm.tsx'
 import { showAlert, showConfirm } from './AppDialog.tsx'
 import { InstallmentConvertModal } from './CreditCardDetailModal.tsx'
@@ -252,7 +252,7 @@ export default function TxDetailModal({
             }}
           >
             <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>📅</span>
-            <span>{formattedDate}</span>
+            <span>{[formattedDate, txTimeLabel(tx)].filter(Boolean).join(' · ')}</span>
           </div>
 
           {/* Dòng Quỹ / Ví */}

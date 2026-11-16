@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import EmptyState from '../components/EmptyState'
 import { CalendarDays, ChevronLeft, ChevronRight, ReceiptText, Search, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -15,6 +15,9 @@ import {
   monthLabel,
   resolveTimeRange,
   type TimeFilter,
+  defaultTxDate,
+  txFormPageDefaults,
+  txTimeLabel,
   ymd,
 } from '../lib'
 import TxForm, { type TxFormDraft } from '../components/TxForm'
@@ -65,6 +68,13 @@ export default function Ledger() {
   const resolvedRange = useMemo(() => resolveTimeRange(timeFilter), [timeFilter])
   const from = resolvedRange.from
   const to = resolvedRange.to
+  // Nút "Thêm giao dịch" khi đang xem tháng khác → ngày mặc định nằm trong tháng đó
+  useEffect(() => {
+    txFormPageDefaults.date = defaultTxDate(from, to, ymd(new Date()))
+    return () => {
+      txFormPageDefaults.date = null
+    }
+  }, [from, to])
 
   function selectMonth(nextM: Date, direction?: 'next' | 'prev') {
     const dir =
@@ -366,8 +376,6 @@ export default function Ledger() {
             icon={ReceiptText}
             title={`Chưa có giao dịch (${resolvedRange.label})`}
             hint="Ghi lại khoản chi/thu đầu tiên, hoặc chọn tháng khác bằng mũi tên phía trên."
-            actionLabel="＋ Thêm giao dịch"
-            onAction={() => setDraftTx({})}
           />
         )}
 
@@ -465,9 +473,12 @@ export default function Ledger() {
                         {t.recurringId && <span className="pill-tag">Định kỳ</span>}
                       </div>
                       <small>
-                        {isT
-                          ? `${f?.name ?? ''} → ${fMap.get(t.toFundId ?? -1)?.name ?? ''}${t.note ? ' · ' + t.note : ''}`
-                          : t.note || f?.name || ''}
+                        {[
+                          txTimeLabel(t),
+                          isT ? `${f?.name ?? ''} → ${fMap.get(t.toFundId ?? -1)?.name ?? ''}${t.note ? ' · ' + t.note : ''}` : t.note || f?.name || '',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </small>
                     </div>
                     <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>

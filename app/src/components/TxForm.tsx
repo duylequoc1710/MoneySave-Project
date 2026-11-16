@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
 import { addDays } from 'date-fns'
-import { evaluateKeypadExpression, formatKeypadDisplay, frequentAmounts, lastFundForCategory, money, rankFrequentCategories, ymd } from '../lib'
+import { evaluateKeypadExpression, formatKeypadDisplay, frequentAmounts, lastFundForCategory, txFormPageDefaults, money, rankFrequentCategories, ymd } from '../lib'
 import DateInput from './DateInput'
 import Keypad, { NumericInputBox } from './Keypad'
 import CategoryPickerModal from './CategoryPickerModal'
@@ -17,6 +17,7 @@ export interface TxFormDraft {
   toFundId?: number | null
   categoryId?: number | null
   note?: string
+  date?: string
 }
 
 export default function TxForm({
@@ -36,7 +37,7 @@ export default function TxForm({
   const [type, setType] = useState<TxType>(tx?.type ?? draft?.type ?? 'expense')
   const [amount, setAmount] = useState(tx ? String(tx.amount) : draft?.amount ? String(draft.amount) : '')
   const [showKeypad, setShowKeypad] = useState<boolean>(false)
-  const [date, setDate] = useState(() => tx?.date ?? ymd(new Date()))
+  const [date, setDate] = useState(() => tx?.date ?? draft?.date ?? txFormPageDefaults.date ?? ymd(new Date()))
   const [fundId, setFundId] = useState<number | ''>(tx?.fundId ?? draft?.fundId ?? '')
   const [toFundId, setToFundId] = useState<number | ''>(tx?.toFundId ?? draft?.toFundId ?? '')
   const [categoryId, setCategoryId] = useState<number | ''>(tx?.categoryId ?? draft?.categoryId ?? '')

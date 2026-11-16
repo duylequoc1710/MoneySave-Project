@@ -29,6 +29,8 @@ import {
   rankFrequentCategories,
   lastFundForCategory,
   frequentAmounts,
+  defaultTxDate,
+  txTimeLabel,
 } from './lib.ts'
 import {
   computeDueDates,
@@ -993,5 +995,21 @@ describe('Nhập nhanh: nhóm & ví hay dùng', () => {
     const txs = [t(1, 10, '2026-11-01', { fundId: 1 }), t(2, 10, '2026-11-03', { fundId: 2 }), t(3, 20, '2026-11-05', { fundId: 3 })]
     assert.equal(lastFundForCategory(txs, 10), 2)
     assert.equal(lastFundForCategory(txs, 99), undefined)
+  })
+})
+
+describe('Ngày mặc định theo khoảng đang xem & nhãn giờ ghi', () => {
+  it('defaultTxDate: hôm nay trong khoảng → hôm nay; tháng khác → cùng ngày, kẹp theo số ngày của tháng', () => {
+    assert.equal(defaultTxDate('2026-11-01', '2026-11-30', '2026-11-16'), '2026-11-16')
+    assert.equal(defaultTxDate('2026-12-01', '2026-12-31', '2026-11-16'), '2026-12-16')
+    assert.equal(defaultTxDate('2026-02-01', '2026-02-28', '2026-01-31'), '2026-02-28')
+    assert.equal(defaultTxDate('2026-10-12', '2026-10-18', '2026-11-03'), '2026-10-12') // tuần: kẹp vào đầu khoảng
+  })
+  it('txTimeLabel: ghi đúng ngày → HH:mm; ghi bù/ghi trước → "nhập dd/MM/yyyy"; tự động → rỗng', () => {
+    const at = new Date(2026, 10, 16, 8, 5).getTime()
+    assert.equal(txTimeLabel({ date: '2026-11-16', createdAt: at }), '08:05')
+    assert.equal(txTimeLabel({ date: '2026-11-10', createdAt: at }), 'nhập 16/11/2026')
+    assert.equal(txTimeLabel({ date: '2026-12-01', createdAt: at }), 'nhập 16/11/2026')
+    assert.equal(txTimeLabel({ date: '2026-11-16', createdAt: at, recurringId: 3 }), '')
   })
 })

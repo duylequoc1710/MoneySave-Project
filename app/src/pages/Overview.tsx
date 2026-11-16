@@ -32,6 +32,7 @@ import {
   moneyShort,
   monthKey,
   type TimeFilter,
+  txTimeLabel,
   ymd,
 } from '../lib'
 import TxForm, { type TxFormDraft } from '../components/TxForm'
@@ -450,7 +451,7 @@ export default function Overview() {
                 </div>
                 <div className="grow">
                   <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
-                  <small>{fullViDate(t.date)}</small>
+                  <small>{[fullViDate(t.date), txTimeLabel(t)].filter(Boolean).join(' · ')}</small>
                 </div>
                 <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>{money(t.amount)}</b>
               </div>
