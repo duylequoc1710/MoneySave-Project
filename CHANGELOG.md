@@ -4,6 +4,13 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.16.1] – 2026-11-16
+### 🤖 CI tự động
+- GitHub Actions (`.github/workflows/ci.yml`): mỗi lần đẩy nhánh hoặc mở PR tự chạy `npm ci`, `npm test`, `npm run build`, `npm run lint` (Node 22). Báo đỏ trước khi lỗi lên Vercel (bài học TODO-3: commit `9f53f54` từng lên `main` khi build lỗi).
+- Không đổi code app, dữ liệu hay schema.
+
+---
+
 ## [v2.16.0] – 2026-11-16
 ### 🔤 Chữ & màu (U3)
 - Chữ gốc 16px (trước 14.5px); mọi cỡ chữ theo một thang thống nhất 12–34px (bỏ cỡ lẻ 12.5/13.5/14.5…); số tiền dùng chữ số đều rộng (`tabular-nums`) → các cột tiền thẳng hàng.

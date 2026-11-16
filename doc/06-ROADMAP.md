@@ -21,7 +21,7 @@ Host tĩnh miễn phí (Firebase Hosting / Netlify / GitHub Pages) để cài l�
 - Giao dịch định kỳ; nhắc nhở
 - Đính kèm ảnh hoá đơn; báo cáo theo nhóm/quỹ; biểu đồ tròn
 - Mục tiêu tiết kiệm; đa tiền tệ; khoá ứng dụng bằng PIN/FaceID (WebAuthn)
-- CI tự động (Unit test đã hoàn thành trong `app/src/app.test.ts`)
+- ✅ CI tự động (v2.16.1, GitHub Actions `ci.yml`: test + build + lint mỗi lần push/PR)
 
 ## Cập nhật 2026-10-26
 Định dạng `MM/yyyy`/`dd/MM/yyyy` thống nhất; màn Chi tiết thu nhập ròng theo tuần; khoá cuộn nền khi mở sheet; bàn phím số dạng panel nổi (xem sessions/2026-10-26-01.md).
