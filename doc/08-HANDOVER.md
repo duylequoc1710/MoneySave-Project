@@ -9,7 +9,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
 - PO đã đổi rule Firebase (két `moneysave_users`), xác nhận 2 thiết bị đồng bộ khớp (2026-11-16). Giai đoạn 2 khoá két cũ: **PO báo đã hoàn tất (2026-11-16)** theo 09 §6.3 – rule chỉ còn `moneysave_users`. Nếu có lỗi đồng bộ: kiểm tra rule, hoàn tác theo 06 mục 5. Bước tuỳ chọn còn lại: xoá nhánh `moneysave_vaults` trên tab Data sau vài tuần ổn định.
-- `npm test`: 80/80 pass (83/83 trên nhánh `claude/quick-entry` v2.18.0, chưa merge). `main` = v2.17.0 (nhập nhanh + Smart Insights theo số liệu thật, 2026-11-16; CI GitHub Actions; U1–U5 giao diện xong). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
+- `npm test`: 83/83 pass. `main` = v2.18.0 (số tiền hay nhập, Tổng quan gộp thẻ có tab, giờ ghi giao dịch, ngày mặc định theo tháng đang xem – 2026-11-16; trước đó v2.17.0 nhập nhanh + Smart Insights theo số liệu thật; CI GitHub Actions; U1–U5 giao diện xong). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục
@@ -39,6 +39,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 - ✅ **[S4a] Google Drive:** v2.11.0; PO đã thử đăng nhập Google + sao lưu/khôi phục trên máy thật – OK (2026-11-16, T-30).
 - **[UI] Cải tiến giao diện:** kế hoạch `11-UI-PLAN.md`. U1 + U2 xong v2.13.0 (đã lên `main`); U4 (v2.14.0) + U5 (v2.15.0) xong, đã lên `main` (nhật ký `sessions/2026-11-16-03.md`). U3 xong v2.16.0, đã lên `main` (nhật ký `sessions/2026-11-16-04.md`). Kế hoạch giao diện U1–U5 hoàn tất. Gợi ý tiếp: S4a (PO thử Google Drive thật, T-30), TODO-2 (PO xác minh trên máy thật), S4b. Lưu ý: skill viết tiếng Anh nhưng luôn trả lời PO bằng tiếng Việt. Skill `ui-ux-pro-max`, `ponytail` có sẵn trong `.claude/skills/`.
 - **[v2.17.0] Nhập nhanh + Smart Insights theo số liệu thật:** PO nói "merge" (2026-11-16) → đã lên `main` (nhật ký `sessions/2026-11-16-06.md`, FR-54/FR-55, T-38/T-39). PO đã thử trên máy thật – OK (2026-11-16, T-38/T-39).
+- **[v2.18.0] Số tiền hay nhập + thẻ gộp Tổng quan + giờ ghi giao dịch:** PO nói "merge" (2026-11-16) → đã lên `main` (nhật ký `sessions/2026-11-16-06.md` mục 13–19, FR-56/FR-57, T-40/T-41). Chờ PO thử trên máy thật.
 - **[S4b – TẠM DỪNG]** PO quyết định giữ Firebase (2026-11-16). Nhánh `claude/s4b-drive-sync` giữ làm dự phòng (S4b-1 + S4b-2 xong, chưa merge; nếu làm tiếp: rebase lên `main`, đổi version sau v2.17.0, đổi tên nhật ký `2026-11-16-05.md` nếu trùng).
 - **[S4b] Định hướng PO (09 §7):** riêng tư + chi phí 0 → đề xuất chuyển đồng bộ sang Drive từng người; chờ PO chốt sau khi S4a ổn.
 - ✅ **[TODO-2]** PO đã xác minh trên máy thật – OK (2026-11-16, T-26).
