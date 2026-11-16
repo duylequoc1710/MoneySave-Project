@@ -14,8 +14,8 @@ Host tĩnh miễn phí (Firebase Hosting / Netlify / GitHub Pages) để cài l�
 
 ## Việc tồn đọng giao cho AI tiếp quản (chi tiết ở `08-HANDOVER.md` mục 6)
 - [ ] TODO-1: Tách logic `GlobalSearchModal` sang module thuần + unit test.
-- [ ] TODO-2: Xác minh thủ công v2.8.0 trên iOS/Android thật (T-26).
-- [ ] TODO-3: Xác nhận Vercel deploy xanh cho `main`.
+- [x] TODO-2: Xác minh thủ công v2.8.0 trên iOS/Android thật (T-26).
+- [x] TODO-3: Xác nhận Vercel deploy xanh cho `main`.
 
 ## Backlog đề xuất
 - Giao dịch định kỳ; nhắc nhở
