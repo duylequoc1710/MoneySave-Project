@@ -6,7 +6,7 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/d%C3%B9ng_mi%E1%BB%85n_ph%C3%AD-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Dùng miễn phí" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.13.0-3b82f6" alt="Version v2.13.0" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.14.0-3b82f6" alt="Version v2.14.0" /></a>
     <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-72%2F72%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
@@ -160,6 +160,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.14.0` (2026-11-16):** Tổng quan đưa Giao dịch gần đây lên trên; màn hình trống có hướng dẫn và nút làm ngay.
 * **`v2.13.0` (2026-11-16):** Giao diện dễ bấm hơn (vùng chạm ≥ 44px, chữ ≥ 12px, nút nổi không che nội dung) và bộ icon SVG thống nhất thay emoji ở khung giao diện.
 * **`v2.12.0` (2026-11-16):** Dọn gọn Cài đặt: gộp khối đồng bộ, Drive lên đầu, bỏ CSV và mục dữ liệu kiểm thử, bản sao an toàn thu gọn.
 * **`v2.11.0` (2026-11-16):** Sao lưu/khôi phục thẳng lên Google Drive của chính người dùng (quyền `drive.file`, mỗi ngày 1 bản, giữ 30 bản).

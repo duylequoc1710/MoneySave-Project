@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import EmptyState from '../components/EmptyState'
 import { CalendarDays, ChevronRight, Repeat, Target } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { startOfMonth } from 'date-fns'
@@ -188,11 +189,13 @@ export default function Budgets() {
 
           <div className="card" style={{ padding: '0 14px' }}>
             {recurrings.length === 0 && (
-              <div className="empty">
-                Chưa có giao dịch định kỳ nào.
-                <br />
-                <small>Hãy thêm tiền nhà, điện, nước, internet, phí dịch vụ hoặc lương cố định để tự động ghi nhận.</small>
-              </div>
+              <EmptyState
+                icon={Repeat}
+                title="Chưa có giao dịch định kỳ"
+                hint="Thêm tiền nhà, điện, nước, internet hoặc lương cố định – app sẽ tự ghi sổ khi đến ngày."
+                actionLabel="+ Cài đặt mới"
+                onAction={() => setRecEdit('new')}
+              />
             )}
             {recurrings.map(rec => {
               const cat = cMap.get(rec.categoryId ?? -1)
@@ -333,16 +336,13 @@ export default function Budgets() {
           {/* Chỉ hiển thị các nhóm ĐANG ĐƯỢC ĐẶT NGÂN SÁCH */}
           <div className="card" style={{ padding: '0 14px' }}>
             {activeBudgets.length === 0 ? (
-              <div className="empty" style={{ padding: '26px 12px', textAlign: 'center' }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🎯</div>
-                <b style={{ color: 'var(--fg)', fontSize: 15 }}>
-                  Chưa có nhóm nào được đặt ngân sách tháng
-                </b>
-                <p className="mut" style={{ fontSize: 13, marginTop: 6, lineHeight: 1.45 }}>
-                  Bấm nút <b>"+ Đặt ngân sách"</b> phía trên để chọn nhóm chi tiêu muốn giới hạn và
-                  bật tự động lặp lại cho tháng tiếp theo.
-                </p>
-              </div>
+              <EmptyState
+                icon={Target}
+                title="Chưa đặt ngân sách tháng"
+                hint="Chọn nhóm chi tiêu muốn giới hạn; có thể bật tự lặp lại cho tháng sau."
+                actionLabel="+ Đặt ngân sách"
+                onAction={() => setBudgetModalCatId('new')}
+              />
             ) : (
               activeBudgets.map(b => {
                 const c = cMap.get(b.categoryId)

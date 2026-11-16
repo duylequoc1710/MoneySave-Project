@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { CalendarClock, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff, PiggyBank, RefreshCw, Search } from 'lucide-react'
+import EmptyState from '../components/EmptyState'
+import { CalendarClock, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff, PieChart, PiggyBank, ReceiptText, RefreshCw, Search } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -399,6 +400,45 @@ export default function Overview() {
               <div style={{ textAlign: 'right' }}>
                 <b className={bal < 0 ? 'exp' : ''}>{hideBalance ? '•••••• ₫' : money(bal)}</b>
               </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 2a. Giao dịch gần đây (dùng nhiều nhất → đặt ngay sau Ví) */}
+      <div className="sec-head">
+        <span>Giao dịch gần đây</span>
+        <span className="link-green" onClick={() => nav('/ledger')}>
+          Xem tất cả
+        </span>
+      </div>
+      <div className="card" style={{ padding: '4px 14px' }}>
+        {recentTxs.length === 0 && (
+          <EmptyState
+            icon={ReceiptText}
+            title="Chưa có giao dịch nào"
+            hint="Ghi khoản chi/thu đầu tiên để xem số dư, báo cáo và gợi ý tiết kiệm."
+            actionLabel="＋ Thêm giao dịch"
+            onAction={() => setPayDraft({})}
+          />
+        )}
+        {recentTxs.map(t => {
+          const c = cMap.get(t.categoryId ?? -1)
+          const f = fMap.get(t.fundId)
+          const isT = t.type === 'transfer'
+          return (
+            <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
+              <div className="ico round" style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}>
+                {isT ? '🔁' : (c?.icon ?? '❓')}
+                {f && <span className="wallet-mini-badge">{f.icon}</span>}
+              </div>
+              <div className="grow">
+                <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
+                <small>{fullViDate(t.date)}</small>
+              </div>
+              <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>
+                {money(t.amount)}
+              </b>
             </div>
           )
         })}
@@ -1130,7 +1170,9 @@ export default function Overview() {
             Tháng
           </button>
         </div>
-        {topSpendList.length === 0 && <div className="empty">Chưa có khoản chi tiêu nào</div>}
+        {topSpendList.length === 0 && (
+          <EmptyState icon={PieChart} title="Chưa có khoản chi" hint="Khi có giao dịch chi, các nhóm chi nhiều nhất sẽ hiện ở đây." />
+        )}
         {topSpendList.map(item => (
           <div className="row" key={item.cid}>
             <div className="ico round" style={{ background: (item.cat?.color ?? '#ef4444') + '28' }}>
@@ -1143,37 +1185,6 @@ export default function Overview() {
             <b className="exp">{item.pct}%</b>
           </div>
         ))}
-      </div>
-
-      {/* 6. Giao dịch gần đây */}
-      <div className="sec-head">
-        <span>Giao dịch gần đây</span>
-        <span className="link-green" onClick={() => nav('/ledger')}>
-          Xem tất cả
-        </span>
-      </div>
-      <div className="card" style={{ padding: '4px 14px' }}>
-        {recentTxs.length === 0 && <div className="empty">Chưa có giao dịch nào</div>}
-        {recentTxs.map(t => {
-          const c = cMap.get(t.categoryId ?? -1)
-          const f = fMap.get(t.fundId)
-          const isT = t.type === 'transfer'
-          return (
-            <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
-              <div className="ico round" style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}>
-                {isT ? '🔁' : (c?.icon ?? '❓')}
-                {f && <span className="wallet-mini-badge">{f.icon}</span>}
-              </div>
-              <div className="grow">
-                <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
-                <small>{fullViDate(t.date)}</small>
-              </div>
-              <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>
-                {money(t.amount)}
-              </b>
-            </div>
-          )
-        })}
       </div>
 
       {viewingTx && (

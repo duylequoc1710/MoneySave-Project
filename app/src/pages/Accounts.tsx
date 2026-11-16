@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import EmptyState from '../components/EmptyState'
 import { CalendarClock, ChevronRight, CreditCard, PiggyBank, Settings, Snowflake, Tags } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -125,6 +126,18 @@ export default function Accounts() {
       await db.funds.delete(f.id!)
     }
   }
+
+  const addCreditCard = () =>
+    setFundEdit({
+      name: '',
+      icon: '💳',
+      color: '#8b5cf6',
+      initialBalance: 0,
+      kind: 'credit',
+      creditLimit: 50_000_000,
+      statementDay: 20,
+      dueDay: 5,
+    })
 
   return (
     <>
@@ -412,18 +425,7 @@ export default function Accounts() {
         <button
           className="btn pri"
           style={{ padding: '6px 12px', fontSize: 13 }}
-          onClick={() =>
-            setFundEdit({
-              name: '',
-              icon: '💳',
-              color: '#8b5cf6',
-              initialBalance: 0,
-              kind: 'credit',
-              creditLimit: 50_000_000,
-              statementDay: 20,
-              dueDay: 5,
-            })
-          }
+          onClick={addCreditCard}
         >
           + Thêm thẻ tín dụng
         </button>
@@ -431,9 +433,13 @@ export default function Accounts() {
 
       <div className="card" style={{ padding: '0 16px' }}>
         {creditFunds.length === 0 && (
-          <div className="empty" style={{ padding: '16px 0', fontSize: 13 }}>
-            Chưa có thẻ tín dụng nào. Bấm "+ Thêm thẻ tín dụng" để thiết lập hạn mức và ngày chốt sao kê.
-          </div>
+          <EmptyState
+            icon={CreditCard}
+            title="Chưa có thẻ tín dụng"
+            hint="Thêm thẻ để theo dõi hạn mức, ngày chốt sao kê, hạn thanh toán và trả góp."
+            actionLabel="+ Thêm thẻ tín dụng"
+            onAction={addCreditCard}
+          />
         )}
         {creditFunds.map(f => {
           const info = analyzeCreditFund(f, txs)

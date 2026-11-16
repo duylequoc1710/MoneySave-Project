@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import EmptyState from '../components/EmptyState'
+import { CalendarDays, ChevronLeft, ChevronRight, ReceiptText, Search, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -361,7 +362,13 @@ export default function Ledger() {
         </div>
 
         {days.length === 0 && (
-          <div className="empty">Chưa có giao dịch trong giai đoạn ({resolvedRange.label})</div>
+          <EmptyState
+            icon={ReceiptText}
+            title={`Chưa có giao dịch (${resolvedRange.label})`}
+            hint="Ghi lại khoản chi/thu đầu tiên, hoặc chọn tháng khác bằng mũi tên phía trên."
+            actionLabel="＋ Thêm giao dịch"
+            onAction={() => setDraftTx({})}
+          />
         )}
 
         {/* Danh sách từng ngày (mỗi ngày 1 thẻ chuẩn MoneySave) */}

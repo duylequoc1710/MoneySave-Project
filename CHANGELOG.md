@@ -4,6 +4,14 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.14.0] – 2026-11-16
+### 🧭 Tổng quan gọn hơn & màn hình trống có hướng dẫn (U4)
+- **Tổng quan:** "Giao dịch gần đây" chuyển lên ngay sau "Ví của tôi" (mục dùng nhiều nhất, không phải cuộn qua các thẻ tín dụng).
+- **Màn hình trống có hướng dẫn + nút làm ngay:** Sổ giao dịch và Giao dịch gần đây ("＋ Thêm giao dịch"), Thẻ tín dụng ("+ Thêm thẻ tín dụng"), Giao dịch định kỳ ("+ Cài đặt mới"), Ngân sách tháng ("+ Đặt ngân sách"); Chi tiêu nhiều nhất có lời giải thích.
+- Thành phần dùng chung `components/EmptyState.tsx` (icon + tiêu đề + gợi ý + 1 nút ≥ 44px). Không đổi dữ liệu/schema Dexie. 72/72 test.
+
+---
+
 ## [v2.13.0] – 2026-11-16
 ### 👆 Dễ bấm, dễ đọc & bộ icon thống nhất (U1 + U2 trong `doc/11-UI-PLAN.md`)
 - **U1:** nút icon (🔍 🔄 📅 ‹ ›, ẩn/hiện số dư) có vùng bấm ≥ 44×44px; link chữ ("Xem tất cả", "Quản lý thẻ", "+ Thêm thẻ"…) và nút nhỏ ở đầu trang được nới vùng bấm vô hình (không đổi bố cục); "+ Thêm thẻ" không còn xuống dòng.
