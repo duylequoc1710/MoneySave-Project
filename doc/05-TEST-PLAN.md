@@ -35,6 +35,7 @@
 | T-33 | v2.15.0 U5: Playwright mở "＋ Thêm giao dịch" – `animationDuration` của `.sheet` = 0.24s; với `reducedMotion: reduce` ≈ 0 và tấm vẫn hiện đủ (opacity 1). Thủ công: PO thấy mở modal mượt, bàn phím số không lệch | ✅ tự động · ✅ PO 2026-11-16 |
 | T-34 | v2.16.0 U3: `uiTokens.test.ts` (cỡ chữ đúng thang trong `index.css` + mọi `.tsx`; token Sáng ≥ 4.5:1, `--on-acc` trên `--acc` ≥ 4.5:1 cả Sáng/Tối). Playwright 375px, 5 trang × Sáng/Tối: không tràn ngang; nút chữ ≥ 44px (trừ link có vùng bấm vô hình 44px). Thủ công: PO xem chữ/màu trên điện thoại | ✅ tự động · ✅ PO 2026-11-16 |
 | T-35 | v2.16.1 CI: GitHub Actions `ci.yml` chạy `npm ci` → test → build → lint trên mọi push/PR; lượt đầu trên nhánh `claude/ci` (run 43883724723) | ✅ Pass (28s) |
+| T-36 | S4b-1: `googleDrive.test.ts` – 6 test `decideSync` (chưa có file, lần đầu máy trống/xung đột/Drive trống, kéo, đẩy, bản của chính máy, không đổi). Thủ công 2 máy: chờ S4b-2/S4b-3 | ✅ tự động · ⏳ PO |
 | T-27 | v2.9.0: `pickSnapshotToReplace` gộp theo ngày; `describeBackup` đếm đúng & từ chối file sai (`backup.test.ts`); smoke Playwright: khôi phục hiện màn xem trước → khôi phục thành công. Thủ công trên iPhone/Android: nút Sao lưu mở bảng chia sẻ, lưu vào Tệp/Drive, lưu lần 2 chọn "Thay thế" | ✅ tự động · ⏳ PO xác nhận máy thật |
 | T-26 | Thủ công v2.8.0: bàn phím in-app + `InAppSelectModal` không bật bàn phím OS; báo cáo Phân bổ/Rút trong `PeriodReport`; anti-drag không gây đơ; nút Reload; `GlobalSearchModal` (logic tìm kiếm đã có unit test – xem T-29) | ✅ PO xác nhận trên máy thật (2026-11-16) |
 

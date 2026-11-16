@@ -4,6 +4,12 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [Chưa phát hành] – nhánh `claude/s4b-drive-sync`
+### 🔄 S4b-1: bộ máy đồng bộ nhiều máy qua Google Drive của từng người
+- `decideSync` (quy tắc kéo/đẩy + chốt hỏi người dùng khi lần đầu đồng bộ mà cả hai bên đều có dữ liệu), `getDriveSyncMeta`/`uploadDriveSync`, `driveSyncNow`. Chưa có giao diện (S4b-2). +6 test → 82/82. Không đổi schema.
+
+---
+
 ## [v2.16.1] – 2026-11-16
 ### 🤖 CI tự động
 - GitHub Actions (`.github/workflows/ci.yml`): mỗi lần đẩy nhánh hoặc mở PR tự chạy `npm ci`, `npm test`, `npm run build`, `npm run lint` (Node 22). Báo đỏ trước khi lỗi lên Vercel (bài học TODO-3: commit `9f53f54` từng lên `main` khi build lỗi).

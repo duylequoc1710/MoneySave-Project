@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { backupDateFromName, buildMultipartBody, driveBackupName, driveQ, pickFilesToPrune, sortBackups } from './googleDrive.ts'
+import { backupDateFromName, buildMultipartBody, decideSync, driveBackupName, driveQ, pickFilesToPrune, sortBackups } from './googleDrive.ts'
 
 describe('Google Drive (S4a): quy ước tên file & dọn bản cũ', () => {
   it('Tên file theo ngày địa phương, đọc lại được ngày', () => {
@@ -33,3 +33,33 @@ describe('Google Drive (S4a): quy ước tên file & dọn bản cũ', () => {
     assert.equal(driveQ("Bob's \\ dir"), "Bob\\'s \\\\ dir")
   })
 })
+
+describe('S4b: decideSync – đồng bộ Drive nhiều máy', () => {
+  const me = 'A'
+  const remote = (updatedAt: number, deviceId = 'B', txCount = 5) => ({ updatedAt, deviceId, txCount })
+  const local = (lastSync: number, localMut: number, hasData = true) => ({ lastSync, localMut, deviceId: me, hasData })
+
+  it('chưa có file trên Drive: có dữ liệu → đẩy; máy trống → không làm gì', () => {
+    assert.equal(decideSync(null, local(0, 0, true)), 'push')
+    assert.equal(decideSync(null, local(0, 0, false)), 'noop')
+  })
+  it('lần đầu máy này đồng bộ: máy trống → kéo về; cả hai có dữ liệu → hỏi người dùng; Drive trống → đẩy', () => {
+    assert.equal(decideSync(remote(100), local(0, 0, false)), 'pull')
+    assert.equal(decideSync(remote(100), local(0, 50, true)), 'conflict')
+    assert.equal(decideSync(remote(100, 'B', 0), local(0, 50, true)), 'push')
+  })
+  it('máy khác cập nhật sau lần đồng bộ cuối và máy này không sửa mới hơn → kéo về', () => {
+    assert.equal(decideSync(remote(200), local(100, 90)), 'pull')
+  })
+  it('máy này sửa mới hơn → đẩy lên', () => {
+    assert.equal(decideSync(remote(100), local(100, 150)), 'push')
+    assert.equal(decideSync(remote(200), local(100, 250)), 'push')
+  })
+  it('bản trên Drive do chính máy này đẩy → không kéo lại', () => {
+    assert.equal(decideSync(remote(200, me), local(100, 90)), 'noop')
+  })
+  it('không ai đổi gì → không làm gì', () => {
+    assert.equal(decideSync(remote(100), local(100, 100)), 'noop')
+  })
+})
+

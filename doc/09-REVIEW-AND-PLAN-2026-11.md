@@ -120,3 +120,21 @@
 - Đạt: lưu cục bộ, sao lưu file, sao lưu Google Drive (S4a – mỗi người tự chịu dung lượng Drive của mình).
 - Chưa đạt: đồng bộ đăng nhập dùng Firebase **của PO** → (1) khoá suy từ uid+email nên chủ Firebase về kỹ thuật giải mã được; (2) gói miễn phí Spark ~1 GB lưu trữ / 10 GB tải mỗi tháng → nhiều người dùng sẽ chạm trần (Spark: ngừng; Blaze: tính tiền).
 - Hướng S4b (đề xuất): đồng bộ qua file trên Drive của từng người (`drive.file`/`appDataFolder`), so `modifiedTime` để kéo/đẩy, giữ snapshot an toàn; Firebase giữ song song trong giai đoạn chuyển. Đánh đổi: chậm hơn (30 s–vài phút), mỗi máy đăng nhập Google. Lựa chọn tối thiểu thay thế: "mật khẩu két" riêng (§2.1b) để Firebase chỉ giữ dữ liệu không giải mã được.
+
+## §8. S4b – Kế hoạch đồng bộ qua Drive của từng người (PO chốt 2026-11-16)
+PO chọn hướng "Drive từng người" (thay Firebase của PO dần dần). Firebase giữ song song đến khi PO thử ổn trên 2 máy.
+
+**Thiết kế**
+- 1 file `MoneySave Sync/moneysave-sync.json` trên Drive người dùng (quyền `drive.file` sẵn có – không hỏi quyền mới). Không mã hoá (Drive của chính họ, như D3). `appProperties` = {updatedAt, deviceId, txCount} để kiểm tra nhẹ không tải cả file.
+- Quy tắc `decideSync` (googleDrive.ts, unit test): giống `syncNowSmart` của Firebase + **chốt an toàn lần đầu**: máy chưa từng đồng bộ Drive mà cả hai bên đều có giao dịch → hỏi người dùng giữ bản nào (không tự ghi đè). Máy trống → kéo về. Ngắt kết nối Drive → xoá mốc, lần sau lại qua chốt.
+- Kéo về qua `importAll(source: 'sync')` → tự lưu bản an toàn trước khi ghi đè. Xung đột 2 máy cùng sửa giữa 2 lượt: bản mới hơn thắng (như Firebase), bản kia còn trong "Bản sao an toàn".
+- Giới hạn: mã Google ~1 giờ, chỉ xin mã mới khi người dùng bấm (popup không được bật ngầm) → đồng bộ tự động chỉ chạy khi mã còn hạn; hết hạn thì hiện nút "Đồng bộ ngay".
+
+**Lát**
+| Lát | Nội dung | Trạng thái |
+|---|---|---|
+| S4b-1 | Bộ máy: `decideSync` + `getDriveSyncMeta`/`uploadDriveSync` (googleDrive.ts), `driveSyncNow` (driveSync.ts), 6 test | ✅ nhánh `claude/s4b-drive-sync` (chưa có giao diện) |
+| S4b-2 | Giao diện trong thẻ Google Drive (Cài đặt): công tắc "Đồng bộ nhiều máy qua Drive", nút "Đồng bộ ngay", trạng thái lần cuối, hộp `AppDialog` chọn bản khi xung đột (hiện ngày + số giao dịch 2 bên); tự đồng bộ khi mở app / quay lại tab / 1,5 s sau khi sửa (chỉ khi mã còn hạn) | ⏳ |
+| S4b-3 | PO thử 2 máy (iPhone + máy tính): thêm giao dịch máy A → máy B thấy sau khi mở lại/bấm đồng bộ; thử chốt xung đột | ⏳ PO |
+| S4b-4 | Khi PO chốt: ẩn/bỏ đồng bộ Firebase cho người dùng mới, hướng dẫn chuyển; giữ khả năng hoàn tác | ⏳ cần PO xác nhận |
+

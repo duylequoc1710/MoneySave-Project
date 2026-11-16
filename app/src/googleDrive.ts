@@ -72,6 +72,7 @@ export function driveQ(s: string): string {
 // ---------------- Trạng thái kết nối (chỉ cờ, không lưu token) ----------------
 const CONNECTED_KEY = 'moneysave_gdrive_connected'
 const LAST_DRIVE_BACKUP_KEY = 'moneysave_gdrive_last_backup_at'
+export const LAST_DRIVE_SYNC_KEY = 'moneysave_gdrive_last_sync_at'
 
 function lsGet(k: string): string | null {
   try {
@@ -196,8 +197,41 @@ export async function disconnectDrive(): Promise<void> {
   token = null
   lsSet(CONNECTED_KEY, null)
   lsSet(LAST_DRIVE_BACKUP_KEY, null)
+  lsSet(LAST_DRIVE_SYNC_KEY, null) // kết nối lại = đồng bộ lần đầu → có chốt hỏi khi cả 2 bên đều có dữ liệu
   const g = (window as GoogleWin).google
   if (t && g) await new Promise<void>(r => g.accounts.oauth2.revoke(t, () => r()))
+}
+
+// ---------------- S4b: đồng bộ nhiều máy qua 1 file trên Drive của người dùng ----------------
+export const DRIVE_SYNC_FOLDER = 'MoneySave Sync'
+export const DRIVE_SYNC_FILE = 'moneysave-sync.json'
+
+export interface DriveSyncMeta {
+  id: string
+  updatedAt: number
+  deviceId: string
+  txCount: number
+}
+
+export type SyncDecision = 'push' | 'pull' | 'conflict' | 'noop'
+
+/**
+ * Quyết định một lượt đồng bộ (hàm thuần). Cùng quy tắc với `syncNowSmart` (Firebase), thêm 1 chốt an toàn:
+ * lần đầu máy này đồng bộ (`lastSync = 0`) mà cả Drive lẫn máy đều có dữ liệu → 'conflict' (hỏi người dùng giữ bản nào),
+ * để một máy mới/trống không bao giờ tự ghi đè dữ liệu thật của máy kia và ngược lại.
+ */
+export function decideSync(
+  remote: Pick<DriveSyncMeta, 'updatedAt' | 'deviceId' | 'txCount'> | null,
+  local: { lastSync: number; localMut: number; deviceId: string; hasData: boolean },
+): SyncDecision {
+  if (!remote) return local.hasData ? 'push' : 'noop'
+  if (local.lastSync === 0) {
+    if (!local.hasData) return 'pull'
+    return remote.txCount > 0 ? 'conflict' : 'push'
+  }
+  if (remote.updatedAt > local.lastSync && remote.deviceId !== local.deviceId && remote.updatedAt >= local.localMut) return 'pull'
+  if (local.localMut > local.lastSync) return 'push'
+  return 'noop'
 }
 
 // ---------------- Drive REST ----------------
@@ -235,18 +269,18 @@ async function listFiles(tok: string, q: string): Promise<DriveFile[]> {
   return r.files ?? []
 }
 
-async function findFolder(tok: string): Promise<string | null> {
-  const files = await listFiles(tok, `name='${driveQ(DRIVE_FOLDER_NAME)}' and mimeType='${FOLDER_MIME}' and trashed=false`)
+async function findFolder(tok: string, name = DRIVE_FOLDER_NAME): Promise<string | null> {
+  const files = await listFiles(tok, `name='${driveQ(name)}' and mimeType='${FOLDER_MIME}' and trashed=false`)
   return files[0]?.id ?? null
 }
 
-async function ensureFolder(tok: string): Promise<string> {
-  const id = await findFolder(tok)
+async function ensureFolder(tok: string, name = DRIVE_FOLDER_NAME): Promise<string> {
+  const id = await findFolder(tok, name)
   if (id) return id
   const r = await api<{ id: string }>(tok, `${API}/files?fields=id`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: DRIVE_FOLDER_NAME, mimeType: FOLDER_MIME }),
+    body: JSON.stringify({ name, mimeType: FOLDER_MIME }),
   })
   return r.id
 }
@@ -298,3 +332,46 @@ export async function uploadDriveBackup(tok: string, json: string, now = new Dat
 export async function downloadDriveBackup(tok: string, id: string): Promise<string> {
   return api<string>(tok, `${API}/files/${encodeURIComponent(id)}?alt=media`)
 }
+
+/** Thông tin file đồng bộ (không tải nội dung) – null nếu chưa có. */
+export async function getDriveSyncMeta(tok: string): Promise<DriveSyncMeta | null> {
+  const folder = await findFolder(tok, DRIVE_SYNC_FOLDER)
+  if (!folder) return null
+  const params = new URLSearchParams({
+    q: `'${driveQ(folder)}' in parents and name='${driveQ(DRIVE_SYNC_FILE)}' and trashed=false`,
+    spaces: 'drive',
+    fields: 'files(id,appProperties)',
+  })
+  const r = await api<{ files: { id: string; appProperties?: Record<string, string> }[] }>(tok, `${API}/files?${params}`)
+  const f = r.files?.[0]
+  if (!f) return null
+  const p = f.appProperties ?? {}
+  return { id: f.id, updatedAt: Number(p.updatedAt) || 0, deviceId: p.deviceId ?? '', txCount: Number(p.txCount) || 0 }
+}
+
+/** Ghi đè (hoặc tạo) file đồng bộ; thông tin máy/thời điểm nằm trong appProperties để kiểm tra nhẹ. */
+export async function uploadDriveSync(
+  tok: string,
+  json: string,
+  meta: Omit<DriveSyncMeta, 'id'>,
+  existingId?: string,
+): Promise<void> {
+  const appProperties = { updatedAt: String(meta.updatedAt), deviceId: meta.deviceId, txCount: String(meta.txCount) }
+  const boundary = 'mss' + Math.random().toString(36).slice(2)
+  const headers = { 'Content-Type': `multipart/related; boundary=${boundary}` }
+  if (existingId) {
+    await api(tok, `${UPLOAD}/files/${encodeURIComponent(existingId)}?uploadType=multipart&fields=id`, {
+      method: 'PATCH',
+      headers,
+      body: buildMultipartBody({ appProperties }, json, boundary),
+    })
+    return
+  }
+  const folder = await ensureFolder(tok, DRIVE_SYNC_FOLDER)
+  await api(tok, `${UPLOAD}/files?uploadType=multipart&fields=id`, {
+    method: 'POST',
+    headers,
+    body: buildMultipartBody({ name: DRIVE_SYNC_FILE, parents: [folder], mimeType: 'application/json', appProperties }, json, boundary),
+  })
+}
+

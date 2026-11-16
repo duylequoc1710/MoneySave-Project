@@ -8,7 +8,7 @@
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/d%C3%B9ng_mi%E1%BB%85n_ph%C3%AD-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Dùng miễn phí" /></a>
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.16.1-3b82f6" alt="Version v2.16.1" /></a>
     <a href="https://github.com/duylequoc1710/MoneySave-Project/actions/workflows/ci.yml"><img src="https://github.com/duylequoc1710/MoneySave-Project/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-76%2F76%20passing-brightgreen" alt="Tests" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-82%2F82%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
