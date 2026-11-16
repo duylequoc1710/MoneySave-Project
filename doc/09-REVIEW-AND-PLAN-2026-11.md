@@ -91,6 +91,26 @@
 4. Mở app → bấm 🔄 → kiểm tra Data trên Firebase có nhánh `moneysave_users/<uid>` (app tự sao chép).
 
 ### §6.3 Giai đoạn 2 (≥7 ngày sau, khi PO xác nhận dữ liệu đầy đủ trên mọi thiết bị)
+**Hướng dẫn PO (từ v2.15.1 – app đã sẵn sàng):**
+1. Trên **mọi** thiết bị đang dùng app: mở app, bấm 🔄, Cài đặt hiện "Đã đồng bộ lúc …" và số giao dịch khớp nhau.
+2. Cài đặt › Sao lưu ra file (giữ 1 bản dự phòng).
+3. https://console.firebase.google.com → dự án `moneysave-project` → **Realtime Database** → tab **Rules** → thay toàn bộ bằng:
+   ```json
+   {
+     "rules": {
+       "moneysave_users": {
+         "$uid": {
+           ".read": "auth != null && auth.uid === $uid",
+           ".write": "auth != null && auth.uid === $uid"
+         }
+       }
+     }
+   }
+   ```
+   → **Publish**. (Hoàn tác: dán lại cấu hình có khối `moneysave_vaults` ở `06-DEPLOYMENT-GUIDE.md` mục 5.)
+4. Mở app trên 1 máy → bấm 🔄 → vẫn "Đã đồng bộ" là xong. Không cần nhắc lại việc này.
+5. (Tuỳ chọn, sau vài tuần ổn) tab **Data** → nhánh `moneysave_vaults` → ⋮ → Delete để dọn bản sao cũ.
+
 - Xoá khối `moneysave_vaults` khỏi rule (khoá két cũ – không ai đọc/ghi được nữa). Lưu ý: chế độ đồng bộ thủ công không đăng nhập sẽ ngừng hoạt động – PO hiện dùng đăng nhập nên không ảnh hưởng.
 - Tuỳ chọn sau đó: xoá dữ liệu nhánh `moneysave_vaults` trên Console (sau khi đã có file sao lưu mới nhất).
 - Tuỳ chọn tương lai: "mật khẩu két" riêng để đúng nghĩa zero-knowledge (§2.1b).

@@ -8,8 +8,8 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
-- PO đã đổi rule Firebase (két `moneysave_users`), xác nhận 2 thiết bị đồng bộ khớp (2026-11-16). Giai đoạn 2 khoá két cũ: từ ~2026-11-23 (09 §6.3), cần nhắc PO.
-- `npm test`: 72/72 pass. `main` = v2.15.0 (U1, U2, U4, U5 giao diện; PO duyệt merge 2026-11-16). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
+- PO đã đổi rule Firebase (két `moneysave_users`), xác nhận 2 thiết bị đồng bộ khớp (2026-11-16). Giai đoạn 2 khoá két cũ: đã gửi PO hướng dẫn 09 §6.3 (2026-11-16) – PO tự làm sau khi v2.15.1 lên `main`; KHÔNG cần nhắc nữa.
+- `npm test`: 72/72 pass. `main` = v2.15.0 (U1, U2, U4, U5 giao diện); nhánh `claude/lock-legacy-vault` = v2.15.1 (sửa để khoá két cũ an toàn), chờ PO "merge". Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục

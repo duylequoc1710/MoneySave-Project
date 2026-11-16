@@ -6,8 +6,8 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/d%C3%B9ng_mi%E1%BB%85n_ph%C3%AD-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Dùng miễn phí" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.15.0-3b82f6" alt="Version v2.15.0" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-72%2F72%20passing-brightgreen" alt="Tests" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.15.1-3b82f6" alt="Version v2.15.1" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-73%2F73%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
@@ -116,7 +116,7 @@ Không chỉ dừng lại ở việc ghi chép thu chi thông thường, **Money
 | **Đám mây & Xác thực** | Firebase Authentication (Email/Password), Realtime Database REST API (`?auth=idToken`) |
 | **Sao lưu Drive** | Google Identity Services (token model, không client secret) + Google Drive API v3, quyền `drive.file` |
 | **Bảo mật & Mã hóa** | Web Crypto API (`crypto.subtle` – `AES-GCM 256-bit`, `PBKDF2-SHA256`, `SHA-256`) |
-| **Chất lượng Mã nguồn** | Node.js Test Runner (`72/72 unit tests`), Oxlint, TypeScript Strict Mode |
+| **Chất lượng Mã nguồn** | Node.js Test Runner (`73/73 unit tests`), Oxlint, TypeScript Strict Mode |
 
 ---
 
@@ -160,6 +160,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.15.1` (2026-11-16):** Sẵn sàng khoá két Firebase cũ: tài khoản mới không báo lỗi đồng bộ khi két cũ đã khoá.
 * **`v2.15.0` (2026-11-16):** Hiệu ứng mở cửa sổ & nhấn nút mượt hơn, tự tắt khi máy bật "Giảm chuyển động".
 * **`v2.14.0` (2026-11-16):** Tổng quan đưa Giao dịch gần đây lên trên; màn hình trống có hướng dẫn và nút làm ngay.
 * **`v2.13.0` (2026-11-16):** Giao diện dễ bấm hơn (vùng chạm ≥ 44px, chữ ≥ 12px, nút nổi không che nội dung) và bộ icon SVG thống nhất thay emoji ở khung giao diện.
@@ -186,7 +187,7 @@ Toàn bộ tài liệu thiết kế, kiến trúc và nhật ký kỹ thuật c�
 * 🏗️ [`doc/02-ARCHITECTURE.md`](doc/02-ARCHITECTURE.md): Kiến trúc hệ thống, luồng đồng bộ & bảo mật E2EE.
 * 🗄️ [`doc/03-DATA-MODEL.md`](doc/03-DATA-MODEL.md): Mô hình dữ liệu IndexedDB (Dexie schema v4).
 * 📖 [`doc/04-USER-GUIDE.md`](doc/04-USER-GUIDE.md): Cẩm nang hướng dẫn sử dụng trên iPhone, Android và máy tính.
-* 🧪 [`doc/05-TEST-PLAN.md`](doc/05-TEST-PLAN.md): Kế hoạch và kết quả kiểm thử tự động (`72/72 tests pass`).
+* 🧪 [`doc/05-TEST-PLAN.md`](doc/05-TEST-PLAN.md): Kế hoạch và kết quả kiểm thử tự động (`73/73 tests pass`).
 * 🗺️ [`doc/06-ROADMAP.md`](doc/06-ROADMAP.md) & [`doc/06-DEPLOYMENT-GUIDE.md`](doc/06-DEPLOYMENT-GUIDE.md): Lộ trình phát triển & hướng dẫn triển khai.
 * 🤝 [`doc/08-HANDOVER.md`](doc/08-HANDOVER.md): Bàn giao cho kỹ sư/AI tiếp nhận (đọc đầu tiên khi phát triển tiếp).
 * 🔎 [`doc/09-REVIEW-AND-PLAN-2026-11.md`](doc/09-REVIEW-AND-PLAN-2026-11.md): Review bảo mật/hiệu năng, kế hoạch lát S1…S5, định hướng sản phẩm (§7).

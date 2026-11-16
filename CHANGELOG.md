@@ -4,6 +4,13 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.15.1] – 2026-11-16
+### 🔒 Chuẩn bị khoá két Firebase cũ (giai đoạn 2)
+- Sửa: khi két cũ `moneysave_vaults` đã bị khoá, tài khoản **mới** đăng nhập lần đầu không còn báo lỗi đồng bộ (bỏ qua bước sao chép két cũ thay vì dừng lại).
+- +1 unit test (két cũ khoá + két bảo mật trống) → 73/73. Hướng dẫn PO khoá két: `doc/09-REVIEW-AND-PLAN-2026-11.md` §6.3, `doc/06-DEPLOYMENT-GUIDE.md` mục 5.
+
+---
+
 ## [v2.15.0] – 2026-11-16
 ### ✨ Chuyển động mượt (U5)
 - Mở cửa sổ (modal): nền mờ dần 0.18s, tấm trượt nhẹ lên 0.24s.

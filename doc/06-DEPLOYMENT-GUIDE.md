@@ -119,7 +119,7 @@ Trong dự án đã tích hợp sẵn workflow GitHub Actions tại [`.github/wo
      }
      ```
      - `moneysave_users/{uid}`: chỉ chủ tài khoản đã đăng nhập mới đọc/ghi được. App tự sao chép két cũ sang lần đầu (không xoá két cũ).
-     - Giữ khối `moneysave_vaults` trong giai đoạn chuyển tiếp (thiết bị chưa cập nhật app vẫn đồng bộ được). **Giai đoạn 2** (sau khi mọi thiết bị đã lên v2.10 ≥ 7 ngày và PO xác nhận dữ liệu đủ): xem `09-REVIEW-AND-PLAN-2026-11.md` §6.
+     - Giữ khối `moneysave_vaults` trong giai đoạn chuyển tiếp (thiết bị chưa cập nhật app vẫn đồng bộ được). **Giai đoạn 2** (khoá két cũ – chỉ giữ khối `moneysave_users`, cần app ≥ v2.15.1): xem hướng dẫn từng bước `09-REVIEW-AND-PLAN-2026-11.md` §6.3. Deploy mới cho cộng đồng: dùng luôn cấu hình giai đoạn 2.
 4. **Lấy Cấu hình Web App:**
    * Vào **Project settings (⚙️)** → cuộn xuống mục **Your apps** → bấm biểu tượng Web **`</>`** → đăng ký app và copy các thông số vào file `app/.env.local`.
 

@@ -362,7 +362,8 @@ async function resolveAccountMode(cfg: CloudSyncConfig, uid: string): Promise<Ac
   }
   if (typeof localStorage !== 'undefined') localStorage.setItem(SECURE_SEEN_KEY, uid)
   if (!r.data) {
-    const legacy = await fetchLegacyVault(cfg)
+    // Két cũ có thể đã bị khoá (giai đoạn 2, 09 §6.3) → coi như không có gì để sao chép
+    const legacy = await fetchLegacyVault(cfg).catch(() => null)
     if (legacy) await secureWrite(uid, legacy) // sao chép nguyên văn bản mã hoá, không giải mã/không xoá két cũ
   }
   accountModeCache = { uid, mode: 'secure', at: Date.now() }

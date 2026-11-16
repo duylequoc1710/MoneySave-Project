@@ -16,6 +16,7 @@ mem.set(
 // Giả lập Firebase Realtime Database (REST)
 const store = new Map<string, unknown>() // path (vd. "moneysave_users/U1") -> JSON
 let rulesEnabled = false
+let legacyLocked = false
 const calls: string[] = []
 const getPath = (path: string): unknown => {
   if (store.has(path)) return store.get(path)
@@ -40,6 +41,7 @@ const getPath = (path: string): unknown => {
     }
   }
   if (path.startsWith('moneysave_vaults/')) {
+    if (legacyLocked) return json(401, { error: 'Permission denied' })
     if (method === 'GET') return json(200, store.get(path) ?? null)
     if (method === 'PUT') {
       store.set(path, JSON.parse(String(init?.body)))
@@ -117,5 +119,18 @@ describe('Két bảo mật theo tài khoản (S3) – chuyển đổi an toàn',
     const p = await cs.encryptVault('{"app":"MoneyGo","funds":[],"txs":[]}', cfg.passphrase, 'devC', 4000)
     await assert.rejects(() => cs.pushEncryptedVaultToRemote(cfg, p), /đăng nhập lại/)
     assert.ok(calls.every(c => !c.startsWith('PUT moneysave_vaults')), 'không ghi két cũ')
+  })
+
+  it('Giai đoạn 2 – két cũ đã khoá: tài khoản mới (két bảo mật trống) vẫn đồng bộ được, lượt đầy đủ không lỗi', async () => {
+    const cfg = cs.getActiveCloudSyncConfig()
+    rulesEnabled = true
+    legacyLocked = true
+    store.delete('moneysave_users/U1') // mô phỏng tài khoản mới
+    cs.resetAccountVaultModeCache()
+    assert.equal(await cs.fetchRemoteMeta(cfg, { checkLegacyNewer: true }), null)
+    assert.equal(cs.getAccountVaultMode(), 'secure')
+    const p = await cs.encryptVault('{"app":"MoneyGo","funds":[],"txs":[]}', cfg.passphrase, 'devNew', 5000)
+    await cs.pushEncryptedVaultToRemote(cfg, p)
+    assert.equal((await cs.fetchRemoteMeta(cfg, { checkLegacyNewer: true }))?.updatedAt, 5000)
   })
 })
