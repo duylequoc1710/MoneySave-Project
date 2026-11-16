@@ -4,6 +4,12 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.11.1] – 2026-11-16
+- Trang tĩnh **Chính sách quyền riêng tư** `/privacy.html` (vi/en – Google yêu cầu khi Publish OAuth); Service Worker không chiếm link này.
+- Cài đặt: thêm mục "📜 Chính sách quyền riêng tư" mở trang trên.
+
+---
+
 ## [v2.11.0] – 2026-11-16
 ### ☁️ Sao lưu / Khôi phục qua Google Drive của chính bạn (S4a)
 - Cài đặt › Dữ liệu cá nhân: **Sao lưu lên Google Drive** và **Khôi phục từ Google Drive** (chọn bản theo ngày → xem trước → xác nhận; vẫn tự lưu bản sao an toàn trước khi ghi đè).

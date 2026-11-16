@@ -617,6 +617,22 @@ export default function Settings() {
         <p className="mut" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
           🔒 <b>100% dữ liệu lưu cục bộ (IndexedDB)</b> ngay trên trình duyệt thiết bị của bạn; khi bật Đồng bộ Đám mây, dữ liệu luôn được mã hóa đầu cuối <code>AES-256</code> trước khi rời khỏi thiết bị.
         </p>
+        <a
+          className="row"
+          href="/privacy.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none', color: 'inherit', borderBottom: 0, padding: '8px 0 0' }}
+        >
+          <div className="ico round" style={{ background: '#64748b24' }}>
+            📜
+          </div>
+          <div className="grow">
+            <b>Chính sách quyền riêng tư</b>
+            <small>Dữ liệu lưu ở đâu, quyền Google Drive, cách xoá dữ liệu</small>
+          </div>
+          <span className="mut" style={{ fontSize: 17 }}>›</span>
+        </a>
       </div>
 
       <footer

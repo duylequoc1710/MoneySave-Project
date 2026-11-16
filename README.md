@@ -6,7 +6,7 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/live_demo_(test_only)-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo (Test Only)" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.11.0-3b82f6" alt="Version v2.11.0" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.11.1-3b82f6" alt="Version v2.11.1" /></a>
     <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-72%2F72%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
