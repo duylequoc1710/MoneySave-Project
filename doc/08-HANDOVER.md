@@ -51,4 +51,5 @@ PO (duyle) giao tiếp tiếng Việt; trả lời tiếng Việt, ngắn gọn;
 2. **Ngân sách phiên:** mỗi phiên chat tối đa ~300k token hoặc 1 lần compact. Nếu vượt nhẹ thì làm xong lát đang dở rồi bàn giao.
 3. **Bàn giao cuối phiên:** cập nhật nhật ký `doc/sessions/YYYY-MM-DD-NN.md` (các mục đánh số), mục 2 & 6 của file này; tài liệu dài chia mục `§n` để phiên sau chỉ đọc đúng mục cần.
 4. **Nhánh & deploy (PO đã chốt D4):** làm trên nhánh `claude/*`, PO thử bản preview Vercel của nhánh, PO nói "merge" thì mới đẩy lên `main` (= production).
+6. **Ảnh chụp & ngôn ngữ (PO chốt 2026-11-16):** chỉ chụp/xem ảnh khi cần để sửa chính xác; gửi PO 1–3 ảnh, không gửi bộ đầy đủ. Luôn trả lời PO bằng tiếng Việt, kể cả khi skill viết tiếng Anh.
 5. **Kế hoạch hiện hành:** `09-REVIEW-AND-PLAN-2026-11.md` (§5 lát S1…S5). S1/S2/S3/S5 xong; còn S4 (chờ Client ID) và GĐ2 khoá két cũ (09 §6.3).

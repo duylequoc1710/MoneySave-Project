@@ -37,6 +37,6 @@ Khuyến nghị thứ tự: **U1 → U2 → U4 → U3 → U5**. (U1 + U2 xong �
 
 ## §4. Quy trình mỗi lát
 1. Chạy `search.py` của skill cho đúng vấn đề (`--domain ux` / `icons` / `typography`), đối chiếu quy tắc dự án.
-2. Sửa trên nhánh `claude/*`; `npm test && npm run build`; ảnh chụp Playwright trước/sau (Tổng quan, Sổ giao dịch, Ngân sách, Ví, Cài đặt; sáng + tối).
+2. Sửa trên nhánh `claude/*`; `npm test && npm run build`; ảnh chụp Playwright **chỉ khi cần làm rõ để sửa chính xác**; gửi PO tối đa 1–3 ảnh của thay đổi rõ nhất (PO chốt 2026-11-16).
 3. Đối chiếu checklist `references/pro-rules.md` của skill; `/ponytail-review` trước khi đề xuất merge.
 4. PO xem trên điện thoại → "merge".
