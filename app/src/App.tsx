@@ -10,6 +10,8 @@ import TxForm from './components/TxForm'
 import AuthLanding from './components/AuthLanding'
 import BackupReminder from './components/BackupReminder'
 import { AppDialogHost } from './components/AppDialog'
+import { askDriveConflict } from './components/backupActions'
+import { startDriveAutoSync } from './driveSync'
 import { applyTheme, getStoredTheme } from './lib'
 import {
   startRealtimeCloudSyncEngine,
@@ -87,6 +89,7 @@ export default function App() {
   useEffect(() => {
     applyTheme(getStoredTheme())
     startRealtimeCloudSyncEngine()
+    startDriveAutoSync(askDriveConflict)
     const unsubAuth = subscribeAuth(setAuthUser)
     const unsubSync = subscribeSyncState(setSyncSnap)
     return () => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight, Cloud, FileText, LifeBuoy } from 'lucide-react'
+import { ChevronRight, Cloud, FileText, LifeBuoy, RefreshCw } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { fmtDmy } from '../lib'
 import {
@@ -8,10 +8,13 @@ import {
   backupDateFromName,
   disconnectDrive,
   isDriveConnected,
+  isDriveSyncOn,
   lastDriveBackupAt,
   preloadGoogleDrive,
+  setDriveSyncOn,
 } from '../googleDrive'
-import { fetchDriveBackupList, runDriveBackup, runDriveRestore } from './backupActions'
+import { DRIVE_SYNC_EVENT, getLastDriveSyncAt } from '../driveSync'
+import { fetchDriveBackupList, fmtDateTime, runDriveBackup, runDriveRestore, runDriveSyncNow } from './backupActions'
 import { showAlert, showConfirm } from './AppDialog'
 
 /** Các dòng "Google Drive" trong thẻ Dữ liệu cá nhân (Cài đặt) – S4a. */
@@ -20,6 +23,14 @@ export default function DriveBackupRows() {
   const [lastAt, setLastAt] = useState(lastDriveBackupAt)
   const [list, setList] = useState<DriveFile[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const [syncOn, setSyncOn] = useState(isDriveSyncOn)
+  const [lastSync, setLastSync] = useState(getLastDriveSyncAt)
+
+  useEffect(() => {
+    const onSynced = () => setLastSync(getLastDriveSyncAt())
+    window.addEventListener(DRIVE_SYNC_EVENT, onSynced)
+    return () => window.removeEventListener(DRIVE_SYNC_EVENT, onSynced)
+  }, [])
 
   // Tải trước thư viện Google để lúc bấm nút popup mở ngay (iOS chặn popup nếu phải chờ tải)
   useEffect(() => {
@@ -31,6 +42,26 @@ export default function DriveBackupRows() {
   const refresh = () => {
     setConnected(isDriveConnected())
     setLastAt(lastDriveBackupAt())
+    setSyncOn(isDriveSyncOn())
+    setLastSync(getLastDriveSyncAt())
+  }
+
+  // Bật công tắc = đồng bộ ngay (cần thao tác chạm để đăng nhập Google); huỷ/lỗi → tắt lại
+  function handleSync(turnOn = false) {
+    if (turnOn) setDriveSyncOn(true)
+    setBusy(true)
+    runDriveSyncNow().then(ok => {
+      if (turnOn && !ok) setDriveSyncOn(false)
+      setBusy(false)
+      refresh()
+    })
+  }
+
+  function handleToggleSync() {
+    if (syncOn) {
+      setDriveSyncOn(false)
+      refresh()
+    } else handleSync(true)
   }
 
   // Không đặt `await` trước runDriveBackup/fetchDriveBackupList: cần giữ "thao tác chạm" để mở popup Google
@@ -91,6 +122,31 @@ export default function DriveBackupRows() {
         <button type="button" className="btn pri" disabled={busy} onClick={handleBackup}>
           {busy ? '…' : 'Sao lưu'}
         </button>
+      </div>
+
+      <div className="row">
+        <div className="ico round" style={{ background: '#f59e0b24' }}>
+          <RefreshCw size={22} style={{ color: 'var(--warn)' }} />
+        </div>
+        <div className="grow">
+          <b>Đồng bộ nhiều máy qua Drive</b>
+          <small>Các máy cùng tài khoản Google</small>
+          {syncOn && <small>{lastSync ? `Lần cuối: ${fmtDateTime(lastSync)}` : 'Chưa đồng bộ lần nào'}</small>}
+          {syncOn && (
+            <button type="button" className="btn" disabled={busy} style={{ marginTop: 6, minHeight: 44 }} onClick={() => handleSync()}>
+              {busy ? 'Đang đồng bộ…' : 'Đồng bộ ngay'}
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={syncOn}
+          aria-label="Đồng bộ nhiều máy qua Drive"
+          className="switch"
+          disabled={busy}
+          onClick={handleToggleSync}
+        />
       </div>
 
       <div className="row">

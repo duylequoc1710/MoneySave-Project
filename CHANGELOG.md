@@ -4,9 +4,13 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
-## [Chưa phát hành] – nhánh `claude/s4b-drive-sync`
-### 🔄 S4b-1: bộ máy đồng bộ nhiều máy qua Google Drive của từng người
-- `decideSync` (quy tắc kéo/đẩy + chốt hỏi người dùng khi lần đầu đồng bộ mà cả hai bên đều có dữ liệu), `getDriveSyncMeta`/`uploadDriveSync`, `driveSyncNow`. Chưa có giao diện (S4b-2). +6 test → 82/82. Không đổi schema.
+## [v2.17.0] – 2026-11-16
+### 🔄 Đồng bộ nhiều máy qua Google Drive của từng người (S4b-1 + S4b-2)
+- Bộ máy: 1 file `MoneySave Sync/moneysave-sync.json` trên Drive của chính người dùng; `decideSync` (kéo/đẩy + hỏi người dùng khi lần đầu đồng bộ mà cả hai bên đều có dữ liệu, **hoặc khi cả hai bên cùng sửa từ lần đồng bộ cuối** – không tự bỏ phần sửa của bên nào), `getDriveSyncMeta`/`uploadDriveSync`, `driveSyncNow`.
+- Cài đặt → Google Drive: công tắc **"Đồng bộ nhiều máy qua Drive"**, nút **"Đồng bộ ngay"**, dòng "Lần cuối: dd/MM/yyyy HH:mm". Bật công tắc = đồng bộ ngay (huỷ/lỗi → tự tắt lại). Ngắt kết nối Drive → tắt công tắc.
+- Hộp hỏi khi xung đột (2 bước, chạm ra ngoài = huỷ): hiện số giao dịch + ngày cập nhật hai bên. Chọn bản Drive → dữ liệu máy này vào "Bản sao an toàn"; chọn bản máy này → bản Drive được lưu vào "Bản sao an toàn" trước khi bị thay.
+- Tự đồng bộ ngầm khi quay lại app và 1,5 s sau khi sửa – chỉ khi công tắc bật, mã Google còn hạn và có mạng (không bật popup ngầm). Mở lại app → bấm "Đồng bộ ngay" 1 lần để đăng nhập Google. Firebase vẫn chạy song song.
+- +8 test → 84/84. Không đổi schema Dexie.
 
 ---
 

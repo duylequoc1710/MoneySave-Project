@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { backupDateFromName, buildMultipartBody, decideSync, driveBackupName, driveQ, pickFilesToPrune, sortBackups } from './googleDrive.ts'
+import { backupDateFromName, buildMultipartBody, decideSync, driveBackupName, driveQ, pickFilesToPrune, shouldAutoDriveSync, sortBackups } from './googleDrive.ts'
 
 describe('Google Drive (S4a): quy ước tên file & dọn bản cũ', () => {
   it('Tên file theo ngày địa phương, đọc lại được ngày', () => {
@@ -53,7 +53,10 @@ describe('S4b: decideSync – đồng bộ Drive nhiều máy', () => {
   })
   it('máy này sửa mới hơn → đẩy lên', () => {
     assert.equal(decideSync(remote(100), local(100, 150)), 'push')
-    assert.equal(decideSync(remote(200), local(100, 250)), 'push')
+  })
+  it('cả hai bên cùng sửa từ lần đồng bộ cuối → hỏi người dùng (không tự bỏ phần sửa của bên nào)', () => {
+    assert.equal(decideSync(remote(200), local(100, 250)), 'conflict')
+    assert.equal(decideSync(remote(200), local(100, 150)), 'conflict')
   })
   it('bản trên Drive do chính máy này đẩy → không kéo lại', () => {
     assert.equal(decideSync(remote(200, me), local(100, 90)), 'noop')
@@ -63,3 +66,12 @@ describe('S4b: decideSync – đồng bộ Drive nhiều máy', () => {
   })
 })
 
+
+describe('S4b-2: shouldAutoDriveSync – tự đồng bộ ngầm', () => {
+  it('chỉ chạy khi bật công tắc + có mã Google còn hạn + có mạng (không bao giờ bật popup ngầm)', () => {
+    assert.equal(shouldAutoDriveSync({ on: true, hasToken: true, online: true }), true)
+    assert.equal(shouldAutoDriveSync({ on: false, hasToken: true, online: true }), false)
+    assert.equal(shouldAutoDriveSync({ on: true, hasToken: false, online: true }), false)
+    assert.equal(shouldAutoDriveSync({ on: true, hasToken: true, online: false }), false)
+  })
+})

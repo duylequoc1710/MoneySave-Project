@@ -90,6 +90,14 @@ function lsSet(k: string, v: string | null) {
   }
 }
 
+export const DRIVE_SYNC_ON_KEY = 'moneysave_gdrive_sync_on'
+export function isDriveSyncOn(): boolean {
+  return lsGet(DRIVE_SYNC_ON_KEY) === '1'
+}
+export function setDriveSyncOn(on: boolean) {
+  lsSet(DRIVE_SYNC_ON_KEY, on ? '1' : null)
+}
+
 export function isDriveConnected(): boolean {
   return lsGet(CONNECTED_KEY) === '1'
 }
@@ -191,12 +199,18 @@ export function getDriveToken(): Promise<string> {
   return preloadGoogleDrive().then(request)
 }
 
+/** Có mã còn hạn trong bộ nhớ → gọi Drive được mà không cần popup (dùng cho tự đồng bộ ngầm). */
+export function hasDriveToken(): boolean {
+  return !!token && token.exp > Date.now()
+}
+
 /** Ngắt kết nối: thu hồi quyền trên Google + xoá cờ trên máy. File trên Drive giữ nguyên. */
 export async function disconnectDrive(): Promise<void> {
   const t = token?.value
   token = null
   lsSet(CONNECTED_KEY, null)
   lsSet(LAST_DRIVE_BACKUP_KEY, null)
+  lsSet(DRIVE_SYNC_ON_KEY, null)
   lsSet(LAST_DRIVE_SYNC_KEY, null) // kết nối lại = đồng bộ lần đầu → có chốt hỏi khi cả 2 bên đều có dữ liệu
   const g = (window as GoogleWin).google
   if (t && g) await new Promise<void>(r => g.accounts.oauth2.revoke(t, () => r()))
@@ -218,7 +232,7 @@ export type SyncDecision = 'push' | 'pull' | 'conflict' | 'noop'
 /**
  * Quyết định một lượt đồng bộ (hàm thuần). Cùng quy tắc với `syncNowSmart` (Firebase), thêm 1 chốt an toàn:
  * lần đầu máy này đồng bộ (`lastSync = 0`) mà cả Drive lẫn máy đều có dữ liệu → 'conflict' (hỏi người dùng giữ bản nào),
- * để một máy mới/trống không bao giờ tự ghi đè dữ liệu thật của máy kia và ngược lại.
+ * để một máy mới/trống không bao giờ tự ghi đè dữ liệu thật của máy kia và ngược lại. Cả hai bên cùng sửa → cũng 'conflict'.
  */
 export function decideSync(
   remote: Pick<DriveSyncMeta, 'updatedAt' | 'deviceId' | 'txCount'> | null,
@@ -229,9 +243,18 @@ export function decideSync(
     if (!local.hasData) return 'pull'
     return remote.txCount > 0 ? 'conflict' : 'push'
   }
-  if (remote.updatedAt > local.lastSync && remote.deviceId !== local.deviceId && remote.updatedAt >= local.localMut) return 'pull'
-  if (local.localMut > local.lastSync) return 'push'
+  const remoteChanged = remote.updatedAt > local.lastSync && remote.deviceId !== local.deviceId
+  const localChanged = local.localMut > local.lastSync
+  // Cả hai bên cùng sửa từ lần đồng bộ cuối (vd. máy này sửa lúc chưa có mã Google) → hỏi, không tự bỏ phần sửa của bên nào
+  if (remoteChanged && localChanged) return 'conflict'
+  if (remoteChanged) return 'pull'
+  if (localChanged) return 'push'
   return 'noop'
+}
+
+/** Tự đồng bộ ngầm chỉ khi: người dùng bật công tắc, có mã Google còn hạn (không bao giờ bật popup ngầm), có mạng. */
+export function shouldAutoDriveSync(s: { on: boolean; hasToken: boolean; online: boolean }): boolean {
+  return s.on && s.hasToken && s.online
 }
 
 // ---------------- Drive REST ----------------

@@ -127,14 +127,14 @@ PO chọn hướng "Drive từng người" (thay Firebase của PO dần dần).
 **Thiết kế**
 - 1 file `MoneySave Sync/moneysave-sync.json` trên Drive người dùng (quyền `drive.file` sẵn có – không hỏi quyền mới). Không mã hoá (Drive của chính họ, như D3). `appProperties` = {updatedAt, deviceId, txCount} để kiểm tra nhẹ không tải cả file.
 - Quy tắc `decideSync` (googleDrive.ts, unit test): giống `syncNowSmart` của Firebase + **chốt an toàn lần đầu**: máy chưa từng đồng bộ Drive mà cả hai bên đều có giao dịch → hỏi người dùng giữ bản nào (không tự ghi đè). Máy trống → kéo về. Ngắt kết nối Drive → xoá mốc, lần sau lại qua chốt.
-- Kéo về qua `importAll(source: 'sync')` → tự lưu bản an toàn trước khi ghi đè. Xung đột 2 máy cùng sửa giữa 2 lượt: bản mới hơn thắng (như Firebase), bản kia còn trong "Bản sao an toàn".
+- Kéo về qua `importAll(source: 'sync')` → tự lưu bản an toàn trước khi ghi đè. Xung đột 2 máy cùng sửa giữa 2 lượt (vd. máy sửa lúc chưa có mã Google): **hỏi người dùng** giữ bản nào (v2.17.0, sửa sau review – trước là bản mới hơn thắng); bản bị thay còn trong "Bản sao an toàn".
 - Giới hạn: mã Google ~1 giờ, chỉ xin mã mới khi người dùng bấm (popup không được bật ngầm) → đồng bộ tự động chỉ chạy khi mã còn hạn; hết hạn thì hiện nút "Đồng bộ ngay".
 
 **Lát**
 | Lát | Nội dung | Trạng thái |
 |---|---|---|
 | S4b-1 | Bộ máy: `decideSync` + `getDriveSyncMeta`/`uploadDriveSync` (googleDrive.ts), `driveSyncNow` (driveSync.ts), 6 test | ✅ nhánh `claude/s4b-drive-sync` (chưa có giao diện) |
-| S4b-2 | Giao diện trong thẻ Google Drive (Cài đặt): công tắc "Đồng bộ nhiều máy qua Drive", nút "Đồng bộ ngay", trạng thái lần cuối, hộp `AppDialog` chọn bản khi xung đột (hiện ngày + số giao dịch 2 bên); tự đồng bộ khi mở app / quay lại tab / 1,5 s sau khi sửa (chỉ khi mã còn hạn) | ⏳ |
+| S4b-2 | Giao diện trong thẻ Google Drive (Cài đặt): công tắc "Đồng bộ nhiều máy qua Drive", nút "Đồng bộ ngay", trạng thái lần cuối, hộp `AppDialog` chọn bản khi xung đột (hiện ngày + số giao dịch 2 bên); tự đồng bộ khi mở app / quay lại tab / 1,5 s sau khi sửa (chỉ khi mã còn hạn) | ✅ v2.17.0 nhánh `claude/s4b-drive-sync` |
 | S4b-3 | PO thử 2 máy (iPhone + máy tính): thêm giao dịch máy A → máy B thấy sau khi mở lại/bấm đồng bộ; thử chốt xung đột | ⏳ PO |
 | S4b-4 | Khi PO chốt: ẩn/bỏ đồng bộ Firebase cho người dùng mới, hướng dẫn chuyển; giữ khả năng hoàn tác | ⏳ cần PO xác nhận |
 

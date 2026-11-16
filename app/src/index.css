@@ -1754,3 +1754,49 @@ h2 {
   vertical-align: -0.125em;
 }
 
+
+/* Công tắc bật/tắt (role="switch"): vùng chạm 52×44, rãnh 46×28 */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 44px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.switch::before {
+  content: '';
+  position: absolute;
+  inset: 8px 3px;
+  border-radius: 14px;
+  background: var(--bd);
+  transition: background 0.2s;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 11px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+.switch[aria-checked='true']::before {
+  background: var(--acc);
+}
+.switch[aria-checked='true']::after {
+  transform: translateX(18px);
+}
+.switch:disabled {
+  opacity: 0.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch::before,
+  .switch::after {
+    transition: none;
+  }
+}

@@ -129,6 +129,7 @@ Tính năng phân cấp danh mục chi tiêu chuẩn phương pháp quản lý n
 * **Cài đặt › Sao lưu & khôi phục** (theo thứ tự nên dùng):
   1. **☁️ Sao lưu lên Google Drive** – lần đầu cho phép Google (nếu hiện "Google hasn't verified this app": *Advanced → Go to moneysavedl.vercel.app → Continue*). File vào thư mục **MoneySave Backup** trên Drive của bạn, mỗi ngày 1 file `MoneySave-YYYY-MM-DD.json` (sao lưu lại trong ngày → ghi đè), giữ 30 bản. Quá 24 giờ chưa sao lưu, Tổng quan hiện nút "Sao lưu Drive" 1 chạm. **Ngắt kết nối** để thu hồi quyền (file trên Drive giữ nguyên).
   2. **🛟 Khôi phục từ Google Drive** – chọn bản theo ngày → xem trước → xác nhận.
+  3. **🔄 Đồng bộ nhiều máy qua Drive** (v2.17.0) – bật công tắc trên mọi máy cùng tài khoản Google. App tự đồng bộ khi quay lại app và sau khi sửa; mỗi lần mở lại app bấm **Đồng bộ ngay** 1 lần để đăng nhập Google (Google không cho tự mở cửa sổ đăng nhập). Nếu hai máy có dữ liệu khác nhau, app hỏi giữ bản nào – bản bị thay vẫn còn trong *Bản sao an toàn*.
   3. **💾 Sao lưu ra file / Khôi phục từ file** – 1 file `MoneySave-SaoLuu.json`; điện thoại: bảng chia sẻ → Lưu vào Tệp/Drive, chọn "Thay thế".
   4. **📊 Xuất báo cáo Excel**, **🔍 Kiểm tra toàn vẹn dữ liệu**.
 * **Bản sao an toàn tự động:** hiện 3 bản mới nhất ("Xem thêm" để xem hết), tự xoay vòng 15 bản, không cần xoá tay.

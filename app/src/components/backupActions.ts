@@ -1,7 +1,8 @@
 import { db, describeBackup, exportAll, importAll } from '../db'
 import { saveBackupFile, type SaveResult } from '../backupFile'
 import { markBackupDownloaded } from '../safetyBackup'
-import { fmtDmy } from '../lib'
+import { fmtDmy, ymd } from '../lib'
+import { type DriveConflictInfo, type DriveSyncResult, driveSyncNow } from '../driveSync'
 import { showAlert, showConfirm } from './AppDialog'
 import {
   DRIVE_FOLDER_NAME,
@@ -126,6 +127,64 @@ export async function runDriveRestore(file: DriveFile): Promise<boolean> {
     return await confirmAndRestore(json, `Google Drive: ${file.name}`)
   } catch (e) {
     await showAlert({ title: 'Lỗi khôi phục', message: 'Lỗi khôi phục: ' + (e as Error).message, tone: 'danger' })
+    return false
+  }
+}
+
+// ---------------- Đồng bộ nhiều máy qua Drive (S4b) ----------------
+
+/** dd/MM/yyyy HH:mm cho mốc thời gian (ms). */
+export function fmtDateTime(ts: number): string {
+  const d = new Date(ts)
+  return `${fmtDmy(ymd(d))} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+/**
+ * Hỏi giữ bản nào khi cả Drive lẫn máy này đều có dữ liệu (lần đầu đồng bộ). Hai bước để chạm nhầm ra ngoài = huỷ,
+ * không bao giờ tự ghi đè.
+ */
+export async function askDriveConflict(info: DriveConflictInfo): Promise<'local' | 'remote' | null> {
+  const facts =
+    `• Trên Google Drive: ${info.remoteTxCount} giao dịch, cập nhật ${fmtDateTime(info.remoteUpdatedAt)}\n` +
+    `• Trên máy này: ${info.localTxCount} giao dịch\n\n`
+  if (
+    await showConfirm({
+      title: 'Hai bản dữ liệu khác nhau',
+      icon: '🔄',
+      tone: 'warning',
+      message: facts + 'Dùng bản trên Google Drive cho máy này? Dữ liệu hiện tại trên máy sẽ được lưu vào "Bản sao an toàn" trước khi thay.',
+      confirmText: 'Dùng bản trên Drive',
+      cancelText: 'Không',
+    })
+  )
+    return 'remote'
+  const keepLocal = await showConfirm({
+    title: 'Giữ bản trên máy này?',
+    icon: '🔄',
+    tone: 'warning',
+    message: facts + 'Bản trên máy này sẽ thay bản trên Google Drive (các máy khác sẽ nhận bản này). Bản trên Drive được lưu vào "Bản sao an toàn" của máy này trước khi thay.',
+    confirmText: 'Giữ bản máy này',
+    cancelText: 'Huỷ, chưa đồng bộ',
+  })
+  return keepLocal ? 'local' : null
+}
+
+const SYNC_MSG: Record<DriveSyncResult, string> = {
+  pushed: 'Đã gửi dữ liệu của máy này lên Google Drive.',
+  pulled: 'Đã nhận dữ liệu mới từ Google Drive.',
+  noop: 'Dữ liệu đã khớp, không có gì mới.',
+  cancelled: 'Đã huỷ, chưa đồng bộ.',
+}
+
+/** Bấm "Đồng bộ ngay": xin mã Google NGAY trong sự kiện bấm (trước mọi await) để iOS không chặn popup. */
+export async function runDriveSyncNow(): Promise<boolean> {
+  const tokenP = getDriveToken()
+  try {
+    const r = await driveSyncNow(await tokenP, askDriveConflict)
+    await showAlert({ title: r === 'cancelled' ? 'Chưa đồng bộ' : 'Đồng bộ xong', message: SYNC_MSG[r], tone: r === 'cancelled' ? 'info' : 'success', icon: '🔄' })
+    return r !== 'cancelled'
+  } catch (e) {
+    await showAlert({ title: 'Lỗi đồng bộ Google Drive', message: (e as Error).message, tone: 'danger' })
     return false
   }
 }

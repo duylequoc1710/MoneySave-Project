@@ -9,7 +9,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
 - PO đã đổi rule Firebase (két `moneysave_users`), xác nhận 2 thiết bị đồng bộ khớp (2026-11-16). Giai đoạn 2 khoá két cũ: **PO báo đã hoàn tất (2026-11-16)** theo 09 §6.3 – rule chỉ còn `moneysave_users`. Nếu có lỗi đồng bộ: kiểm tra rule, hoàn tác theo 06 mục 5. Bước tuỳ chọn còn lại: xoá nhánh `moneysave_vaults` trên tab Data sau vài tuần ổn định.
-- `npm test`: 76/76 trên `main` (82/82 trên nhánh S4b) pass. `main` = v2.16.1 (+ CI GitHub Actions) (U1–U5 giao diện xong + sửa để khoá két cũ an toàn). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
+- `npm test`: 76/76 trên `main` (84/84 trên nhánh S4b, v2.17.0 chưa merge) pass. `main` = v2.16.1 (+ CI GitHub Actions) (U1–U5 giao diện xong + sửa để khoá két cũ an toàn). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục
@@ -38,7 +38,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 - ✅ [TODO-1] Đã xong v2.10.1: logic tìm kiếm ở `app/src/search.ts`, test `search.test.ts` (T-29).
 - ✅ **[S4a] Google Drive:** v2.11.0; PO đã thử đăng nhập Google + sao lưu/khôi phục trên máy thật – OK (2026-11-16, T-30).
 - **[UI] Cải tiến giao diện:** kế hoạch `11-UI-PLAN.md`. U1 + U2 xong v2.13.0 (đã lên `main`); U4 (v2.14.0) + U5 (v2.15.0) xong, đã lên `main` (nhật ký `sessions/2026-11-16-03.md`). U3 xong v2.16.0, đã lên `main` (nhật ký `sessions/2026-11-16-04.md`). Kế hoạch giao diện U1–U5 hoàn tất. Gợi ý tiếp: S4a (PO thử Google Drive thật, T-30), TODO-2 (PO xác minh trên máy thật), S4b. Lưu ý: skill viết tiếng Anh nhưng luôn trả lời PO bằng tiếng Việt. Skill `ui-ux-pro-max`, `ponytail` có sẵn trong `.claude/skills/`.
-- **[S4b] Đồng bộ qua Drive từng người (PO chốt 2026-11-16):** kế hoạch `09-…` §8. S4b-1 (bộ máy + test) xong trên nhánh `claude/s4b-drive-sync`, chưa merge. Tiếp: S4b-2 giao diện + tự đồng bộ (xem §8 bảng lát), rồi PO thử 2 máy.
+- **[S4b] Đồng bộ qua Drive từng người (PO chốt 2026-11-16):** kế hoạch `09-…` §8. S4b-1 + S4b-2 (giao diện + tự đồng bộ) xong v2.17.0 trên nhánh `claude/s4b-drive-sync`, chưa merge (nhật ký `sessions/2026-11-16-05.md`). Tiếp: PO thử 2 máy (S4b-3, T-37) → PO nói "merge" thì đẩy `main`. Sau đó S4b-4 (bỏ dần Firebase) cần PO xác nhận.
 - ✅ **[TODO-2]** PO đã xác minh trên máy thật – OK (2026-11-16, T-26).
 - ✅ **[TODO-3]** PO xác nhận bản live v2.16.0 trên Vercel OK (2026-11-16). Từ v2.16.1 có CI GitHub Actions chặn build lỗi trước khi lên `main`.
 - ✅ CI tự động (v2.16.1): `.github/workflows/ci.yml` chạy test/build/lint mỗi lần push/PR – xem tab Actions trên GitHub; badge CI trong README.
