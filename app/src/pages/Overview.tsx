@@ -60,7 +60,9 @@ export default function Overview() {
   const [showInsightsModal, setShowInsightsModal] = useState(false)
   const [trendTab, setTrendTab] = useState<'expense' | 'income'>('expense')
   const [barScope, setBarScope] = useState<'week' | 'month'>('month')
-  const [topScope, setTopScope] = useState<'week' | 'month'>('month')
+  // Thẻ gộp "Giao dịch gần đây" + "Chi nhiều nhất" (tuần/tháng) để trang Tổng quan gọn hơn
+  const [listTab, setListTab] = useState<'recent' | 'week' | 'month'>('recent')
+  const topScope = listTab === 'week' ? 'week' : 'month'
   const [viewingTx, setViewingTx] = useState<Tx | null>(null)
   const [viewingCreditFundId, setViewingCreditFundId] = useState<number | null>(null)
   const [showSavingsModal, setShowSavingsModal] = useState(false)
@@ -405,15 +407,28 @@ export default function Overview() {
         })}
       </div>
 
-      {/* 2a. Giao dịch gần đây (dùng nhiều nhất → đặt ngay sau Ví) */}
+      {/* 2a. Giao dịch gần đây + Chi nhiều nhất (gộp 1 thẻ, chuyển bằng tab) */}
       <div className="sec-head">
-        <span>Giao dịch gần đây</span>
-        <span className="link-green" onClick={() => nav('/ledger')}>
-          Xem tất cả
+        <span>{listTab === 'recent' ? 'Giao dịch gần đây' : 'Chi tiêu nhiều nhất'}</span>
+        <span className="link-green" onClick={() => (listTab === 'recent' ? nav('/ledger') : openReport('expense'))}>
+          {listTab === 'recent' ? 'Xem tất cả' : 'Xem chi tiết'}
         </span>
       </div>
-      <div className="card" style={{ padding: '4px 14px' }}>
-        {recentTxs.length === 0 && (
+      <div className="card" style={{ padding: '12px 14px 4px' }}>
+        <div className="seg" role="tablist" style={{ marginBottom: 6 }}>
+          {(
+            [
+              ['recent', 'Gần đây'],
+              ['week', 'Chi tuần này'],
+              ['month', 'Chi tháng này'],
+            ] as const
+          ).map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={listTab === k} className={listTab === k ? 'on' : ''} onClick={() => setListTab(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {listTab === 'recent' && recentTxs.length === 0 && (
           <EmptyState
             icon={ReceiptText}
             title="Chưa có giao dịch nào"
@@ -422,26 +437,41 @@ export default function Overview() {
             onAction={() => setPayDraft({})}
           />
         )}
-        {recentTxs.map(t => {
-          const c = cMap.get(t.categoryId ?? -1)
-          const f = fMap.get(t.fundId)
-          const isT = t.type === 'transfer'
-          return (
-            <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
-              <div className="ico round" style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}>
-                {isT ? '🔁' : (c?.icon ?? '❓')}
-                {f && <span className="wallet-mini-badge">{f.icon}</span>}
+        {listTab === 'recent' &&
+          recentTxs.map(t => {
+            const c = cMap.get(t.categoryId ?? -1)
+            const f = fMap.get(t.fundId)
+            const isT = t.type === 'transfer'
+            return (
+              <div className="row" key={t.id} onClick={() => setViewingTx(t)} style={{ cursor: 'pointer' }}>
+                <div className="ico round" style={{ background: (c?.color ?? '#64748b') + '28', position: 'relative' }}>
+                  {isT ? '🔁' : (c?.icon ?? '❓')}
+                  {f && <span className="wallet-mini-badge">{f.icon}</span>}
+                </div>
+                <div className="grow">
+                  <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
+                  <small>{fullViDate(t.date)}</small>
+                </div>
+                <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>{money(t.amount)}</b>
+              </div>
+            )
+          })}
+        {listTab !== 'recent' && topSpendList.length === 0 && (
+          <EmptyState icon={PieChart} title="Chưa có khoản chi" hint="Khi có giao dịch chi, các nhóm chi nhiều nhất sẽ hiện ở đây." />
+        )}
+        {listTab !== 'recent' &&
+          topSpendList.map(item => (
+            <div className="row" key={item.cid}>
+              <div className="ico round" style={{ background: (item.cat?.color ?? '#ef4444') + '28' }}>
+                {item.cat?.icon ?? '📦'}
               </div>
               <div className="grow">
-                <b>{isT ? 'Chuyển quỹ' : (c?.name ?? 'Không nhóm')}</b>
-                <small>{fullViDate(t.date)}</small>
+                <b>{item.cat ? getCategoryFullName(item.cat, cats) : 'Không nhóm'}</b>
+                <small>{money(item.amount)}</small>
               </div>
-              <b className={t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : 'mut'}>
-                {money(t.amount)}
-              </b>
+              <b className="exp">{item.pct}%</b>
             </div>
-          )
-        })}
+          ))}
       </div>
 
       {/* 2b. Quỹ tín dụng (hiển thị trực tiếp ở Tổng quan, bấm vào mở trang chi tiết giao dịch & trả góp) */}
@@ -1153,39 +1183,6 @@ export default function Overview() {
           <span className={`dot ${reportSlide === 0 ? 'on' : ''}`} onClick={() => setReportSlide(0)} />
           <span className={`dot ${reportSlide === 1 ? 'on' : ''}`} onClick={() => setReportSlide(1)} />
         </div>
-      </div>
-
-      {/* 5. Chi tiêu nhiều nhất */}
-      <div className="sec-head">
-        <span>Chi tiêu nhiều nhất</span>
-        <span className="link-green" onClick={() => openReport('expense')}>
-          Xem chi tiết
-        </span>
-      </div>
-      <div className="card">
-        <div className="seg">
-          <button className={topScope === 'week' ? 'on' : ''} onClick={() => setTopScope('week')}>
-            Tuần
-          </button>
-          <button className={topScope === 'month' ? 'on' : ''} onClick={() => setTopScope('month')}>
-            Tháng
-          </button>
-        </div>
-        {topSpendList.length === 0 && (
-          <EmptyState icon={PieChart} title="Chưa có khoản chi" hint="Khi có giao dịch chi, các nhóm chi nhiều nhất sẽ hiện ở đây." />
-        )}
-        {topSpendList.map(item => (
-          <div className="row" key={item.cid}>
-            <div className="ico round" style={{ background: (item.cat?.color ?? '#ef4444') + '28' }}>
-              {item.cat?.icon ?? '📦'}
-            </div>
-            <div className="grow">
-              <b>{item.cat ? getCategoryFullName(item.cat, cats) : 'Không nhóm'}</b>
-              <small>{money(item.amount)}</small>
-            </div>
-            <b className="exp">{item.pct}%</b>
-          </div>
-        ))}
       </div>
 
       {viewingTx && (

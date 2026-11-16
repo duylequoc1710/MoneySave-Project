@@ -1157,3 +1157,24 @@ export function lastFundForCategory(txs: Tx[], categoryId: number | undefined): 
   for (const t of txs) if (t.categoryId === categoryId && (!best || t.date > best.date || (t.date === best.date && (t.id ?? 0) > (best.id ?? 0)))) best = t
   return best?.fundId
 }
+
+/**
+ * Số tiền hay nhập cho một nhóm (đếm trong `txs` gần đây, hoà → dùng gần nhất), bỏ giao dịch tự động.
+ * Thiếu thì bù bằng mức mặc định; trả về tăng dần để dễ nhìn trên hàng nút của bàn phím số.
+ */
+export function frequentAmounts(txs: Tx[], categoryId: number | undefined, limit = 4, defaults = [50_000, 100_000, 200_000, 500_000]): number[] {
+  const stat = new Map<number, { n: number; last: string }>()
+  for (const t of txs) {
+    if (categoryId == null || t.categoryId !== categoryId || t.recurringId || t.savingsAction || t.amount <= 0) continue
+    const s = stat.get(t.amount) ?? { n: 0, last: '' }
+    s.n++
+    if (t.date > s.last) s.last = t.date
+    stat.set(t.amount, s)
+  }
+  const top = [...stat.entries()]
+    .sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))
+    .slice(0, limit)
+    .map(([amt]) => amt)
+  for (const d of defaults) if (top.length < limit && !top.includes(d)) top.push(d)
+  return top.sort((a, b) => a - b)
+}

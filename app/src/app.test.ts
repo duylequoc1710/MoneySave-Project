@@ -28,6 +28,7 @@ import {
   shiftMonth,
   rankFrequentCategories,
   lastFundForCategory,
+  frequentAmounts,
 } from './lib.ts'
 import {
   computeDueDates,
@@ -976,6 +977,17 @@ describe('Nhập nhanh: nhóm & ví hay dùng', () => {
     assert.deepEqual(rankFrequentCategories(txs, 'expense'), [10, 30, 20])
     assert.deepEqual(rankFrequentCategories(txs, 'income'), [60])
     assert.deepEqual(rankFrequentCategories([], 'expense'), [])
+  })
+  it('số tiền hay nhập theo nhóm: đếm, hoà → gần nhất, bù mặc định, tăng dần', () => {
+    const txs = [
+      t(1, 10, '2026-11-01', { amount: 35_000 }), t(2, 10, '2026-11-02', { amount: 35_000 }), t(3, 10, '2026-11-03', { amount: 35_000 }),
+      t(4, 10, '2026-11-01', { amount: 50_000 }), t(5, 10, '2026-11-04', { amount: 50_000 }),
+      t(6, 10, '2026-11-02', { amount: 120_000 }), t(7, 10, '2026-11-05', { amount: 45_000 }), t(8, 10, '2026-11-06', { amount: 30_000 }),
+      t(9, 10, '2026-11-07', { amount: 999_000, recurringId: 1 }), t(10, 20, '2026-11-07', { amount: 70_000 }),
+    ]
+    assert.deepEqual(frequentAmounts(txs, 10), [30_000, 35_000, 45_000, 50_000]) // 35k×3, 50k×2, rồi 30k, 45k (gần nhất) hơn 120k
+    assert.deepEqual(frequentAmounts(txs, 20), [50_000, 70_000, 100_000, 200_000])
+    assert.deepEqual(frequentAmounts([], undefined), [50_000, 100_000, 200_000, 500_000])
   })
   it('ví dùng gần nhất cho nhóm', () => {
     const txs = [t(1, 10, '2026-11-01', { fundId: 1 }), t(2, 10, '2026-11-03', { fundId: 2 }), t(3, 20, '2026-11-05', { fundId: 3 })]

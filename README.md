@@ -6,9 +6,9 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/d%C3%B9ng_mi%E1%BB%85n_ph%C3%AD-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Dùng miễn phí" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.17.0-3b82f6" alt="Version v2.17.0" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.18.0-3b82f6" alt="Version v2.18.0" /></a>
     <a href="https://github.com/duylequoc1710/MoneySave-Project/actions/workflows/ci.yml"><img src="https://github.com/duylequoc1710/MoneySave-Project/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-80%2F80%20passing-brightgreen" alt="Tests" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-81%2F81%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
@@ -162,6 +162,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.18.0` (2026-11-16):** Bàn phím số gợi ý số tiền hay nhập theo nhóm; Tổng quan gộp Giao dịch gần đây + Chi nhiều nhất thành 1 thẻ có tab.
 * **`v2.17.0` (2026-11-16):** Nhập nhanh (tự chọn sẵn nhóm & ví hay dùng, hàng nút 1 chạm); Smart Insights làm lại theo số liệu thật (tách khoản lớn, so cùng kỳ, thu – chi tháng).
 * **`v2.16.1` (2026-11-16):** CI tự động: GitHub tự chạy test, build, lint mỗi lần đẩy code.
 * **`v2.16.0` (2026-11-16):** Chữ to & dễ đọc hơn (16px, số tiền thẳng cột), màu giao diện Sáng đủ tương phản, nút chữ dễ bấm (44px), icon thống nhất trong cửa sổ.

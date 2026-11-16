@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, processRecurringTransactions, type RecFrequency, type Tx, type TxType } from '../db'
 import { addDays } from 'date-fns'
-import { evaluateKeypadExpression, formatKeypadDisplay, lastFundForCategory, money, rankFrequentCategories, ymd } from '../lib'
+import { evaluateKeypadExpression, formatKeypadDisplay, frequentAmounts, lastFundForCategory, money, rankFrequentCategories, ymd } from '../lib'
 import DateInput from './DateInput'
 import Keypad, { NumericInputBox } from './Keypad'
 import CategoryPickerModal from './CategoryPickerModal'
@@ -246,7 +246,7 @@ export default function TxForm({
             value={amount}
             onChange={setAmount}
             onDone={() => setShowKeypad(false)}
-            suggestions={[50000, 100000, 200000, 500000]}
+            suggestions={frequentAmounts(recentTxs, selCat?.id)}
           />
         )}
 

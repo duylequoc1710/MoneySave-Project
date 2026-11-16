@@ -4,6 +4,14 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.18.0] – 2026-11-16
+### ⚡ Số tiền hay nhập + Tổng quan gọn hơn
+- Bàn phím số khi thêm giao dịch: hàng nút gợi ý giờ là **4 số tiền bạn hay nhập cho nhóm đang chọn** (90 ngày gần đây, vd. Ăn uống: 35k · 50k…), thiếu thì bù 50k/100k/200k/500k. Đổi nhóm → gợi ý đổi theo.
+- Tổng quan: gộp "Giao dịch gần đây" và "Chi tiêu nhiều nhất" thành **1 thẻ có 3 tab** (Gần đây · Chi tuần này · Chi tháng này) – trang ngắn hơn 1 thẻ; tiêu đề và nút "Xem tất cả / Xem chi tiết" đổi theo tab.
+- +1 test → 81/81. Không đổi dữ liệu/schema.
+
+---
+
 ## [v2.17.0] – 2026-11-16
 ### ⚡ Nhập giao dịch nhanh hơn
 - Thêm giao dịch mới: nhóm mặc định = **nhóm bạn dùng nhiều nhất trong 90 ngày** (trước là nhóm đầu danh sách). Hàng nút **"nhóm hay dùng"** (tối đa 4, vuốt ngang) dưới ô Nhóm – 1 chạm để chọn.
