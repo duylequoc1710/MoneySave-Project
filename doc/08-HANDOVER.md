@@ -1,6 +1,6 @@
 # 08 – Tài liệu bàn giao (Handover) cho AI / kỹ sư tiếp nhận
 
-> Cập nhật: 2026-11-16 (phiên 02) · production `main` = **v2.11.0** (`a524381`, S4a Google Drive) · chờ PO thử Google thật (T-30).
+> Cập nhật: 2026-11-16 (phiên 02) · production `main` = **v2.11.0** + trang `privacy.html` (`7d769ac`) · PO đang Publish app OAuth (10 §3.4), chờ thử Google thật (T-30).
 
 ## 1. Dự án là gì
 **MoneySave** – PWA quản lý tài chính cá nhân, offline-first, tiếng Việt. Live: https://moneysavedl.vercel.app (Vercel tự deploy khi push `main`).
@@ -9,7 +9,7 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 ## 2. Trạng thái hiện tại
 - Git: working tree sạch, không có thay đổi chưa đẩy (đã kiểm tra 2026-11-04).
 - PO đã đổi rule Firebase (két `moneysave_users`), xác nhận 2 thiết bị đồng bộ khớp (2026-11-16). Giai đoạn 2 khoá két cũ: từ ~2026-11-23 (09 §6.3), cần nhắc PO.
-- `npm test`: 72/72 pass. `main` = v2.11.0 (a524381). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
+- `npm test`: 72/72 pass. `main` = v2.11.0 + privacy (7d769ac). Dexie schema chính `version(4)` (không đổi); CSDL phụ `moneysave_safety` `version(2)` (thêm bảng `kv`).
 - Tính năng hoàn thành đến v2.8.0: xem `../CHANGELOG.md`, `06-ROADMAP.md`, `01-SRS.md` (FR-01…FR-39).
 
 ## 3. Cấu trúc thư mục
