@@ -63,17 +63,17 @@
 ### Quyết định cần PO
 - **D1** – Sửa bảo mật đồng bộ theo §2.1(a)? (khuyến nghị: Có, làm sớm nhất)
 - **D2** – Sao lưu: duyệt GĐ1 (Phương án A) ngay; GĐ2 Google Drive làm sau khi GĐ1 được xác nhận trên máy thật?
-- **D3** – Mã hoá file sao lưu bằng mật khẩu (A+): bắt buộc / tuỳ chọn / không?
+- **D3** – Mã hoá file sao lưu bằng mật khẩu (A+): ✅ PO chốt **Không** (2026-11-16) – bỏ A+.
 - **D4** – Quy trình nhánh: làm trên nhánh `claude/*` → tạo PR → PO xem bản Preview của Vercel trên điện thoại → merge `main` để lên production (thay cho việc đẩy thẳng `main` như trước).
 
 ### Lát đề xuất (thứ tự ưu tiên)
 | Lát | Nội dung | Người làm | Phụ thuộc |
 |---|---|---|---|
 | S1 ✅ | §2.2 persist storage, §3.3 JSON gọn (§3.2 huỷ – xem §2.4) | Opus | v2.9.0 |
-| S2 ✅ | Sao lưu GĐ1: 1 file duy nhất (ghi đè), Web Share, xem trước khi khôi phục, gộp snapshot theo ngày, sửa §2.3. A+ (mật khẩu file) chưa làm – chờ D3 | Opus | v2.9.0 |
-| S3 ✅ code | Bảo mật đồng bộ §2.1(a) + §2.4 + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu (chi tiết §6) | Opus | v2.10.0 · chờ PO đổi rule Firebase |
-| S4 | Google Drive GĐ2 | Sonnet, Opus review | S2 xác nhận, PO tạo OAuth Client ID |
-| S5 | TODO-1 tách logic tìm kiếm + test; hook dữ liệu dùng chung §3.4 | Sonnet | – |
+| S2 ✅ | Sao lưu GĐ1: 1 file duy nhất (ghi đè), Web Share, xem trước khi khôi phục, gộp snapshot theo ngày, sửa §2.3. A+ (mật khẩu file) huỷ theo D3 | Opus | v2.9.0 |
+| S3 ✅ | Bảo mật đồng bộ §2.1(a) + §2.4 + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu (chi tiết §6) | Opus | v2.10.0 · PO đã đổi rule, 2 thiết bị khớp (2026-11-16) |
+| S4 | Google Drive GĐ2 – hướng dẫn PO: `10-S4-GOOGLE-DRIVE-SETUP.md` | Sonnet, Opus review | ⏳ chờ PO gửi OAuth Client ID |
+| S5 ✅ | TODO-1 tách logic tìm kiếm `search.ts` + test, tìm không dấu/nhiều từ. Hook dữ liệu dùng chung §3.4 **hoãn** (đụng mọi trang, lợi ích nhỏ ở cỡ dữ liệu hiện tại) | Opus | v2.10.1 |
 
 ## §6. S3 – Két bảo mật theo tài khoản (v2.10.0)
 ### §6.1 Cách hoạt động

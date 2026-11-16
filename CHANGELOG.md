@@ -4,6 +4,15 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.10.1] – 2026-11-16
+### 🔍 Tìm kiếm toàn diện (S5)
+- Tách logic tìm kiếm khỏi `GlobalSearchModal.tsx` sang module thuần `search.ts` (đóng TODO-1), component chỉ còn vẽ kết quả.
+- **Tìm không dấu:** gõ "an uong", "tiet kiem" hay có dấu đều ra kết quả (bỏ dấu tiếng Việt, đ→d, không phân biệt hoa thường).
+- **Nhiều từ không cần đúng thứ tự:** "phở sáng" khớp ghi chú "Phở bò sáng"; số tiền gõ "50.000" khớp giao dịch 50000.
+- +8 unit test (`search.test.ts`) → 68/68. Không đổi dữ liệu/schema.
+
+---
+
 ## [v2.10.0] – 2026-11-16
 ### 🔐 Bảo mật đồng bộ Cloud (S3)
 - **Két bảo mật theo tài khoản** `moneysave_users/{uid}`: mọi request kèm `idToken` (`?auth=`); rule Firebase chỉ cho chủ tài khoản đọc/ghi (trước đây két `moneysave_vaults` mở công khai và khoá suy ra từ uid+email).

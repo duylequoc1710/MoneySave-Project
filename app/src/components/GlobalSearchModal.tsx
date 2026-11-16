@@ -3,13 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { type Category, type Fund, type RecurringTx, type SavingsGoal, type Tx } from '../db'
 import { fmtDmy, money } from '../lib'
+import { type SearchableFeature, normalizeQuery, searchFeatures, searchPlans, searchTxs } from '../search'
 
-interface AppFeatureItem {
-  id: string
-  title: string
-  subtitle: string
+interface AppFeatureItem extends SearchableFeature {
   icon: string
-  keywords: string
   action: () => void
 }
 
@@ -144,74 +141,41 @@ export default function GlobalSearchModal({
     },
   ], [nav, onClose, onOpenSavingsGoals])
 
-  const cleanQuery = q.trim().toLowerCase()
+  const cleanQuery = normalizeQuery(q)
 
-  const matchedFeatures = useMemo(() => {
-    if (!cleanQuery) return features.slice(0, 5)
-    return features.filter(
-      f =>
-        f.title.toLowerCase().includes(cleanQuery) ||
-        f.subtitle.toLowerCase().includes(cleanQuery) ||
-        f.keywords.toLowerCase().includes(cleanQuery),
-    )
-  }, [features, cleanQuery])
+  const matchedFeatures = useMemo(() => searchFeatures(features, cleanQuery), [features, cleanQuery])
 
-  const matchedTxs = useMemo(() => {
-    if (!cleanQuery) return []
-    return txs
-      .filter(t => {
-        const catName = cMap.get(t.categoryId ?? -1)?.name ?? ''
-        const fName = fMap.get(t.fundId)?.name ?? ''
-        const toFName = t.toFundId ? fMap.get(t.toFundId)?.name ?? '' : ''
-        const gName = t.savingsGoalName ?? ''
-        const note = t.note ?? ''
-        const dateStr = fmtDmy(t.date)
-        const amtStr = String(t.amount)
-
-        const fullStr = `${catName} ${fName} ${toFName} ${gName} ${note} ${dateStr} ${amtStr}`.toLowerCase()
-        return fullStr.includes(cleanQuery)
-      })
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
-      .slice(0, 30)
-  }, [txs, cleanQuery, cMap, fMap])
+  const matchedTxs = useMemo(() => searchTxs(txs, cleanQuery, cMap, fMap), [txs, cleanQuery, cMap, fMap])
 
   const matchedNotes = useMemo(() => {
-    if (!cleanQuery) return []
-    const items: Array<{ id: string; title: string; subtitle: string; icon: string; action: () => void }> = []
-
-    goals.forEach(g => {
-      const gStr = `${g.name} ${g.note ?? ''}`.toLowerCase()
-      if (gStr.includes(cleanQuery)) {
-        items.push({
+    const goToGoals = () => {
+      onClose()
+      onOpenSavingsGoals()
+    }
+    const goToBudgets = () => {
+      onClose()
+      nav('/budgets')
+    }
+    return searchPlans(goals, recurrings, cleanQuery).map(hit => {
+      if (hit.kind === 'goal') {
+        const g = hit.goal
+        return {
           id: `goal-${g.id}`,
           title: `🎯 Mục tiêu: ${g.name}`,
           subtitle: `Tích lũy: ${money(g.allocatedAmount)} / ${money(g.targetAmount)}${g.note ? ' · ' + g.note : ''}`,
           icon: g.icon || '🎯',
-          action: () => {
-            onClose()
-            onOpenSavingsGoals()
-          },
-        })
+          action: goToGoals,
+        }
+      }
+      const r = hit.recurring
+      return {
+        id: `rec-${r.id}`,
+        title: `🔁 Định kỳ: ${r.name}`,
+        subtitle: `Định mức ${money(r.amount)}${r.note ? ' · ' + r.note : ''}`,
+        icon: '🗓️',
+        action: goToBudgets,
       }
     })
-
-    recurrings.forEach(r => {
-      const rStr = `${r.name} ${r.note ?? ''}`.toLowerCase()
-      if (rStr.includes(cleanQuery)) {
-        items.push({
-          id: `rec-${r.id}`,
-          title: `🔁 Định kỳ: ${r.name}`,
-          subtitle: `Định mức ${money(r.amount)}${r.note ? ' · ' + r.note : ''}`,
-          icon: '🗓️',
-          action: () => {
-            onClose()
-            nav('/budgets')
-          },
-        })
-      }
-    })
-
-    return items.slice(0, 15)
   }, [goals, recurrings, cleanQuery, onClose, onOpenSavingsGoals, nav])
 
   return createPortal(

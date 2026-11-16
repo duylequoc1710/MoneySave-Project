@@ -53,7 +53,7 @@ Ghi chép thu chi nhanh, xem tổng quan tài chính, quản lý theo quỹ; dù
 | FR-42 | **Chống quét khối/kéo thả vô tình (v2.8.0)**: CSS `user-select:none`, `-webkit-touch-callout:none`, chặn `dragstart`/`selectstart` ngoài ô nhập văn bản. |
 | FR-45 | **Két đồng bộ bảo mật theo tài khoản (v2.10.0)**: `moneysave_users/{uid}` {vault, meta} với `?auth=idToken`; tự phát hiện rule (401/403 → két cũ), sao chép két cũ khi két mới trống (không xoá), polling chỉ đọc `meta`; kéo Cloud trước khi sinh giao dịch định kỳ; `syncNowSmart` dùng chung lượt đang chạy. |
 | FR-44 | **Sao lưu 1 file & khôi phục có xem trước (v2.9.0)**: `saveBackupFile` (File System Access ghi đè / Web Share / tải file), `describeBackup` + xác nhận trước khi `importAll`; bản sao an toàn `sync`/`daily` gộp 1 bản/ngày (`pickSnapshotToReplace`). |
-| FR-43 *(TODO: chưa có unit test cho phần tìm kiếm – xem `08-HANDOVER.md`)* | **Nút Reload nhanh & Tìm kiếm toàn diện (v2.8.0)**: nút 🔄 tại Tổng quan gọi `syncNowSmart`, kiểm tra Service Worker; `GlobalSearchModal` tìm chức năng, giao dịch, kế hoạch/định kỳ/ghi chú. |
+| FR-43 | **Nút Reload nhanh & Tìm kiếm toàn diện (v2.8.0)**: nút 🔄 tại Tổng quan gọi `syncNowSmart`, kiểm tra Service Worker; `GlobalSearchModal` tìm chức năng, giao dịch, kế hoạch/định kỳ/ghi chú. Từ v2.10.1 logic ở `search.ts` (unit test `search.test.ts`): không phân biệt dấu/hoa thường, mọi từ phải khớp (không cần đúng thứ tự), số "50.000" khớp 50000; giao dịch tối đa 30 (mới nhất trước), kế hoạch tối đa 15. |
 
 ## 3. Yêu cầu phi chức năng (NFR)
 - NFR-01 Đa nền tảng: PWA cài được trên iOS (Safari → Thêm vào MH chính), Android (Chrome), macOS (Safari/Chrome).

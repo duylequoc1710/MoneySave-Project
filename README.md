@@ -6,8 +6,8 @@
 
   <p>
     <a href="https://moneysavedl.vercel.app"><img src="https://img.shields.io/badge/live_demo_(test_only)-moneysavedl.vercel.app-10b981?style=flat&logo=vercel" alt="Live Demo (Test Only)" /></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.10.0-3b82f6" alt="Version v2.10.0" /></a>
-    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-60%2F60%20passing-brightgreen" alt="Tests" /></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-v2.10.1-3b82f6" alt="Version v2.10.1" /></a>
+    <a href="doc/05-TEST-PLAN.md"><img src="https://img.shields.io/badge/tests-68%2F68%20passing-brightgreen" alt="Tests" /></a>
     <a href="https://vite.dev"><img src="https://img.shields.io/badge/vite-v8.3-646CFF" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/react-v19-61DAFB" alt="React" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
@@ -75,7 +75,7 @@ Không chỉ dừng lại ở việc ghi chép thu chi thông thường, **Money
 | **Biểu đồ & Trực quan hóa** | Recharts v3 (Lazy-loaded chunk), Custom Sparkbars & Milestone Steppers |
 | **Đám mây & Xác thực** | Firebase Authentication (Email/Password), Cloud Firestore / Realtime Database REST API |
 | **Bảo mật & Mã hóa** | Web Crypto API (`crypto.subtle` – `AES-GCM 256-bit`, `PBKDF2-SHA256`, `SHA-256`) |
-| **Chất lượng Mã nguồn** | Node.js Test Runner (`60/60 unit tests`), Oxlint, TypeScript Strict Mode |
+| **Chất lượng Mã nguồn** | Node.js Test Runner (`68/68 unit tests`), Oxlint, TypeScript Strict Mode |
 
 ---
 
@@ -117,6 +117,7 @@ Sau khi đã tùy biến mã nguồn theo ý thích, bạn có thể đẩy lên
 
 Chi tiết đầy đủ từng bản phát hành được ghi nhận tại **[CHANGELOG.md](CHANGELOG.md)**:
 
+* **`v2.10.1` (2026-11-16):** Tìm kiếm không dấu, nhiều từ, số tiền có dấu chấm; logic tìm kiếm tách module có unit test.
 * **`v2.10.0` (2026-11-16):** Két đồng bộ bảo mật theo tài khoản (chỉ chủ tài khoản đọc/ghi), tự chuyển két cũ không mất dữ liệu, kiểm tra Cloud nhẹ hơn, sửa nguy cơ đẩy dữ liệu cũ đè Cloud.
 * **`v2.9.0` (2026-11-16):** Sao lưu 1 file duy nhất (ghi đè bản cũ) qua bảng chia sẻ iOS/Android hoặc ghi đè trực tiếp trên máy tính, xem trước khi khôi phục, gộp bản sao an toàn theo ngày.
 * **`v2.8.0` (2026-11-01):** Đồng bộ bàn phím số & bộ chọn in-app (bỏ 100% bàn phím/`<select>` hệ thống), báo cáo Phân bổ/Rút Quỹ Tiết Kiệm, chống kéo thả vô tình, nút Reload nhanh & Tìm kiếm toàn diện.
@@ -137,7 +138,7 @@ Toàn bộ tài liệu thiết kế, kiến trúc và nhật ký kỹ thuật c�
 * 🏗️ [`doc/02-ARCHITECTURE.md`](doc/02-ARCHITECTURE.md): Kiến trúc hệ thống, luồng đồng bộ & bảo mật E2EE.
 * 🗄️ [`doc/03-DATA-MODEL.md`](doc/03-DATA-MODEL.md): Mô hình dữ liệu IndexedDB (Dexie schema v4).
 * 📖 [`doc/04-USER-GUIDE.md`](doc/04-USER-GUIDE.md): Cẩm nang hướng dẫn sử dụng trên iPhone, Android và máy tính.
-* 🧪 [`doc/05-TEST-PLAN.md`](doc/05-TEST-PLAN.md): Kế hoạch và kết quả kiểm thử tự động (`60/60 tests pass`).
+* 🧪 [`doc/05-TEST-PLAN.md`](doc/05-TEST-PLAN.md): Kế hoạch và kết quả kiểm thử tự động (`68/68 tests pass`).
 * 🗺️ [`doc/06-ROADMAP.md`](doc/06-ROADMAP.md) & [`doc/06-DEPLOYMENT-GUIDE.md`](doc/06-DEPLOYMENT-GUIDE.md): Lộ trình phát triển & hướng dẫn triển khai.
 * 🛠️ [`doc/07-INCIDENT-LOGS-AND-CASE-STUDIES.md`](doc/07-INCIDENT-LOGS-AND-CASE-STUDIES.md): Sổ tay phân tích sự cố kỹ thuật (RCA) & các giải pháp thực chiến.
 
