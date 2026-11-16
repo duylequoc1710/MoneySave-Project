@@ -40,7 +40,7 @@ export default function SmartInsightsModal({
           </button>
           <div style={{ textAlign: 'center' }}>
             <b style={{ fontSize: 17 }}>🧠 Smart Insights</b>
-            <div className="mut" style={{ fontSize: 11.5 }}>
+            <div className="mut" style={{ fontSize: 12 }}>
               Kỳ phân tích: {insights.monthStr} · Hôm nay {insights.todayStr}
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function SmartInsightsModal({
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                fontSize: 11.5,
+                fontSize: 12,
                 marginTop: 6,
               }}
               className="mut"
@@ -397,7 +397,7 @@ export default function SmartInsightsModal({
                   />
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: st.isWeekend ? 700 : 500,
                       color: st.isWeekend ? '#f59e0b' : 'var(--mut)',
                       marginTop: 5,

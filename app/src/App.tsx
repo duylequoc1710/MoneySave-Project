@@ -183,7 +183,7 @@ export default function App() {
             type="button"
             className="pill-tag"
             style={{
-              fontSize: 10.5,
+              fontSize: 12,
               border: 0,
               cursor: 'pointer',
               color: syncSnap.status === 'error' ? 'var(--exp)' : 'var(--acc)',

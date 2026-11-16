@@ -101,7 +101,7 @@ export default function CategoryPickerModal({
                 </div>
                 <div className="grow">
                   <b style={{ fontSize: 15 }}>{grp.parent.name}</b>
-                  <span className="mut" style={{ fontSize: 11, marginLeft: 6 }}>
+                  <span className="mut" style={{ fontSize: 12, marginLeft: 6 }}>
                     (Nhóm chung)
                   </span>
                 </div>

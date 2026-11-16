@@ -350,7 +350,7 @@ export default function SavingsGoalsModal({
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <small className="mut" style={{ fontSize: 11, display: 'block' }}>
+              <small className="mut" style={{ fontSize: 12, display: 'block' }}>
                 Số dư quỹ
               </small>
               <b
@@ -374,7 +374,7 @@ export default function SavingsGoalsModal({
                 padding: '0 4px',
               }}
             >
-              <small className="mut" style={{ fontSize: 11, display: 'block' }}>
+              <small className="mut" style={{ fontSize: 12, display: 'block' }}>
                 Đã phân bổ
               </small>
               <b
@@ -392,7 +392,7 @@ export default function SavingsGoalsModal({
               </b>
             </div>
             <div style={{ minWidth: 0 }}>
-              <small className="mut" style={{ fontSize: 11, display: 'block' }}>
+              <small className="mut" style={{ fontSize: 12, display: 'block' }}>
                 Chưa phân bổ
               </small>
               <b
@@ -573,7 +573,7 @@ export default function SavingsGoalsModal({
                           background: badgeColor + '22',
                           color: badgeColor,
                           border: `1px solid ${badgeColor}44`,
-                          fontSize: 11,
+                          fontSize: 12,
                           whiteSpace: 'nowrap',
                         }}
                       >
@@ -626,7 +626,7 @@ export default function SavingsGoalsModal({
                       }}
                     >
                       <div>
-                        <span className="mut" style={{ display: 'block', fontSize: 11 }}>
+                        <span className="mut" style={{ display: 'block', fontSize: 12 }}>
                           Đích đến ({fmtDmy(g.targetDate)})
                         </span>
                         <b style={{ display: 'block', marginTop: 2 }}>
@@ -638,7 +638,7 @@ export default function SavingsGoalsModal({
                         </b>
                       </div>
                       <div>
-                        <span className="mut" style={{ display: 'block', fontSize: 11 }}>
+                        <span className="mut" style={{ display: 'block', fontSize: 12 }}>
                           {info.isCompleted ? 'Số tiền còn thiếu' : 'Cần tích lũy mỗi tháng'}
                         </span>
                         <b
@@ -761,7 +761,7 @@ export default function SavingsGoalsModal({
                       <span
                         className="pill-tag"
                         style={{
-                          fontSize: 11,
+                          fontSize: 12,
                           background: 'color-mix(in srgb, var(--acc) 16%, transparent)',
                           color: 'var(--acc)',
                         }}
@@ -792,7 +792,7 @@ export default function SavingsGoalsModal({
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: 600,
                         }}
                       >
@@ -845,7 +845,7 @@ export default function SavingsGoalsModal({
                               <span
                                 className="pill-tag"
                                 style={{
-                                  fontSize: 10.5,
+                                  fontSize: 12,
                                   color: st.isAchieved ? '#10b981' : '#3b82f6',
                                   background: st.isAchieved
                                     ? 'rgba(16,185,129,0.16)'
@@ -868,7 +868,7 @@ export default function SavingsGoalsModal({
                               justifyContent: 'space-between',
                               alignItems: 'center',
                               marginTop: 4,
-                              fontSize: 11.5,
+                              fontSize: 12,
                               flexWrap: 'wrap',
                               gap: 6,
                             }}
@@ -1266,7 +1266,7 @@ function SavingsGoalFormModal({
               key={v}
               type="button"
               className="btn"
-              style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+              style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
               onClick={() => setTargetRaw(formatNumberInput(String(v)))}
             >
               {v >= 1_000_000 ? `${v / 1_000_000}tr` : money(v)}
@@ -1340,7 +1340,7 @@ function SavingsGoalFormModal({
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-          <small className="mut" style={{ alignSelf: 'center', fontSize: 11.5 }}>
+          <small className="mut" style={{ alignSelf: 'center', fontSize: 12 }}>
             Kỳ hạn nhanh:
           </small>
           {[3, 6, 12, 18, 24].map(m => (
@@ -1348,7 +1348,7 @@ function SavingsGoalFormModal({
               key={m}
               type="button"
               className="btn"
-              style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+              style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
               onClick={() => applyQuickMonths(m)}
             >
               {m} tháng
@@ -1819,7 +1819,7 @@ function AllocateToGoalModal({
                 <button
                   type="button"
                   className="btn"
-                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+                  style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(info.monthlyNeededNow)))}
                 >
                   Định mức tháng ({money(info.monthlyNeededNow)})
@@ -1829,7 +1829,7 @@ function AllocateToGoalModal({
                 <button
                   type="button"
                   className="btn"
-                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+                  style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(info.remainingAmount)))}
                 >
                   Đủ 100% ({money(info.remainingAmount)})
@@ -1839,7 +1839,7 @@ function AllocateToGoalModal({
                 <button
                   type="button"
                   className="btn"
-                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+                  style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(unallocatedBalance)))}
                 >
                   Tất cả số dư rỗi ({money(unallocatedBalance)})
@@ -1850,7 +1850,7 @@ function AllocateToGoalModal({
             <button
               type="button"
               className="btn"
-              style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+              style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
               onClick={() => setAmountRaw(formatNumberInput(String(goal.allocatedAmount)))}
             >
               Rút toàn bộ ({money(goal.allocatedAmount)})
@@ -2055,7 +2055,7 @@ function DepositToSavingsModal({
                   key={v}
                   type="button"
                   className="btn"
-                  style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 99 }}
+                  style={{ fontSize: 12, padding: '4px 10px', borderRadius: 99 }}
                   onClick={() => setAmountRaw(formatNumberInput(String(v)))}
                 >
                   {v >= 1_000_000 ? `${v / 1_000_000}tr` : '500k'}

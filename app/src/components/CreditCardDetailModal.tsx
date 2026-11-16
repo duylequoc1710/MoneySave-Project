@@ -254,7 +254,7 @@ export function InstallmentConvertModal({
                   }}
                 >
                   <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>{m} tháng</div>
-                  <div className="mut" style={{ fontSize: 10.5, marginTop: 2, whiteSpace: 'nowrap' }}>
+                  <div className="mut" style={{ fontSize: 12, marginTop: 2, whiteSpace: 'nowrap' }}>
                     {money(perMonth)}
                   </div>
                 </button>
@@ -632,7 +632,7 @@ function SelectTxForInstallmentModal({
                       <span
                         className="pill-tag"
                         style={{
-                          fontSize: 10.5,
+                          fontSize: 12,
                           color: 'var(--acc)',
                           whiteSpace: 'nowrap',
                         }}
@@ -650,7 +650,7 @@ function SelectTxForInstallmentModal({
                   <b className="exp" style={{ fontSize: 15 }}>
                     -{money(t.amount)}
                   </b>
-                  <div style={{ fontSize: 11, color: 'var(--acc)', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--acc)', marginTop: 2 }}>
                     Chọn ›
                   </div>
                 </div>
@@ -923,7 +923,7 @@ export default function CreditCardDetailModal({
                 minWidth: 0,
               }}
             >
-              <div className="mut" style={{ fontSize: 11.5, whiteSpace: 'nowrap' }}>
+              <div className="mut" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
                 Kỳ chốt {fmtDmy(info.lastStatementDate)}
               </div>
               <div
@@ -939,7 +939,7 @@ export default function CreditCardDetailModal({
                   ? money(info.previousStatementDebt)
                   : '0 ₫ · Đã tất toán'}
               </div>
-              <div className="mut" style={{ fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap' }}>
+              <div className="mut" style={{ fontSize: 12, marginTop: 4, whiteSpace: 'nowrap' }}>
                 Hạn TT: <b>{fmtDmy(info.nextDueDate)}</b>
               </div>
             </div>
@@ -953,14 +953,14 @@ export default function CreditCardDetailModal({
                 minWidth: 0,
               }}
             >
-              <div className="mut" style={{ fontSize: 11.5, whiteSpace: 'nowrap' }}>
+              <div className="mut" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
                 Kỳ mới {fmtDmy(info.lastStatementDate).slice(0, 5)} →{' '}
                 {fmtDmy(info.nextStatementDate).slice(0, 5)}
               </div>
               <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4, whiteSpace: 'nowrap' }}>
                 {money(info.currentCycleSpend)}
               </div>
-              <div className="mut" style={{ fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap' }}>
+              <div className="mut" style={{ fontSize: 12, marginTop: 4, whiteSpace: 'nowrap' }}>
                 Hạn TT: <b>{fmtDmy(info.nextCycleDueDate)}</b>
               </div>
             </div>
@@ -1193,7 +1193,7 @@ export default function CreditCardDetailModal({
                           <span
                             className="pill-tag"
                             style={{
-                              fontSize: 10.5,
+                              fontSize: 12,
                               color: 'var(--acc)',
                               borderColor: 'var(--acc)',
                               whiteSpace: 'nowrap',

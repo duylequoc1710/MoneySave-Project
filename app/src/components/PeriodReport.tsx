@@ -551,7 +551,7 @@ export default function PeriodReport({
                   <BarChart data={netBuckets} stackOffset="sign" margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
                     <CartesianGrid vertical={false} stroke="#8884" />
                     <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
-                    <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
+                    <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 12 }} width={72} />
                     <ReferenceLine y={0} stroke="#8e98a4" />
                     <Bar dataKey="income" name="Khoản thu" stackId="n" fill="#1d9bf0" barSize={44} />
                     <Bar dataKey="negExpense" name="Khoản chi" stackId="n" fill="#f0534f" barSize={44} />
@@ -796,7 +796,7 @@ export default function PeriodReport({
                                       {t.note || fMap.get(t.fundId)?.name || 'Giao dịch'}
                                     </div>
                                     {t.note && (
-                                      <small className="mut" style={{ fontSize: 11 }}>
+                                      <small className="mut" style={{ fontSize: 12 }}>
                                         {fMap.get(t.fundId)?.name}
                                       </small>
                                     )}
@@ -823,7 +823,7 @@ export default function PeriodReport({
                       <BarChart data={weekBuckets} margin={{ left: 6, right: 8, top: 8, bottom: 8 }}>
                         <CartesianGrid vertical={false} stroke="#8884" />
                         <XAxis dataKey="label" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={36} />
-                        <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 11 }} width={72} />
+                        <YAxis tickFormatter={v => new Intl.NumberFormat('en-US').format(Number(v))} tick={{ fontSize: 12 }} width={72} />
                         <Tooltip
                           cursor={{ fill: 'rgba(148, 163, 184, 0.1)', radius: 6 }}
                           contentStyle={{
@@ -894,7 +894,7 @@ export default function PeriodReport({
                                       {cMap.get(t.categoryId ?? -1)?.name ?? 'Giao dịch'}
                                       {t.note ? ` · ${t.note}` : ''}
                                     </div>
-                                    <small className="mut" style={{ fontSize: 11 }}>
+                                    <small className="mut" style={{ fontSize: 12 }}>
                                       {fMap.get(t.fundId)?.name}
                                     </small>
                                   </div>
@@ -1172,7 +1172,7 @@ export default function PeriodReport({
                           <div style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {isAlloc ? `Phân bổ: ${t.savingsGoalName ?? 'Kế hoạch'}` : `Rút từ: ${t.savingsGoalName ?? 'Kế hoạch'}`}
                           </div>
-                          <small className="mut" style={{ fontSize: 11, display: 'block' }}>
+                          <small className="mut" style={{ fontSize: 12, display: 'block' }}>
                             {fmtDmy(t.date)} · {f?.name ?? 'Ví Tiết Kiệm'}{t.note ? ' · ' + t.note : ''}
                           </small>
                         </div>

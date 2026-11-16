@@ -227,10 +227,10 @@ export default function Budgets() {
                       {rec.type === 'income' ? '+' : rec.type === 'expense' ? '-' : ''}
                       {money(rec.amount)}
                     </b>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         className="btn"
-                        style={{ padding: '3px 8px', fontSize: 11 }}
+                        style={{ padding: '7px 10px', fontSize: 12 }}
                         title="Phát sinh giao dịch ngay hôm nay"
                         onClick={() => triggerNow(rec)}
                       >
@@ -238,7 +238,7 @@ export default function Budgets() {
                       </button>
                       <button
                         className="btn"
-                        style={{ padding: '3px 8px', fontSize: 11 }}
+                        style={{ padding: '7px 10px', fontSize: 12 }}
                         onClick={() => toggleRecActive(rec)}
                       >
                         {rec.active ? 'Đang bật' : 'Tạm dừng'}
@@ -430,7 +430,7 @@ export default function Budgets() {
                         <span
                           className="pill-tag"
                           style={{
-                            fontSize: 10.5,
+                            fontSize: 12,
                             whiteSpace: 'nowrap',
                             color: isRepeat ? 'var(--acc)' : 'var(--mut)',
                           }}

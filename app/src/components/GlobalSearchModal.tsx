@@ -231,6 +231,7 @@ export default function GlobalSearchModal({
               <button
                 type="button"
                 onClick={() => setQ('')}
+                aria-label="Xoá nội dung tìm kiếm"
                 style={{
                   background: 'none',
                   border: 0,
@@ -406,7 +407,7 @@ export default function GlobalSearchModal({
                                     ? 'Chuyển quỹ'
                                     : (c?.name ?? 'Không nhóm')}
                               </b>
-                              <span className="pill-tag" style={{ fontSize: 11 }}>{fmtDmy(t.date)}</span>
+                              <span className="pill-tag" style={{ fontSize: 12 }}>{fmtDmy(t.date)}</span>
                             </div>
                             <small className="mut" style={{ display: 'block', fontSize: 12, marginTop: 2 }}>
                               {f?.name ?? ''}{t.note ? ' · ' + t.note : ''}

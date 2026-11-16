@@ -159,7 +159,7 @@ export function WalletSelectorPill({ fundFilter, onChange, funds, txs }: Props) 
                             <b style={{ fontSize: 15 }}>{f.name}</b>
                             <span
                               style={{
-                                fontSize: 10,
+                                fontSize: 12,
                                 padding: '2px 6px',
                                 borderRadius: 99,
                                 background: 'color-mix(in srgb, var(--fg) 10%, transparent)',

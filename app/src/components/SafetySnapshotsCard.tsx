@@ -78,11 +78,11 @@ export default function SafetySnapshotsCard() {
               {s.reason} · {s.txCount} giao dịch · {s.fundCount} ví
             </small>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button type="button" className="btn" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => restore(s)}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="btn" style={{ padding: '7px 12px', fontSize: 12 }} onClick={() => restore(s)}>
               Khôi phục
             </button>
-            <button type="button" className="btn" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => download(s)}>
+            <button type="button" className="btn" style={{ padding: '7px 12px', fontSize: 12 }} onClick={() => download(s)}>
               Tải
             </button>
           </div>

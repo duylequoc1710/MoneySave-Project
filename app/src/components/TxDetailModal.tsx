@@ -300,7 +300,7 @@ export default function TxDetailModal({
                 <b style={{ color: 'var(--acc)' }}>
                   📅 Trả góp {instStatus.termMonths} tháng ({money(instStatus.monthlyAmount)}/kỳ)
                 </b>
-                <span className="pill-tag" style={{ fontSize: 11 }}>
+                <span className="pill-tag" style={{ fontSize: 12 }}>
                   Đã trả {instStatus.paidCycles}/{instStatus.termMonths} kỳ
                 </span>
               </div>

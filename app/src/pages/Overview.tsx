@@ -418,6 +418,7 @@ export default function Overview() {
             justifyContent: 'space-between',
             alignItems: 'center',
             fontSize: 13,
+            gap: 12,
           }}
         >
           <span className="mut">💳 Theo dõi hạn mức, kỳ sao kê & trả góp với Quỹ tín dụng</span>
@@ -701,7 +702,7 @@ export default function Overview() {
                 {smartInsights.topCat.name}
               </b>
               {smartInsights.topCat.amount > 0 && (
-                <span className="pill-tag" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                <span className="pill-tag" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
                   ~{smartInsights.topCat.workHours}h làm
                 </span>
               )}
@@ -739,7 +740,7 @@ export default function Overview() {
             >
               {Math.abs(smartInsights.burnRate.projectedVsBaselinePct)}%
             </div>
-            <small className="mut" style={{ display: 'block', marginTop: 4, fontSize: 11.5 }}>
+            <small className="mut" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
               {smartInsights.burnRate.projectedVsBaselinePct > 0
                 ? 'Cao hơn TB tháng'
                 : 'Thấp hơn TB tháng'}
@@ -753,7 +754,7 @@ export default function Overview() {
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              fontSize: 11.5,
+              fontSize: 12,
               marginBottom: 5,
             }}
             className="mut"
@@ -831,7 +832,7 @@ export default function Overview() {
             >
               <span
                 style={{
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 700,
                   color:
                     activeHeroCard.tone === 'danger'
@@ -845,7 +846,7 @@ export default function Overview() {
               >
                 {activeHeroCard.icon} {activeHeroCard.badge.toUpperCase()}
               </span>
-              <span className="mut" style={{ fontSize: 11.5 }}>
+              <span className="mut" style={{ fontSize: 12 }}>
                 {activeHeroCard.metricLabel}: <b>{activeHeroCard.metricValue}</b>
               </span>
             </div>
@@ -896,10 +897,11 @@ export default function Overview() {
                       )
                     }
                     title="Nhận định trước"
+                    aria-label="Nhận định trước"
                   >
                     ‹
                   </button>
-                  <span className="mut" style={{ fontSize: 11.5 }}>
+                  <span className="mut" style={{ fontSize: 12 }}>
                     {(insightIdx % smartInsights.heroCards.length) + 1}/
                     {smartInsights.heroCards.length}
                   </span>
@@ -913,6 +915,7 @@ export default function Overview() {
                       )
                     }
                     title="Nhận định tiếp theo"
+                    aria-label="Nhận định tiếp theo"
                   >
                     ›
                   </button>
@@ -975,9 +978,9 @@ export default function Overview() {
                   <XAxis
                     dataKey="label"
                     ticks={[`01/${format(today, 'MM')}`, `${daysInThisMonth}/${format(today, 'MM')}`]}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 12 }}
                   />
-                  <YAxis orientation="right" tickFormatter={moneyShort} tick={{ fontSize: 11 }} />
+                  <YAxis orientation="right" tickFormatter={moneyShort} tick={{ fontSize: 12 }} />
                   <Tooltip
                     cursor={{ stroke: 'var(--mut)', strokeWidth: 1, strokeDasharray: '3 3' }}
                     contentStyle={{
@@ -1067,7 +1070,7 @@ export default function Overview() {
               <ResponsiveContainer>
                 <BarChart data={barData} barSize={64} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis orientation="right" tickFormatter={moneyShort} tick={{ fontSize: 11 }} />
+                  <YAxis orientation="right" tickFormatter={moneyShort} tick={{ fontSize: 12 }} />
                   <Tooltip
                     cursor={{ fill: 'rgba(148, 163, 184, 0.08)', radius: 8 }}
                     contentStyle={{
@@ -1094,13 +1097,13 @@ export default function Overview() {
         )}
 
         <div className="report-BottomNav">
-          <button className="icon-btn" onClick={() => setReportSlide(0)}>
+          <button className="icon-btn" onClick={() => setReportSlide(0)} aria-label="Báo cáo trước">
             ‹
           </button>
           <span className="link-green" onClick={() => setReportSlide(s => (s === 0 ? 1 : 0))}>
             {reportSlide === 0 ? 'Báo cáo xu hướng' : 'Báo cáo chi tiêu'}
           </span>
-          <button className="icon-btn" onClick={() => setReportSlide(1)}>
+          <button className="icon-btn" onClick={() => setReportSlide(1)} aria-label="Báo cáo sau">
             ›
           </button>
         </div>

@@ -203,6 +203,7 @@ export default function Ledger() {
           className={`icon-btn ${!resolvedRange.isMonthMode ? 'active-cal' : ''}`}
           onClick={() => setShowTimeModal(true)}
           title="Chọn khoảng thời gian lọc chi tiết"
+          aria-label="Chọn khoảng thời gian"
         >
           📅
         </button>
@@ -219,6 +220,7 @@ export default function Ledger() {
           className="icon-btn"
           onClick={() => setShowSearch(s => !s)}
           title="Tìm kiếm"
+          aria-label="Tìm kiếm"
         >
           🔍
         </button>
@@ -250,7 +252,7 @@ export default function Ledger() {
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
         >
-          <button className="m-arrow" onClick={() => selectMonth(tabLeft, 'prev')} title="Tháng trước">
+          <button className="m-arrow" onClick={() => selectMonth(tabLeft, 'prev')} title="Tháng trước" aria-label="Tháng trước">
             ‹
           </button>
           <button
@@ -289,7 +291,7 @@ export default function Ledger() {
           >
             {getMonthTabLabel(tabRight, nowMonth)}
           </button>
-          <button className="m-arrow" onClick={() => selectMonth(tabRight, 'next')} title="Tháng kế tiếp">
+          <button className="m-arrow" onClick={() => selectMonth(tabRight, 'next')} title="Tháng kế tiếp" aria-label="Tháng kế tiếp">
             ›
           </button>
         </div>
@@ -432,7 +434,7 @@ export default function Ledger() {
                         <b className={isSavingsAlloc ? 'inc' : ''} style={!isSavingsAlloc ? { color: '#f59e0b' } : undefined}>
                           {isSavingsAlloc ? '+' : '-'}{money(t.amount)}
                         </b>
-                        <small style={{ display: 'block', fontSize: 10, color: 'var(--mut)' }}>
+                        <small style={{ display: 'block', fontSize: 12, color: 'var(--mut)' }}>
                           {isSavingsAlloc ? 'vào mục tiêu' : 'hoàn về ví TK'}
                         </small>
                       </div>

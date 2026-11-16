@@ -465,16 +465,16 @@ export default function Accounts() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
                     <b style={{ fontSize: 16 }}>{f.name}</b>
                     {info.activeInstallmentsCount > 0 && (
-                      <span className="pill-tag" style={{ fontSize: 10.5, color: 'var(--acc)', whiteSpace: 'nowrap' }}>
+                      <span className="pill-tag" style={{ fontSize: 12, color: 'var(--acc)', whiteSpace: 'nowrap' }}>
                         📅 {info.activeInstallmentsCount} trả góp
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     <button
                       type="button"
                       className="btn"
-                      style={{ padding: '4px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
+                      style={{ padding: '7px 10px', fontSize: 12, whiteSpace: 'nowrap' }}
                       onClick={e => {
                         e.stopPropagation()
                         setViewingCreditFundId(f.id!)
@@ -485,7 +485,7 @@ export default function Accounts() {
                     <button
                       type="button"
                       className="btn"
-                      style={{ padding: '4px 9px', fontSize: 12, whiteSpace: 'nowrap' }}
+                      style={{ padding: '7px 10px', fontSize: 12, whiteSpace: 'nowrap' }}
                       onClick={e => {
                         e.stopPropagation()
                         setFundEdit(f)
@@ -557,7 +557,7 @@ export default function Accounts() {
                   <div className="grow">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <b style={{ fontSize: 16 }}>{grp.parent.name}</b>
-                      <span className="pill-tag" style={{ fontSize: 11, background: 'var(--acc)', color: '#fff' }}>
+                      <span className="pill-tag" style={{ fontSize: 12, background: 'var(--acc)', color: '#fff' }}>
                         {grp.children.length} nhóm con
                       </span>
                     </div>

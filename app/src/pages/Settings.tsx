@@ -224,7 +224,7 @@ export default function Settings() {
                 : 'Lưu file MoneySave-SaoLuu.json vào Tệp / iCloud / Google Drive. Lưu cùng chỗ và chọn "Thay thế" để bản mới ghi đè bản cũ'}
             </small>
             {canPickSaveFile() && backupFileName && (
-              <button type="button" className="btn" style={{ marginTop: 6, padding: '4px 10px', fontSize: 12 }} onClick={() => handleBackup(true)}>
+              <button type="button" className="btn" style={{ marginTop: 6, padding: '7px 12px', fontSize: 12 }} onClick={() => handleBackup(true)}>
                 Đổi nơi lưu
               </button>
             )}
@@ -366,7 +366,7 @@ export default function Settings() {
         <div className="mut" style={{ fontSize: 12.5, marginTop: 4 }}>
           Tác giả: <b>Duylequoc1710</b>
         </div>
-        <div className="mut" style={{ fontSize: 11.5, marginTop: 2 }}>
+        <div className="mut" style={{ fontSize: 12, marginTop: 2 }}>
           Bản quyền © {new Date().getFullYear()} · Phiên bản {__APP_VERSION__}
         </div>
       </footer>

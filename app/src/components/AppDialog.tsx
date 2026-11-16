@@ -314,7 +314,7 @@ function ActiveDialog({ item }: { item: InternalDialogItem }) {
             </div>
             <div
               className="mut"
-              style={{ fontSize: 11.5, marginTop: 2, fontWeight: 500 }}
+              style={{ fontSize: 12, marginTop: 2, fontWeight: 500 }}
             >
               MoneySave
             </div>

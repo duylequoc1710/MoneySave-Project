@@ -187,10 +187,10 @@ export function InAppSelect<T extends string | number>({
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {selected ? selected.label : placeholder}
             </span>
-            {selected?.badge && <span className="pill-tag" style={{ fontSize: 10 }}>{selected.badge}</span>}
+            {selected?.badge && <span className="pill-tag" style={{ fontSize: 12 }}>{selected.badge}</span>}
           </div>
           {selected?.subLabel && (
-            <div style={{ fontSize: 11, color: 'var(--mut)', fontWeight: 500, marginTop: 1 }}>
+            <div style={{ fontSize: 12, color: 'var(--mut)', fontWeight: 500, marginTop: 1 }}>
               {selected.subLabel}
             </div>
           )}

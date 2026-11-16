@@ -157,7 +157,7 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   color: var(--mut);
   text-decoration: none;
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 24px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -192,7 +192,8 @@ main {
   max-width: 680px;
   width: 100%;
   margin: 0 auto;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(135px + env(safe-area-inset-bottom));
+  /* chừa chỗ cho thanh dock + nút nổi để nội dung cuối trang không bị che */
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(170px + env(safe-area-inset-bottom));
 }
 @media (min-width: 900px) {
   html,
@@ -411,6 +412,27 @@ h2 {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
+}
+/* U1: vùng chạm ≥ 44×44px – nới vùng bấm vô hình, không đổi bố cục */
+.link-green,
+.m-arrow,
+.mobile-brand-link,
+.mobile-brand-bar .pill-tag {
+  position: relative;
+}
+.link-green::after,
+.m-arrow::after,
+.mobile-brand-link::after,
+.mobile-brand-bar .pill-tag::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(100% + 16px);
+  min-width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 .ml-balance-header {
   display: flex;
@@ -430,6 +452,11 @@ h2 {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 10px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .icon-btn:hover {
   background: color-mix(in srgb, var(--fg) 8%, transparent);
@@ -477,7 +504,7 @@ h2 {
   border-radius: 50%;
   background: var(--card);
   border: 1px solid var(--bd);
-  font-size: 11px;
+  font-size: 12px;
   display: grid;
   place-items: center;
 }
@@ -620,7 +647,7 @@ h2 {
 }
 @media (max-width: 390px) {
   main {
-    padding: 12px 12px calc(135px + env(safe-area-inset-bottom));
+    padding: 12px 12px calc(170px + env(safe-area-inset-bottom));
   }
   .ml-total-num {
     font-size: 25px;
@@ -630,7 +657,7 @@ h2 {
     padding: 9px 2px;
   }
   .nav a {
-    font-size: 10.5px;
+    font-size: 12px;
     padding: 6px 2px;
   }
 }
@@ -681,7 +708,7 @@ h2 {
 }
 /* Pill Tag & Credit Card */
 .pill-tag {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 99px;
@@ -929,7 +956,7 @@ h2 {
   font-weight: 500;
 }
 .ml-amount-mode-badge {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--acc);
   font-weight: 600;
 }
@@ -1363,7 +1390,7 @@ h2 {
   margin-bottom: 12px;
 }
 .cat-group-label {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--mut);
@@ -1551,7 +1578,7 @@ h2 {
   background: color-mix(in srgb, var(--fg) 8%, transparent);
 }
 .report-subtx-date-badge {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--mut);
   background: color-mix(in srgb, var(--fg) 7%, transparent);
