@@ -4,6 +4,16 @@ Tài liệu này ghi nhận toàn bộ lịch sử phát triển, nâng cấp t�
 
 ---
 
+## [v2.11.0] – 2026-11-16
+### ☁️ Sao lưu / Khôi phục qua Google Drive của chính bạn (S4a)
+- Cài đặt › Dữ liệu cá nhân: **Sao lưu lên Google Drive** và **Khôi phục từ Google Drive** (chọn bản theo ngày → xem trước → xác nhận; vẫn tự lưu bản sao an toàn trước khi ghi đè).
+- Quyền hẹp `drive.file`: app chỉ thấy thư mục "MoneySave Backup" do nó tạo. Không có máy chủ trung gian, không tốn chi phí cho chủ app; mã truy cập Google chỉ giữ trong bộ nhớ (~1 giờ).
+- Mỗi ngày 1 file `MoneySave-YYYY-MM-DD.json` (sao lưu lại trong ngày → ghi đè), giữ 30 bản gần nhất; chỉ xoá file đúng quy ước tên trong thư mục của app.
+- Thanh nhắc trên Tổng quan: đã kết nối Drive mà quá 24 giờ chưa sao lưu → nút "Sao lưu Drive" 1 chạm (Google không cho sao lưu ngầm khi chưa chạm).
+- `googleDrive.ts` + `components/DriveBackupCard.tsx`; +4 unit test (`googleDrive.test.ts`) → 72/72. Không đổi schema Dexie.
+
+---
+
 ## [v2.10.1] – 2026-11-16
 ### 🔍 Tìm kiếm toàn diện (S5)
 - Tách logic tìm kiếm khỏi `GlobalSearchModal.tsx` sang module thuần `search.ts` (đóng TODO-1), component chỉ còn vẽ kết quả.

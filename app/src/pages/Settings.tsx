@@ -12,6 +12,7 @@ import {
 import SafetySnapshotsCard from '../components/SafetySnapshotsCard'
 import { canPickSaveFile, downloadFile, getRememberedFileName } from '../backupFile'
 import { runBackup, runRestoreFromFile } from '../components/backupActions'
+import DriveBackupRows from '../components/DriveBackupCard'
 import { auditData, type DataIssue } from '../dataAudit'
 import { clearAllToCleanState, seedDemoData3Months } from '../demoData'
 import {
@@ -479,6 +480,8 @@ export default function Settings() {
             }}
           />
         </div>
+
+        <DriveBackupRows />
 
         <div className="row" style={{ borderBottom: auditIssues ? undefined : 0 }}>
           <div className="ico round" style={{ background: '#14b8a624' }}>

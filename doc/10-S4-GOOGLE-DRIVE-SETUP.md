@@ -36,8 +36,12 @@
 - **KHÔNG gửi Client secret** (app không cần, nếu có hiện thì bỏ qua).
 - Khi code xong S4, kỹ sư sẽ báo **địa chỉ bản Preview của nhánh** để anh thêm vào mục Authorized JavaScript origins (Google không cho dùng ký tự `*`, mỗi địa chỉ phải thêm riêng). Đổi origin có thể mất 5 phút–vài giờ mới có hiệu lực.
 
-## §6. Ghi chú kỹ thuật (cho kỹ sư làm S4)
-- Google Identity Services (token model, `initTokenClient`), không dùng client secret, không redirect. Token sống ~1 giờ, lưu trong bộ nhớ (không lưu localStorage).
+## §6. Ghi chú kỹ thuật (S4a đã làm – v2.11.0)
+- ✅ PO đã tạo Client ID (2026-11-16): `356324629636-1qot1jbqm32k5v15tlatr37ong8o6ja4.apps.googleusercontent.com` (công khai, mặc định trong `googleDrive.ts`; bản clone đặt `VITE_GOOGLE_CLIENT_ID` của riêng họ).
+- Code: `app/src/googleDrive.ts` (GIS + Drive REST + hàm thuần), `components/DriveBackupCard.tsx`, `backupActions.ts` (`runDriveBackup`, `runDriveRestore`, `confirmAndRestore`), `BackupReminder.tsx` (nhắc 24 giờ).
+- Không tự sao lưu ngầm: token model không có refresh token → luôn cần 1 chạm. Muốn tự động thật cần máy chủ (trái mục tiêu chi phí 0) → không làm.
+- Hướng tiếp theo (S4b, chưa làm): chuyển đồng bộ nhiều máy từ Firebase sang Drive của từng người – xem 09 §7.
+- (Thiết kế ban đầu) Google Identity Services (token model, `initTokenClient`), không dùng client secret, không redirect. Token sống ~1 giờ, lưu trong bộ nhớ (không lưu localStorage).
 - Thư mục `MoneySave Backup` do app tạo; mỗi lần sao lưu tạo/ghi đè theo quy ước 1 file/ngày + giữ N bản gần nhất (chốt khi code). Dùng lại `exportAll`/`describeBackup`/`importAll(..., {source})` — không đổi schema Dexie.
 - D3 = **không mã hoá file sao lưu bằng mật khẩu** (PO chốt 2026-11-16).
 - Rủi ro cần PO thử máy thật: popup đăng nhập Google trong PWA iPhone (chế độ "Thêm vào MH chính").

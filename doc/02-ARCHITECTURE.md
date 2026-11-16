@@ -18,6 +18,7 @@
      └── TxForm / Accounts ─────────┘ ghi
                                     │ (Giai đoạn 2)
                               Sync adapter ⇄ Cloud (Firebase/Supabase)
+                              Sao lưu ⇄ Google Drive của người dùng (googleDrive.ts, drive.file, v2.11.0)
 ```
 
 ## Cấu trúc mã (`app/src`)

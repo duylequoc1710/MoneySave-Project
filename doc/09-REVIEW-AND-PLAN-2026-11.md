@@ -72,7 +72,8 @@
 | S1 ✅ | §2.2 persist storage, §3.3 JSON gọn (§3.2 huỷ – xem §2.4) | Opus | v2.9.0 |
 | S2 ✅ | Sao lưu GĐ1: 1 file duy nhất (ghi đè), Web Share, xem trước khi khôi phục, gộp snapshot theo ngày, sửa §2.3. A+ (mật khẩu file) huỷ theo D3 | Opus | v2.9.0 |
 | S3 ✅ | Bảo mật đồng bộ §2.1(a) + §2.4 + node meta §3.1 + migration két cũ + cập nhật rule/tài liệu (chi tiết §6) | Opus | v2.10.0 · PO đã đổi rule, 2 thiết bị khớp (2026-11-16) |
-| S4 | Google Drive GĐ2 – hướng dẫn PO: `10-S4-GOOGLE-DRIVE-SETUP.md` | Sonnet, Opus review | ⏳ chờ PO gửi OAuth Client ID |
+| S4a ✅ | Google Drive GĐ2: sao lưu/khôi phục (`10-S4-GOOGLE-DRIVE-SETUP.md`) | Opus | v2.11.0 · ⏳ PO thử máy thật |
+| S4b | Đồng bộ nhiều máy qua Drive của từng người thay Firebase (§7) | Opus lập kế hoạch | Sau khi S4a ổn trên iPhone |
 | S5 ✅ | TODO-1 tách logic tìm kiếm `search.ts` + test, tìm không dấu/nhiều từ. Hook dữ liệu dùng chung §3.4 **hoãn** (đụng mọi trang, lợi ích nhỏ ở cỡ dữ liệu hiện tại) | Opus | v2.10.1 |
 
 ## §6. S3 – Két bảo mật theo tài khoản (v2.10.0)
@@ -93,3 +94,9 @@
 - Xoá khối `moneysave_vaults` khỏi rule (khoá két cũ – không ai đọc/ghi được nữa). Lưu ý: chế độ đồng bộ thủ công không đăng nhập sẽ ngừng hoạt động – PO hiện dùng đăng nhập nên không ảnh hưởng.
 - Tuỳ chọn sau đó: xoá dữ liệu nhánh `moneysave_vaults` trên Console (sau khi đã có file sao lưu mới nhất).
 - Tuỳ chọn tương lai: "mật khẩu két" riêng để đúng nghĩa zero-knowledge (§2.1b).
+
+## §7. Định hướng sản phẩm (PO nêu 2026-11-16) & hệ quả kỹ thuật
+- Mục tiêu: dữ liệu chủ yếu trên điện thoại; sao lưu riêng tư; **chủ app không đọc được dữ liệu người dùng**; cho cộng đồng/người thân dùng free qua Vercel, mã nguồn mở; **không phát sinh chi phí** khi nhiều người dùng.
+- Đạt: lưu cục bộ, sao lưu file, sao lưu Google Drive (S4a – mỗi người tự chịu dung lượng Drive của mình).
+- Chưa đạt: đồng bộ đăng nhập dùng Firebase **của PO** → (1) khoá suy từ uid+email nên chủ Firebase về kỹ thuật giải mã được; (2) gói miễn phí Spark ~1 GB lưu trữ / 10 GB tải mỗi tháng → nhiều người dùng sẽ chạm trần (Spark: ngừng; Blaze: tính tiền).
+- Hướng S4b (đề xuất): đồng bộ qua file trên Drive của từng người (`drive.file`/`appDataFolder`), so `modifiedTime` để kéo/đẩy, giữ snapshot an toàn; Firebase giữ song song trong giai đoạn chuyển. Đánh đổi: chậm hơn (30 s–vài phút), mỗi máy đăng nhập Google. Lựa chọn tối thiểu thay thế: "mật khẩu két" riêng (§2.1b) để Firebase chỉ giữ dữ liệu không giải mã được.

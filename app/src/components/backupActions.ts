@@ -3,6 +3,15 @@ import { saveBackupFile, type SaveResult } from '../backupFile'
 import { markBackupDownloaded } from '../safetyBackup'
 import { fmtDmy } from '../lib'
 import { showAlert, showConfirm } from './AppDialog'
+import {
+  DRIVE_FOLDER_NAME,
+  DRIVE_KEEP,
+  type DriveFile,
+  downloadDriveBackup,
+  getDriveToken,
+  listDriveBackups,
+  uploadDriveBackup,
+} from '../googleDrive'
 
 const RESULT_MSG: Record<Exclude<SaveResult, 'cancelled'>, string> = {
   overwritten: 'Đã ghi đè bản sao lưu mới nhất vào file đã chọn trên máy.',
@@ -40,26 +49,83 @@ export async function runBackup(opts: { chooseNewLocation?: boolean; silentSucce
 export async function runRestoreFromFile(file?: File): Promise<void> {
   if (!file) return
   try {
-    const json = await file.text()
-    const s = describeBackup(json)
-    const [curTx, curFunds] = await Promise.all([db.txs.count(), db.funds.count()])
-    const when = s.exportedAt ? new Date(s.exportedAt).toLocaleString('vi-VN') : 'không rõ'
-    const range = s.firstDate && s.lastDate ? `${fmtDmy(s.firstDate)} → ${fmtDmy(s.lastDate)}` : '—'
-    const ok = await showConfirm({
-      title: 'Khôi phục từ file sao lưu?',
-      icon: '🛟',
-      tone: 'warning',
-      confirmText: 'Khôi phục',
-      message:
-        `File: ${file.name}\nSao lưu lúc: ${when}\n` +
-        `• ${s.txs} giao dịch (${range})\n• ${s.funds} ví · ${s.categories} nhóm · ${s.budgets} ngân sách · ${s.recurrings} định kỳ · ${s.savingsGoals} kế hoạch\n\n` +
-        `Dữ liệu hiện tại trên máy: ${curTx} giao dịch · ${curFunds} ví.\n` +
-        `Dữ liệu hiện tại sẽ được TỰ LƯU thành bản sao an toàn trước khi ghi đè (có thể khôi phục lại).`,
-    })
-    if (!ok) return
-    await importAll(json, db, { source: 'restore' })
-    await showAlert({ title: 'Khôi phục thành công', message: `Đã khôi phục ${s.txs} giao dịch, ${s.funds} ví.`, tone: 'success' })
+    await confirmAndRestore(await file.text(), `File: ${file.name}`)
   } catch (e) {
     await showAlert({ title: 'Lỗi khôi phục', message: 'Lỗi khôi phục: ' + (e as Error).message, tone: 'danger' })
+  }
+}
+
+/** Xem trước + xác nhận + ghi đè (dùng chung cho file trên máy và Google Drive). Trả về true nếu đã khôi phục. */
+export async function confirmAndRestore(json: string, sourceLabel: string): Promise<boolean> {
+  const s = describeBackup(json)
+  const [curTx, curFunds] = await Promise.all([db.txs.count(), db.funds.count()])
+  const when = s.exportedAt ? new Date(s.exportedAt).toLocaleString('vi-VN') : 'không rõ'
+  const range = s.firstDate && s.lastDate ? `${fmtDmy(s.firstDate)} → ${fmtDmy(s.lastDate)}` : '—'
+  const ok = await showConfirm({
+    title: 'Khôi phục từ bản sao lưu?',
+    icon: '🛟',
+    tone: 'warning',
+    confirmText: 'Khôi phục',
+    message:
+      `${sourceLabel}\nSao lưu lúc: ${when}\n` +
+      `• ${s.txs} giao dịch (${range})\n• ${s.funds} ví · ${s.categories} nhóm · ${s.budgets} ngân sách · ${s.recurrings} định kỳ · ${s.savingsGoals} kế hoạch\n\n` +
+      `Dữ liệu hiện tại trên máy: ${curTx} giao dịch · ${curFunds} ví.\n` +
+      `Dữ liệu hiện tại sẽ được TỰ LƯU thành bản sao an toàn trước khi ghi đè (có thể khôi phục lại).`,
+  })
+  if (!ok) return false
+  await importAll(json, db, { source: 'restore' })
+  await showAlert({ title: 'Khôi phục thành công', message: `Đã khôi phục ${s.txs} giao dịch, ${s.funds} ví.`, tone: 'success' })
+  return true
+}
+
+// ---------------- Google Drive (S4a) ----------------
+
+/**
+ * Sao lưu lên Google Drive của người dùng. Gọi TRỰC TIẾP trong onClick: dòng đầu tiên xin mã truy cập
+ * trước mọi `await` để iOS/Safari không chặn cửa sổ đăng nhập Google.
+ */
+export async function runDriveBackup(opts: { silentSuccess?: boolean } = {}): Promise<boolean> {
+  const tokenP = getDriveToken()
+  try {
+    const tok = await tokenP
+    const json = await exportAll()
+    const r = await uploadDriveBackup(tok, json)
+    markBackupDownloaded()
+    if (!opts.silentSuccess)
+      await showAlert({
+        title: 'Đã sao lưu lên Google Drive',
+        message:
+          `File "${r.name}" trong thư mục "${DRIVE_FOLDER_NAME}" trên Drive của bạn` +
+          (r.overwritten ? ' (ghi đè bản cùng ngày).' : '.') +
+          `\nGiữ tối đa ${DRIVE_KEEP} bản gần nhất (mỗi ngày 1 bản).`,
+        tone: 'success',
+        icon: '☁️',
+      })
+    return true
+  } catch (e) {
+    await showAlert({ title: 'Lỗi sao lưu Google Drive', message: (e as Error).message, tone: 'danger' })
+    return false
+  }
+}
+
+/** Lấy danh sách bản sao lưu trên Drive (gọi trực tiếp trong onClick, cùng lý do như trên). Lỗi → báo và trả null. */
+export async function fetchDriveBackupList(): Promise<DriveFile[] | null> {
+  const tokenP = getDriveToken()
+  try {
+    return await listDriveBackups(await tokenP)
+  } catch (e) {
+    await showAlert({ title: 'Lỗi Google Drive', message: (e as Error).message, tone: 'danger' })
+    return null
+  }
+}
+
+export async function runDriveRestore(file: DriveFile): Promise<boolean> {
+  const tokenP = getDriveToken()
+  try {
+    const json = await downloadDriveBackup(await tokenP, file.id)
+    return await confirmAndRestore(json, `Google Drive: ${file.name}`)
+  } catch (e) {
+    await showAlert({ title: 'Lỗi khôi phục', message: 'Lỗi khôi phục: ' + (e as Error).message, tone: 'danger' })
+    return false
   }
 }
