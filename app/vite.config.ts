@@ -47,6 +47,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         // index.html luôn lấy từ mạng trước (fallback cache khi offline) -> không kẹt bản cũ
         navigateFallback: 'index.html',
+        // Trang tĩnh (chính sách quyền riêng tư) không bị SW thay bằng app
+        navigateFallbackDenylist: [/^\/privacy/],
         runtimeCaching: [
           {
             urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',

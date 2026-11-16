@@ -22,6 +22,10 @@
    - Quyền `drive.file` thuộc loại không nhạy cảm nên **không cần Google duyệt**.
    - Nếu anh muốn để chế độ *Testing* thì phải thêm Gmail của mình vào **Test users**; nhược điểm: Google có thể bắt cho phép lại mỗi 7 ngày.
 
+### §3.4 Thực tế (2026-11-16)
+- Google bắt **Application home page** + **Privacy policy link** mới cho Publish. Điền: home `https://moneysavedl.vercel.app`, privacy `https://moneysavedl.vercel.app/privacy.html` (trang tĩnh `app/public/privacy.html`, SW không chặn nhờ `navigateFallbackDenylist`). Authorized domains: `moneysavedl.vercel.app`. **Không tải logo** (tải logo → bắt buộc Google duyệt).
+- Chưa Publish thì đăng nhập báo "Access blocked … Error 403: access_denied" → tạm thời thêm Gmail vào **Test users**.
+
 ## §4. Tạo Client ID
 1. Mục **Clients** (bản cũ: APIs & Services → Credentials → **Create credentials → OAuth client ID**) → **Create client**.
 2. Application type: **Web application** · Name: `MoneySave Web`.
