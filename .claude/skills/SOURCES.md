@@ -13,5 +13,7 @@ Chỉnh sửa so với bản gốc:
 - `ui-ux-pro-max/SKILL.md`: đổi `python "${CLAUDE_PLUGIN_ROOT}/.claude/skills/..."` → `python3 "$(git rev-parse --show-toplevel)/.claude/skills/..."`; bỏ `scripts/tests`.
 - Không chép các skill khác của ui-ux-pro-max-skill (ui-styling, brand, design, slides…) cho gọn.
 
+Skill tự viết cho dự án (không có nguồn ngoài): `tiepnhan` – tiếp nhận phiên khi PO tự mở phiên mới (xem `doc/08-HANDOVER.md` §8.8).
+
 Cập nhật: clone lại repo nguồn, chép đè thư mục skill tương ứng, áp lại các chỉnh sửa trên, cập nhật bảng commit.
 **Không** bật thêm plugin cùng tên ở `.claude/settings.json` (tránh nạp trùng).

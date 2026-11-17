@@ -18,6 +18,7 @@
 - Ngày lưu `YYYY-MM-DD`, hiển thị `dd/MM/yyyy` qua `fmtDmy`; không `new Date('YYYY-MM-DD')` để hiển thị.
 - Chủ dự án không chuyên kỹ thuật: trả lời tiếng Việt (kể cả khi skill viết/yêu cầu tiếng Anh), ngắn gọn, đưa khuyến nghị rõ ràng. Xưng hô: AI xưng **"tôi"**, gọi chủ dự án là **"bạn"** (không dùng "em", "anh/chị").
 - **Bàn giao phiên:** gần hết ngân sách (~300k token) hoặc PO yêu cầu bàn giao → AI tự tạo phiên mới bằng `create_session` kèm lời nhắn bàn giao đầy đủ, không chờ PO. Chủ động làm các bước đã thống nhất, không hỏi lại từng bước; chỉ hỏi khi yêu cầu mơ hồ hoặc cần PO xác nhận logic quan trọng (dữ liệu tiền, đồng bộ/sao lưu, schema, bảo mật, đổi diện mạo lớn). `main` chỉ khi PO nói "merge". Xem 08-HANDOVER §8.7.
+- **PO tự mở phiên mới:** PO gõ `/tiepnhan` (skill `.claude/skills/tiepnhan`) để AI đọc bàn giao và báo trạng thái. Không dùng `/init` (tạo lại `CLAUDE.md`). Xem 08-HANDOVER §8.8.
 - Ảnh chụp màn hình: chỉ chụp/xem khi cần làm rõ để sửa chính xác (tốn token); gửi PO tối đa 1–3 ảnh của thay đổi rõ nhất, không gửi bộ đầy đủ. Ưu tiên tiết kiệm thời gian và token.
 
 ## Skill Claude Code (chép sẵn trong `.claude/skills/`, xem `SOURCES.md`)
