@@ -41,7 +41,6 @@ Stack: React 19, TypeScript, Vite 8, Dexie (IndexedDB), Recharts, vite-plugin-pw
 - **[v2.17.0] Nhập nhanh + Smart Insights theo số liệu thật:** PO nói "merge" (2026-11-16) → đã lên `main` (nhật ký `sessions/2026-11-16-06.md`, FR-54/FR-55, T-38/T-39). PO đã thử trên máy thật – OK (2026-11-16, T-38/T-39).
 - **[v2.18.0] Số tiền hay nhập + thẻ gộp Tổng quan + giờ ghi giao dịch:** PO nói "merge" (2026-11-16) → đã lên `main` (nhật ký `sessions/2026-11-16-06.md` mục 13–19, FR-56/FR-57, T-40/T-41). Chờ PO thử trên máy thật.
 - **[S4b – TẠM DỪNG]** PO quyết định giữ Firebase (2026-11-16). Nhánh `claude/s4b-drive-sync` giữ làm dự phòng (S4b-1 + S4b-2 xong, chưa merge; nếu làm tiếp: rebase lên `main`, đổi version sau v2.17.0, đổi tên nhật ký `2026-11-16-05.md` nếu trùng).
-- **[S4b] Định hướng PO (09 §7):** riêng tư + chi phí 0 → đề xuất chuyển đồng bộ sang Drive từng người; chờ PO chốt sau khi S4a ổn.
 - ✅ **[TODO-2]** PO đã xác minh trên máy thật – OK (2026-11-16, T-26).
 - ✅ **[TODO-3]** PO xác nhận bản live v2.16.0 trên Vercel OK (2026-11-16). Từ v2.16.1 có CI GitHub Actions chặn build lỗi trước khi lên `main`.
 - ✅ CI tự động (v2.16.1): `.github/workflows/ci.yml` chạy test/build/lint mỗi lần push/PR – xem tab Actions trên GitHub; badge CI trong README.
