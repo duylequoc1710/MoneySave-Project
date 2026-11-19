@@ -23,4 +23,5 @@ Chỉ đọc, không sửa code, không commit trong bước này.
    - "Tôi đã tiếp nhận phiên mới." + phiên bản đang chạy trên `main`.
    - Việc còn treo (nhánh chưa merge, việc chờ PO thử, quyết định đang chờ) – mỗi việc 1 dòng.
    - 1 khuyến nghị việc nên làm tiếp (nếu có), rồi chờ yêu cầu.
-5. Sau đó làm việc theo `CLAUDE.md` và `08-HANDOVER §8`. Khi gần ngưỡng context (~300k token) vẫn tự bàn giao bằng `create_session` theo §8.7.
+5. Nếu có nhánh `claude/*` của phiên trước chưa merge (trừ `claude/s4b-drive-sync` – dự phòng, cố ý chưa merge): gộp vào nhánh làm việc của phiên này trước khi làm (`.claude/WORKFLOW.md` mục Nhánh).
+6. Sau đó làm việc theo `CLAUDE.md`, `.claude/WORKFLOW.md` và `08-HANDOVER §8`. Bàn giao theo §8.7 (gửi PO lời nhắn mở phiên mới).
