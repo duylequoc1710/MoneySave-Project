@@ -1,6 +1,12 @@
+@.claude/WORKFLOW.md
+
 # MoneySave
 
 Ứng dụng quản lý tài chính cá nhân, local-first (React 19 + Vite + Dexie). Mã nguồn nằm trong `app/`, tài liệu trong `doc/` (bắt đầu từ `doc/00-INDEX.md`). **Trước khi làm việc: đọc `doc/08-HANDOVER.md` (§2 trạng thái, §5 cảnh báo, §8 quy tắc) và nhật ký phiên mới nhất trong `doc/sessions/`.**
+
+## Triển khai
+
+**Kiểu A** (xem `.claude/WORKFLOW.md`): webapp trên Vercel (https://moneysavedl.vercel.app), dữ liệu trên Firebase (và IndexedDB trên máy người dùng). Vercel theo dõi `main` và tự triển khai khi merge – sau khi merge chỉ báo "bản mới sẽ lên trong vài phút". Không có GitHub Pages (đã bỏ).
 
 ## Lệnh thường dùng (chạy trong `app/`)
 
